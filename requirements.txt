@@ -1,0 +1,11 @@
+# Core dependencies
+django
+python-dotenv
+
+# Dev tools
+django-debug-toolbar
+django-extensions
+ipython
+
+# Production dependencies
+django-cors-headers
