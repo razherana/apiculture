@@ -33,4 +33,8 @@ urlpatterns = [
     path('production/miel/', include('projet.routes.production.miel')),
     path('production/ressources/', include('projet.routes.production.ressources')),
     path('production/statistiques/', include('projet.routes.production.statistiques')),
+    
+    # Test templates
+    path('admin/', admin.site.urls),
+    path('', include('projet.routes')),
 ]

@@ -1,0 +1,243 @@
+/* Reset et bases */
+*, *:before, *:after {
+    box-sizing: border-box;
+}
+
+/* Carte de formulaire */
+.form-card {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    padding: 2rem;
+    max-width: 500px;
+    margin: 2rem auto;
+    border: 1px solid #eee;
+}
+
+.form-card h2 {
+    color: #222;
+    margin-bottom: 1.5rem;
+    text-align: center;
+    font-size: 1.5rem;
+    font-weight: 600;
+    position: relative;
+    padding-bottom: 0.5rem;
+}
+
+.form-card h2::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 3px;
+    background: #ffd700;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-card label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: #444;
+    font-size: 0.95rem;
+}
+
+.form-card input[type="text"],
+.form-card input[type="number"],
+.form-card input[type="date"],
+.form-card select,
+.form-card textarea {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+    background: #fff;
+    color: #222;
+    transition: all 0.2s ease;
+}
+
+.form-card input[type="text"]:focus,
+.form-card input[type="number"]:focus,
+.form-card input[type="date"]:focus,
+.form-card select:focus,
+.form-card textarea:focus {
+    border-color: #ffd700;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.1);
+}
+
+.form-card .radio-group {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.form-card .radio-group label {
+    display: flex;
+    align-items: center;
+    font-weight: 400;
+    color: #555;
+    cursor: pointer;
+}
+
+.form-card input[type="radio"] {
+    accent-color: #ffd700;
+    margin-right: 0.5rem;
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+/* Boutons */
+.btn {
+    border: none;
+    outline: none;
+    border-radius: 4px;
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.btn-primary {
+    background: #222;
+    color: #fff;
+}
+
+.btn-primary:hover {
+    background: #ffd700;
+    color: #222;
+}
+
+.btn-secondary {
+    background: #fff;
+    color: #222;
+    border: 1px solid #ddd;
+}
+
+.btn-secondary:hover {
+    border-color: #ffd700;
+    color: #222;
+}
+
+.btn-danger {
+    background: #ff3b30;
+    color: #fff;
+}
+
+.btn-danger:hover {
+    background: #d70015;
+}
+
+.btn:active {
+    transform: translateY(1px);
+}
+
+/* Rangée de boutons */
+.form-btn-row {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+    margin-top: 2rem;
+    flex-wrap: wrap;
+}
+
+/* Boutons d'action */
+.action-btn {
+    border-radius: 4px;
+    padding: 0.6rem 1.2rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    text-decoration: none !important;
+}
+
+.action-btn.edit {
+    background: #222;
+    color: #fff;
+}
+
+.action-btn.edit:hover {
+    background: #ffd700;
+    color: #222;
+}
+
+.action-btn.delete {
+    background: #ff3b30;
+    color: #fff;
+}
+
+.action-btn.delete:hover {
+    background: #d70015;
+}
+
+.action-btn.view {
+    background: #fff;
+    color: #222;
+    border: 1px solid #ddd;
+}
+
+.action-btn.view:hover {
+    border-color: #ffd700;
+}
+
+.action-btn.add {
+    background: #ffd700;
+    color: #222;
+}
+
+.action-btn.add:hover {
+    background: #222;
+    color: #ffd700;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .form-card {
+        padding: 1.5rem;
+        margin: 1rem;
+    }
+    
+    .form-btn-row {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    
+    .btn, .action-btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .form-card {
+        padding: 1rem;
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+    }
+    
+    .form-card h2 {
+        font-size: 1.3rem;
+    }
+    
+    .radio-group {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+}

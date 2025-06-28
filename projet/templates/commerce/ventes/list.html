@@ -1,0 +1,58 @@
+{% extends "commerce/base_commerce.html" %}
+{% load static %}
+{% block title %}Liste des ventes{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="{% static 'commerce/css/list.css' %}">
+<div class="liste-content">
+    <h2>Liste des ventes</h2>
+    <form action="{% url 'vente_form' %}" method="post">
+        {% csrf_token %}
+        <button class="action-btn add" type="submit">
+            Nouvelle Vente
+        </button>
+    </form> 
+        <form action="{% url 'ventes_stats'%}" method="post" style="display:inline;">
+        {% csrf_token %}
+        <button class="action-btn add" type="submit">
+            Statistiques générale des ventes cette saison
+        </button>
+    </form>
+    <div class="table-card">
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Client</th>
+                    <th>Produit</th> 
+                    <th>Quantité</th>
+                    <th>Montant (€)</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for vente in ventes %}
+                <tr>
+                    <td>{{ vente.date }}</td>
+                    <td>{{ vente.client }}</td>
+                    <td>{{ vente.produit }}</td>
+                    <td>{{ vente.quantite }}</td>
+                    <td>{{ vente.montant }}</td>
+                    <td>
+                        <form action="{% url 'vente_vue' %}" method="post">
+                            {% csrf_token %}
+                            <button class="action-btn view" type="submit">
+                                Voir
+                            </button>
+                        </form> 
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6">Aucune vente trouvée.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

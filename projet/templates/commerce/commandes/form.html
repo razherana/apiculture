@@ -1,0 +1,50 @@
+{% extends "commerce/base_commerce.html" %}
+{% load static %}
+{% block title %}Nouvelle commande{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'commerce/css/form.css' %}">
+<div class="form-card" id="commande-insert-card">
+    <h2>Nouvelle commande</h2>
+    <form method="post" id="commande-insert-form" autocomplete="off">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="date">Date de la commande</label>
+            <input type="date" id="date" name="date" required>
+        </div>
+        <div class="form-group">
+            <label for="livraison_date">Date de livraison prévue</label>
+            <input type="date" id="livraison_date" name="livraison_date" required>
+        </div>
+        <div class="form-group">
+            <label for="client">Client</label>
+            <select id="client" name="client" required>
+                <option value="" disabled selected>-- Sélectionner un client --</option>
+                {% for cl in clients %}
+                    <option value="{{ cl.nom }}">{{ cl.nom }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="produit">Miel</label>
+            <select id="produit" name="produit" required>
+                <option value="" disabled selected>-- Sélectionner un Miel --</option>
+                {% for prod in produits %}
+                    <option value="{{ prod.nom }}">{{ prod.nom }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="quantite">Quantité</label>
+            <input type="number" id="quantite" name="quantite" min="1" required>
+        </div>
+        <div class="form-group">
+            <label for="note">Note</label>
+            <input type="text" id="note" name="note">
+        </div>
+        <div style="display: flex; gap: 0.5em; justify-content: flex-end;">
+            <button type="submit" class="action-btn add">Enregistrer</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

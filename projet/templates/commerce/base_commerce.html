@@ -1,0 +1,34 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Commerce & Stock{% endblock %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{% static 'commerce/css/commerce.css' %}">
+    <link href="https://fonts.googleapis.com/css?family=Inter:400,600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="layout">
+        <aside class="sidebar">
+             <div class="sidebar-title">Apiculture</div>
+            <nav class="sidebar-nav">
+                <a href="{% url 'test_liste_miels' %}" class="sidebar-btn">Stock des Miels</a>
+                <a href="{% url 'test_liste_clients' %}" class="sidebar-btn">Clients</a>
+                <a href="{% url 'test_liste_ventes' %}" class="sidebar-btn">Ventes</a>
+                <a href="{% url 'test_liste_commandes' %}" class="sidebar-btn">Commandes</a>
+            </nav>
+        </aside>
+        <main class="main-content">
+            <header class="page-header">
+                <h1>{% block page_title %}Commerce & Stock{% endblock %}</h1>
+            </header>
+            <section class="main-section">
+                {% block content %}
+                <!-- Le contenu spécifique de chaque page sera injecté ici -->
+                {% endblock %}
+            </section>
+        </main>
+    </div>
+</body>
+</html>

@@ -1,0 +1,52 @@
+{% extends "commerce/base_commerce.html" %}
+{% load static %}
+{% block title %}Liste des miels{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="{% static 'commerce/css/list.css' %}">
+<div class="liste-content">
+    <h2>Liste des miels</h2>
+    <form action="{% url 'miels_stats'%}" method="post" style="display:inline;">
+        {% csrf_token %}
+        <button class="action-btn add" type="submit">
+            Statistiques générale des stocks cette saison
+        </button>
+    </form>
+    <div class="table-card">
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Type</th>
+                    <th>Conteneur</th>
+                    <th>Stock actuel</th>
+                    <th>Prix</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for miel in miels %}
+                <tr>
+                    <td>{{ miel.id }}</td>
+                    <td>{{ miel.type }}</td>
+                    <td>{{ miel.conteneur }}</td>
+                    <td>{{ miel.stock }}</td>
+                    <td>{{ miel.prix }} Ar</td>
+                    <td>
+                        <form action="{% url 'test_stocks_miels' %}" method="post">
+                            {% csrf_token %}
+                            <button class="action-btn view" type="submit">
+                                Gerer
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5">Aucun miel trouvé.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
