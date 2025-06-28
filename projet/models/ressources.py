@@ -274,6 +274,7 @@ class RucheHausseHistory(models.Model):
     hausse_id = models.ForeignKey(
         Hausse, on_delete=models.CASCADE, related_name='ruche_hausse_histories')
     created_at = models.DateTimeField(auto_now_add=True)
+    is_removed = models.BooleanField(default=False)
 
     class Meta:
         db_table = 'ruche_hausse_histories'
