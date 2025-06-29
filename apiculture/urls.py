@@ -20,21 +20,14 @@ from django.urls import path, include
 urlpatterns = [
     path('', include('projet.routes.dashboard')),
     
-    # Commerce routes
-    path('commerce/stock/', include('projet.routes.commerce.stock')),
-    path('commerce/ventes/', include('projet.routes.commerce.ventes')),
-    
-    # Elevage routes
-    path('elevage/calendar/', include('projet.routes.elevage.calendar')),
-    path('elevage/cheptel/', include('projet.routes.elevage.cheptel')),
-    path('elevage/ruches/', include('projet.routes.elevage.ruches')),
+    # Ressources routes
+    path('ressources/', include('projet.ressources.urls')),
     
     # Production routes
-    path('production/miel/', include('projet.routes.production.miel')),
-    path('production/ressources/', include('projet.routes.production.ressources')),
-    path('production/statistiques/', include('projet.routes.production.statistiques')),
+    path('production/', include('projet.production.urls')),
     
-    # Test templates
-    path('admin/', admin.site.urls),
+    # Ventes routes
+    path('ventes/', include('projet.ventes.urls')),
+
     path('', include('projet.routes')),
 ]
