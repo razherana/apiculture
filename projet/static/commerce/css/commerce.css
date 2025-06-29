@@ -252,3 +252,254 @@ body {
         padding: 1rem;
     }
 }
+/* SIDEBAR - Style moderne et sophistiqué */
+.sidebar {
+    width: 280px;
+    background: linear-gradient(165deg, #111111 0%, #1a1a1a 100%);
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    padding: 28px 0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    border-right: 1px solid rgba(255, 215, 0, 0.05);
+    box-shadow: 4px 0 25px rgba(0, 0, 0, 0.15);
+}
+
+.sidebar-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #ffd700;
+    margin-bottom: 42px;
+    letter-spacing: 1.5px;
+    padding: 10px 25px;
+    position: relative;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.sidebar-title i {
+    font-size: 1.8rem;
+    background: linear-gradient(45deg, #ffd700, #ffed4a);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 0 15px;
+}
+
+/* Style des sections */
+.nav-section {
+    width: 100%;
+    margin-bottom: 8px;
+    position: relative;
+    overflow: hidden;
+}
+
+.section-title {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    padding: 14px 20px;
+    background: rgba(255, 215, 0, 0.03);
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.section-title:hover {
+    background: rgba(255, 215, 0, 0.08);
+}
+
+.section-title .icon {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 12px;
+}
+
+.section-title .title {
+    flex: 1;
+    color: #ffd700;
+    font-weight: 600;
+    font-size: 0.95rem;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    text-align: left;
+}
+
+.section-title .arrow {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffd700;
+    transition: transform 0.3s ease;
+}
+
+.section-title i {
+    font-size: 1.1rem;
+    color: #ffd700;
+}
+
+.section-content {
+    overflow: hidden;
+    transition: all 0.3s ease;
+    padding-left: 20px;
+    margin-top: 8px;
+}
+
+.sidebar-btn.sub-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 20px;
+    width: 100%;
+    color: #d4d4d4;
+    text-decoration: none;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    margin-bottom: 4px;
+    position: relative;
+    overflow: hidden;
+}
+
+.sidebar-btn.sub-item .icon {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 12px;
+}
+
+.sidebar-btn.sub-item .title {
+    flex: 1;
+    font-size: 0.9rem;
+}
+
+.sidebar-btn.sub-item:hover {
+    background: rgba(255, 215, 0, 0.05);
+    color: #ffd700;
+    transform: translateX(5px);
+}
+
+.sidebar-btn.sub-item.active {
+    background: rgba(255, 215, 0, 0.1);
+    color: #ffd700;
+}
+
+/* Animation pour la flèche */
+.nav-section.collapsed .arrow i {
+    transform: rotate(0deg);
+}
+
+.nav-section:not(.collapsed) .arrow i {
+    transform: rotate(90deg);
+}
+
+/* Effet de glassmorphism subtil */
+.section-title::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+        45deg,
+        rgba(255, 215, 0, 0.05) 0%,
+        rgba(255, 215, 0, 0) 100%
+    );
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.section-title:hover::before {
+    opacity: 1;
+}
+
+/* Animation d'entrée pour les sous-menus */
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.nav-section:not(.collapsed) .section-content {
+    animation: slideDown 0.3s ease forwards;
+}
+
+/* Responsive design */
+@media (max-width: 1100px) {
+    .sidebar {
+        width: 100%;
+        height: auto;
+        position: static;
+    }
+
+    .nav-section {
+        margin-bottom: 5px;
+    }
+
+    .section-content {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        width: 250px;
+        background: #1a1a1a;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        z-index: 1000;
+        padding: 10px;
+    }
+
+    .section-title:hover {
+        transform: none;
+    }
+
+    .sidebar-btn.sub-item:hover {
+        transform: none;
+    }
+}
+
+@media (max-width: 700px) {
+    .sidebar {
+        padding: 15px;
+    }
+
+    .sidebar-title {
+        text-align: center;
+        justify-content: center;
+        margin-bottom: 20px;
+    }
+
+    .nav-section {
+        width: 100%;
+    }
+
+    .section-content {
+        position: static;
+        width: 100%;
+        box-shadow: none;
+        background: transparent;
+    }
+}

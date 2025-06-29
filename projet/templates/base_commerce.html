@@ -1,0 +1,138 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Commerce & Stock{% endblock %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{% static 'commerce/css/commerce.css' %}">
+    <link href="https://fonts.googleapis.com/css?family=Inter:400,600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+
+<body>
+    <div class="layout">
+        <aside class="sidebar">
+            <div class="sidebar-title">
+                <i class="fas fa-honeycomb"></i>
+                Apiculture
+            </div>
+            
+            <nav class="sidebar-nav">
+                <!-- Section Commerce -->
+                <div class="nav-section">
+                    <button class="sidebar-btn section-title">
+                        <span class="icon"><i class="fas fa-store"></i></span>
+                        <span class="title">Commerce</span>
+                        <span class="arrow"><i class="fas fa-chevron-right"></i></span>
+                    </button>
+                    <div class="section-content">
+                        <a href="{% url 'test_liste_miels' %}" class="sidebar-btn sub-item">
+                            <span class="icon"><i class="fas fa-jar"></i></span>
+                            <span class="title">Stock des Miels</span>
+                        </a>
+                        <a href="{% url 'test_liste_clients' %}" class="sidebar-btn sub-item">
+                            <span class="icon"><i class="fas fa-users"></i></span>
+                            <span class="title">Clients</span>
+                        </a>
+                        <a href="{% url 'test_liste_ventes' %}" class="sidebar-btn sub-item">
+                            <span class="icon"><i class="fas fa-chart-line"></i></span>
+                            <span class="title">Ventes</span>
+                        </a>
+                        <a href="{% url 'test_liste_commandes' %}" class="sidebar-btn sub-item">
+                            <span class="icon"><i class="fas fa-clipboard-list"></i></span>
+                            <span class="title">Commandes</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Section Élevage -->
+                <!-- Modification de la section élevage dans le sidebar -->
+                <div class="nav-section">
+                    <button class="sidebar-btn section-title">
+                        <span class="icon">
+                            <i class="fas fa-bug"></i> <!-- Icône de ruche -->
+                        </span>
+                        <span class="title">Élevage</span>
+                        <span class="arrow"><i class="fas fa-chevron-right"></i></span>
+                    </button>
+                    <div class="section-content">
+                        <a href="#" class="sidebar-btn sub-item">
+                            <span class="icon"><i class="fas fa-crown"></i></span>
+                            <span class="title">Reines</span>
+                        </a>
+                        <a href="#" class="sidebar-btn sub-item">
+                            <span class="icon"><i class="fas fa-boxes-stacked"></i></span>
+                            <span class="title">Ruches</span>
+                        </a>
+                        <a href="#" class="sidebar-btn sub-item">
+                            <span class="icon"><i class="fas fa-temperature-half"></i></span>
+                            <span class="title">Surveillance</span>
+                        </a>
+                    </div>
+                </div>
+                <!-- Section Production -->
+                <div class="nav-section">
+                    <button class="sidebar-btn section-title">
+                        <span class="icon"><i class="fas fa-industry"></i></span>
+                        <span class="title">Production</span>
+                        <span class="arrow"><i class="fas fa-chevron-right"></i></span>
+                    </button>
+                    <div class="section-content">
+                        <!-- Sous-menus à venir -->
+                    </div>
+                </div>
+            </nav>
+        </aside>
+        <main class="main-content">
+            <header class="page-header">
+                <h1>{% block page_title %}Commerce & Stock{% endblock %}</h1>
+            </header>
+            <section class="main-section">
+                {% block content %}{% endblock %}
+            </section>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const sections = document.querySelectorAll('.nav-section');
+
+            sections.forEach(section => {
+                const title = section.querySelector('.section-title');
+                const content = section.querySelector('.section-content');
+                const arrow = section.querySelector('.arrow i');
+
+                // Initialiser tous les contenus comme fermés
+                content.style.maxHeight = '0px';
+                content.style.opacity = '0';
+                section.classList.add('collapsed');
+
+                title.addEventListener('click', () => {
+                    // Fermer tous les autres sections
+                    sections.forEach(otherSection => {
+                        if (otherSection !== section && !otherSection.classList.contains('collapsed')) {
+                            const otherContent = otherSection.querySelector('.section-content');
+                            const otherArrow = otherSection.querySelector('.arrow i');
+                            otherContent.style.maxHeight = '0px';
+                            otherContent.style.opacity = '0';
+                            otherSection.classList.add('collapsed');
+                            otherArrow.style.transform = 'rotate(0deg)';
+                        }
+                    });
+
+                    // Basculer la section actuelle
+                    const isCollapsed = section.classList.contains('collapsed');
+                    content.style.maxHeight = isCollapsed ? content.scrollHeight + 'px' : '0px';
+                    content.style.opacity = isCollapsed ? '1' : '0';
+                    section.classList.toggle('collapsed');
+                    arrow.style.transform = isCollapsed ? 'rotate(90deg)' : 'rotate(0deg)';
+                });
+            });
+        });
+    </script>
+    
+</body>
+
+</html>
