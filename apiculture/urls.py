@@ -28,4 +28,6 @@ urlpatterns = [
     
     # Ventes routes
     path('ventes/', include('projet.ventes.urls')),
+
+    path('', include('projet.routes')),
 ]

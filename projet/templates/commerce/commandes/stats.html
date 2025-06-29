@@ -1,0 +1,187 @@
+{% extends "base_commerce.html" %}
+{% load static %}
+{% block title %}Statistiques des commandes{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="{% static 'commerce/css/list.css' %}">
+<link rel="stylesheet" href="{% static 'commerce/css/stat.css' %}">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<div class="liste-content">
+    <h2 style="font-size:1.3em;margin-bottom:0.5em;">Statistiques des commandes</h2>
+    <div id="main-flex-container">
+        <div id="sidecard-list" class="small-card">
+            <h4 style="text-align:center;font-size:1em;margin:0 0 0.6em 0;">Types de miel</h4>
+            <ul>
+                {% for type in stats_par_type %}
+                <li data-type="{{ type }}"{% if forloop.first %} class="selected"{% endif %}>
+                    {{ type }}
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        <div id="stats-panel">
+            <div class="stat-cards-container">
+                <div class="stat-cards-row" style="display:flex; gap:1em;">
+                    <div class="mini-card small-card">
+                        <div class="mini-card-title">Commandes totales</div>
+                        <div class="mini-card-value" id="val-total-commandes">0</div>
+                    </div> 
+                    <div class="mini-card small-card">
+                        <div class="mini-card-title">Commandes livrées</div>
+                        <div class="mini-card-value" id="val-commandes-livrees">0</div>
+                    </div>
+                    <div class="mini-card small-card">
+                        <div class="mini-card-title">Commandes annulées</div>
+                        <div class="mini-card-value" id="val-commandes-annulees">0</div>
+                    </div>
+                    <div class="mini-card small-card">
+                        <div class="mini-card-title">Taux livraison</div>
+                        <div class="mini-card-value" id="val-taux-livraison">0%</div>
+                    </div>
+                    <div class="mini-card small-card">
+                        <div class="mini-card-title">Chiffre d'affaires</div>
+                        <div class="mini-card-value" id="val-ca">0€</div>
+                    </div>
+                </div>
+                <div id="commandes-stats" class="small-card"></div>
+                <div class="stat-graphs-row">
+                    <div class="small-card stat-graph-card">
+                        <canvas id="commandesCurveChart" width="430" height="230"></canvas>
+                    </div>
+                    <div class="small-card stat-graph-card">
+                        <canvas id="produitsPieChart" width="260" height="230"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const commandesStats = {
+    global: {{ stats_globales|safe }},
+    types: {{ stats_par_type|safe }}
+};
+
+function renderMiniCards(type) {
+    const stats = commandesStats.types[type];
+    document.getElementById("val-total-commandes").innerText = stats.total_commandes;
+    document.getElementById("val-commandes-livrees").innerText = stats.commandes_livrees;
+    document.getElementById("val-commandes-annulees").innerText = stats.commandes_annulees;
+    document.getElementById("val-taux-livraison").innerText = (stats.taux_livraison * 100).toFixed(1) + '%';
+    document.getElementById("val-ca").innerText = stats.ca_estime.toFixed(2) + '€';
+}
+
+function renderCommandesStats(type){
+    const stats = commandesStats.types[type];
+    
+    let jourHtml = '';
+    for (const [jour, quantite] of Object.entries(stats.repartition_par_jour || {})) {
+        jourHtml += `<tr><td>${jour}</td><td>${quantite}</td></tr>`;
+    }
+    
+    let clientsHtml = '';
+    for (const client of (stats.top_clients || [])) {
+        clientsHtml += `<li>${client}</li>`;
+    }
+    
+    document.getElementById("commandes-stats").innerHTML = `
+        <table class="stat-table">
+            <tr><th>Type de miel</th><td>${type}</td></tr>
+            <tr><th>Commandes totales</th><td>${stats.total_commandes}</td></tr>
+            <tr><th>Commandes livrées</th><td>${stats.commandes_livrees}</td></tr>
+            <tr><th>Commandes annulées</th><td>${stats.commandes_annulees}</td></tr>
+            <tr><th>Taux de livraison</th><td>${(stats.taux_livraison * 100).toFixed(1)}%</td></tr>
+            <tr><th>Chiffre d'affaires</th><td>${stats.ca_estime.toFixed(2)}€</td></tr>
+        </table>
+        <h4 style="margin-top:1em;">Commandes par jour</h4>
+        <table class="stat-table">${jourHtml}</table>
+        ${clientsHtml ? `<h4 style="margin-top:1em;">Clients fréquents</h4><ul style="padding-left:1.5em;">${clientsHtml}</ul>` : ''}
+    `;
+}
+
+let commandesCurveChart, produitsPieChart;
+function renderCommandesCharts(type){
+    // Courbe
+    const cc = document.getElementById('commandesCurveChart').getContext('2d');
+    if(commandesCurveChart) commandesCurveChart.destroy();
+
+    const stats = commandesStats.types[type];
+    const labels = Object.keys(stats.repartition_par_jour);
+    const data = Object.values(stats.repartition_par_jour);
+
+    commandesCurveChart = new Chart(cc, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: `Commandes par jour - ${type}`,
+                data: data,
+                borderColor: '#5f8f3e',
+                backgroundColor: 'rgba(95,143,62,0.1)',
+                tension: 0.25
+            }]
+        },
+        options: {
+            plugins: {legend: {display: false}},
+            scales: {
+                x: { ticks: {font: {size: 12}, color: "#694b18"} },
+                y: { beginAtZero: true, ticks: {font: {size: 12}, color: "#694b18"} }
+            }
+        }
+    });
+
+    // Camembert
+    const pc = document.getElementById('produitsPieChart').getContext('2d');
+    if(produitsPieChart) produitsPieChart.destroy();
+
+    const labelsPie = Object.keys(commandesStats.types);
+    const dataPie = labelsPie.map(t => commandesStats.types[t].total_commandes);
+
+    produitsPieChart = new Chart(pc, {
+        type: 'pie',
+        data: {
+            labels: labelsPie,
+            datasets: [{
+                data: dataPie,
+                backgroundColor: ['#f6ca7a', '#d46a6a', '#62a469', '#a4bdfc', '#ffd700']
+            }]
+        },
+        options: {
+            plugins: {
+                legend: {position: 'bottom', labels: {font: {size: 12}}},
+                title: {
+                    display: true,
+                    text: 'Répartition totale par type',
+                    font: {size: 14}
+                }
+            }
+        }
+    });
+}
+
+window.addEventListener("DOMContentLoaded", function(){
+    const typeList = document.querySelectorAll('#sidecard-list li');
+    let selected = "";
+
+    function selectType(type){
+        typeList.forEach((li) => {
+            li.classList.toggle('selected', li.dataset.type === type);
+        });
+        renderMiniCards(type);
+        renderCommandesStats(type);
+        renderCommandesCharts(type);
+        selected = type;
+    }
+
+    typeList.forEach((li) => {
+        li.addEventListener('click', () => selectType(li.dataset.type));
+    });
+
+    // Sélection initiale
+    if (typeList.length > 0) {
+        selectType(typeList[0].dataset.type);
+    }
+});
+</script>
+{% endblock %}

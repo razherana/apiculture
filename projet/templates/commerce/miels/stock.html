@@ -1,0 +1,45 @@
+{% extends "base_commerce.html" %}
+{% load static %}
+{% block title %}Gestion du stock{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="{% static 'commerce/css/list.css' %}">
+<div class="liste-content">
+    <h2>Stock de {{miel_nom}}   |   quantité unitaire:{{quantite_unite}} {{unite}} |    Stock actuel:{{stock_actuel}}</h2>
+    <div style="display:flex; gap:1em; margin-bottom: 1em;">
+        <form action="{% url 'miels_stock_form' %}" method="post">
+            {% csrf_token %}
+            <button class="action-btn add" type="submit">Ajouter une entrée/sortie de miel</button>
+        </form>
+        <form action="#" method="post" style="display:flex; align-items:center; gap:0.5em;">
+            {% csrf_token %}
+            <label for="new_price" style="font-weight:normal;">Nouveau prix (Ar):</label>
+            <input type="number" step="0.01" min="0" name="new_price" id="new_price" style="width:90px;" required>
+            <button class="action-btn add" type="submit">Mettre à jour le prix</button>
+        </form>
+    </div>
+    <div class="table-card">
+        <table>
+            <thead>
+                <tr>
+                    <th>Mouvement</th>
+                    <th>Vers/Depuis</th>
+                    <th>Nombre</th>
+                    <th>Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for miel in miels %}
+                <tr {% if miel.stock_actuel <= miel.seuil_alerte %} style="background:#ffd6d6;" {% endif %}>
+                    <td>{{ miel.type }}</td>
+                    <td>{{ miel.source }}</td>
+                    <td>{{ miel.nombre }}</td>
+                    <td>{{ miel.date }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="9">Aucun miel en stock.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

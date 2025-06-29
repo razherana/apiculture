@@ -1,0 +1,135 @@
+{% extends "base_commerce.html" %}
+{% load static %}
+{% block title %}Fiche client{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'commerce/css/form.css' %}">
+<div class="form-card" id="client-card">
+    <h2>Fiche client</h2>
+    <button type="button" class="action-btn edit" id="edit-btn">Modifier</button>
+    <button type="button" class="action-btn view" id="cancel-btn" style="display:none;">Annuler</button>
+    <form id="client-form">
+        <div class="form-group">
+            <label for="nom">Nom</label>
+            <input type="text" id="nom" name="nom" value="{{ client.nom }}" readonly>
+        </div>
+        <div class="form-group">
+            <label for="note">Note</label>
+            <input type="text" id="note" name="note" value="{{ client.note }}" readonly>
+        </div>
+        <div class="form-group">
+            <label for="email">E-mail</label>
+            <input type="email" id="email" name="email" value="{{ client.email }}" readonly>
+        </div>
+        <div class="form-group">
+            <label for="telephone">Téléphone</label>
+            <input type="text" id="telephone" name="telephone" value="{{ client.telephone }}" readonly>
+        </div>
+        <div class="form-group">
+            <label for="derniere_commande">Dernière commande</label>
+            <input type="date" id="derniere_commande" name="derniere_commande" value="{{ client.derniere_commande }}" readonly>
+        </div>
+        <div class="form-group">
+            <label for="adresse">Adresse</label>
+            <input type="text" id="adresse" name="adresse" value="{{ client.adresse }}" readonly>
+        </div>
+        <div class="form-group" id="client-type-group">
+            <label for="client_type">Type de client</label>
+            <!-- Input mode (readonly) -->
+            <input type="text" id="client_type_input" name="client_type" value="{{ client.client_type }}" readonly>
+            <!-- Select mode (hidden by default) -->
+            <select id="client_type_select" name="client_type" style="display:none;">
+                {% for ct in client_types %}
+                    <option value="{{ ct.type }}" {% if ct.type == client.client_type %}selected{% endif %}>{{ ct.type }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div style="display: flex; gap: 0.5em;">
+            <button type="button" class="action-btn delete" id="delete-btn">Supprimer</button>
+            <button type="submit" class="action-btn add" id="save-btn" style="display:none;">Enregistrer</button>
+        </div>
+    </form>
+</div>
+
+<script>
+    // Mode switching logic
+    const form = document.getElementById('client-form');
+    const editBtn = document.getElementById('edit-btn');
+    const saveBtn = document.getElementById('save-btn');
+    const cancelBtn = document.getElementById('cancel-btn');
+
+    // Fields except id and client_type (client_type handled specially)
+    const fields = Array.from(form.elements).filter(
+        el => el.tagName === 'INPUT' && el.name !== 'id' && el.name !== 'client_type'
+    );
+
+    // Client type input/select
+    const clientTypeInput = document.getElementById('client_type_input');
+    const clientTypeSelect = document.getElementById('client_type_select');
+
+    let originalValues = {};
+
+    function setReadOnly(isReadOnly) {
+        fields.forEach(el => el.readOnly = isReadOnly);
+        if (isReadOnly) {
+            clientTypeInput.style.display = '';
+            clientTypeInput.readOnly = true;
+            clientTypeSelect.style.display = 'none';
+        } else {
+            clientTypeInput.style.display = 'none';
+            clientTypeSelect.style.display = '';
+        }
+    }
+
+    editBtn.addEventListener('click', function() {
+        // Store original values for cancel (including select value)
+        fields.forEach(el => originalValues[el.name] = el.value);
+        originalValues['client_type'] = clientTypeSelect.value;
+        setReadOnly(false);
+        editBtn.style.display = 'none';
+        saveBtn.style.display = '';
+        cancelBtn.style.display = '';
+    });
+
+    cancelBtn.addEventListener('click', function() {
+        // Restore original values
+        fields.forEach(el => {
+            if (originalValues[el.name] !== undefined) {
+                el.value = originalValues[el.name];
+            }
+        });
+        // Restore client_type
+        clientTypeSelect.value = originalValues['client_type'];
+        clientTypeInput.value = clientTypeSelect.options[clientTypeSelect.selectedIndex].text;
+        setReadOnly(true);
+        editBtn.style.display = '';
+        saveBtn.style.display = 'none';
+        cancelBtn.style.display = 'none';
+    });
+
+    // On select change, update input value (for real-time display if needed)
+    clientTypeSelect.addEventListener('change', function() {
+        clientTypeInput.value = clientTypeSelect.options[clientTypeSelect.selectedIndex].text;
+    });
+
+    // By default: view mode
+    setReadOnly(true);
+
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        // On save, update input field with selected value
+        clientTypeInput.value = clientTypeSelect.options[clientTypeSelect.selectedIndex].text;
+        setReadOnly(true);
+        editBtn.style.display = '';
+        saveBtn.style.display = 'none';
+        cancelBtn.style.display = 'none';
+        alert("Modifications enregistrées (simulation)");
+    });
+
+    document.getElementById('delete-btn').addEventListener('click', function() {
+        if(confirm("Voulez-vous vraiment supprimer ce client ?")) {
+            alert("Client supprimé (simulation)");
+        }
+    });
+</script>
+{% endblock %}

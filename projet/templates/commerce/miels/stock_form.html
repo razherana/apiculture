@@ -1,0 +1,49 @@
+{% extends "base_commerce.html" %}
+{% load static %}
+{% block title %}Gestion du stock{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'commerce/css/form.css' %}">
+<div class="form-card">
+    <h2>Notifier un mouvement de {{miel_nom}}</h2>
+    <form>
+        <div class="form-group">
+            <label>Type d'opération :</label>
+            <div class="radio-group">
+                <input type="radio" id="entree" name="type" value="Entrée" required>
+                <label for="entree">Entrée</label>
+                <input type="radio" id="sortie" name="type" value="Sortie">
+                <label for="sortie">Sortie</label>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="source">Source</label>
+            <select id="source" name="source" required>
+                <optgroup label="Entrées">
+                    {% for ruche in ruches %}
+                    <option value="{{ ruche }}">{{ ruche }}</option>
+                    {% endfor %}
+                </optgroup>
+                <optgroup label="Sorties">
+                    {% for client in clients %}
+                    <option value="{{ client }}">{{ client }}</option>
+                    {% endfor %}
+                </optgroup>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="nombre">Nombre (kg)</label>
+            <input type="number" id="nombre" name="nombre" min="0" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="date">Date</label>
+            <input type="date" id="date" name="date" required>
+        </div>
+        
+        <button type="submit">Enregistrer</button>
+    </form>
+</div>
+{% endblock %}

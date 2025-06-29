@@ -1,0 +1,47 @@
+{% extends "base_commerce.html" %}
+{% load static %}
+{% block title %}Ajouter un client{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="{% static 'commerce/css/form.css' %}">
+<div class="form-card" id="client-insert-card">
+    <h2>Ajouter un client</h2>
+    <form method="post" id="client-insert-form" autocomplete="off">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="nom">Nom</label>
+            <input type="text" id="nom" name="nom" required>
+        </div>
+        <div class="form-group">
+            <label for="note">Note</label>
+            <input type="text" id="note" name="note">
+        </div>
+        <div class="form-group">
+            <label for="email">E-mail</label>
+            <input type="email" id="email" name="email">
+        </div>
+        <div class="form-group">
+            <label for="telephone">Téléphone</label>
+            <input type="text" id="telephone" name="telephone">
+        </div>
+        <div class="form-group">
+            <label for="derniere_commande">Dernière commande</label>
+            <input type="date" id="derniere_commande" name="derniere_commande">
+        </div>
+        <div class="form-group">
+            <label for="adresse">Adresse</label>
+            <input type="text" id="adresse" name="adresse">
+        </div>
+        <div class="form-group">
+            <label for="client_type">Type de client</label>
+            <select id="client_type" name="client_type" required>
+                {% for ct in client_types %}
+                    <option value="{{ ct.type }}">{{ ct.type }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-btn-row">
+            <button type="submit" class="action-btn add">Enregistrer</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
