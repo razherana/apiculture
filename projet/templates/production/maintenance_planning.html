@@ -1,0 +1,20 @@
+{% extends 'production/base_production.html' %}
+{% block page_header %}Planning de Maintenance{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">Tâches de maintenance</div>
+    {% for task in tasks %}
+        <div class="card">
+            <p><strong>Tâche :</strong> {{ task.description }}</p>
+            {% if task.statut == 'À faire' %}
+                <p><strong>Prévu le :</strong> {{ task.date_prevue }}</p>
+                <p><strong>Statut :</strong> <span style="color: orange;">{{ task.statut }}</span></p>
+            {% else %}
+                <p><strong>Réalisé le :</strong> {{ task.date_realisation }}</p>
+                <p><strong>Statut :</strong> <span style="color: green;">{{ task.statut }}</span></p>
+            {% endif %}
+        </div>
+    {% endfor %}
+</div>
+{% endblock %}

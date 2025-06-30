@@ -1,0 +1,35 @@
+{% extends 'production/base_production.html' %}
+{% block page_header %}Analyse de la Mortalité{% endblock %}
+
+{% block content %}
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
+    <div class="card"><div class="card-header">Mortalité Totale</div><p style="font-size: 2rem; font-weight: bold;">{{ total_mortalite }} colonies</p></div>
+    <div class="card"><div class="card-header">Colonies Totales</div><p style="font-size: 2rem; font-weight: bold;">{{ total_colonies }} colonies</p></div>
+    <div class="card"><div class="card-header">Taux de Mortalité</div><p style="font-size: 2rem; font-weight: bold; color: #c00;">{{ taux_mortalite }}%</p></div>
+</div>
+<div class="card mt-4">
+    <div class="card-header">Évolution de la mortalité par mois</div>
+    <div style="height: 50vh;">
+        <canvas id="mortaliteChart"></canvas>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    new Chart(document.getElementById('mortaliteChart'), {
+        type: 'line',
+        data: {
+            labels: {{ labels|safe }},
+            datasets: [{
+                label: 'Nombre de colonies perdues',
+                data: {{ values|safe }},
+                fill: false,
+                borderColor: 'rgb(220, 53, 69)',
+                tension: 0.1
+            }]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends 'production/base_production.html' %}
+{% block page_header %}Statistiques par Ruche{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">Graphique de la production totale par ruche (en kg)</div>
+    <div class="card-body" style="height: 60vh;">
+        <canvas id="productionChart"></canvas>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    new Chart(document.getElementById('productionChart'), {
+        type: 'bar',
+        data: {
+            labels: {{ labels|safe|default:"[]" }},
+            datasets: [{
+                label: 'Production de Miel (kg)',
+                data: {{ values|safe|default:"[]" }},
+                backgroundColor: 'rgba(255, 215, 0, 0.6)',
+                borderColor: 'rgba(255, 215, 0, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends 'production/base_production.html' %}
+{% block page_header %}Analyse de la Rentabilité{% endblock %}
+
+{% block content %}
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
+    <div class="card"><div class="card-header">Revenus Totaux</div><p style="font-size: 2rem; font-weight: bold; color: green;">{{ revenus_totaux }} €</p></div>
+    <div class="card"><div class="card-header">Coûts Totaux</div><p style="font-size: 2rem; font-weight: bold; color: red;">{{ couts_totaux }} €</p></div>
+    <div class="card"><div class="card-header">Bénéfice Net</div><p style="font-size: 2rem; font-weight: bold; color: #222;">{{ benefice_net }} €</p></div>
+</div>
+
+<div class="card" style="margin-top: 2rem;">
+    <div class="card-header">Répartition des flux financiers</div>
+    <div style="height: 50vh; max-width: 500px; margin: auto;">
+        <canvas id="rentabiliteChart"></canvas>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    new Chart(document.getElementById('rentabiliteChart'), {
+        type: 'doughnut',
+        data: {
+          labels: {{ chart_labels|safe }},
+          datasets: [{
+            label: 'Montant en €',
+            data: {{ chart_values|safe }},
+            backgroundColor: {{ chart_colors|safe }},
+            hoverOffset: 4
+          }]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,32 @@
+{% extends 'production/base_production.html' %}
+{% block page_header %}Inventaire du Matériel{% endblock %}
+{% block page_actions %}<a href="{% url 'materiel_form' %}" class="btn">Ajouter</a>{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Type</th>
+                    <th>Désignation</th>
+                    <th>Date d'ajout</th>
+                    <th>Statut</th>
+                    <th>Durée de vie (mois)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in materiels %}
+                <tr>
+                    <td>{{ item.type }}</td>
+                    <td>{{ item.designation }}</td>
+                    <td>{{ item.date_ajout }}</td>
+                    <td>{{ item.statut }}</td>
+                    <td>{{ item.duree_vie }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
