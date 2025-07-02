@@ -21,13 +21,13 @@ urlpatterns = [
     path('', include('projet.routes.dashboard')),
     
     # Ressources routes
-    path('ressources/', include('projet.ressources.urls')),
+    path('ressources/', include('projet.routes.ressources')),
     
     # Production routes
-    path('production/', include('projet.production.urls')),
+    path('production/', include('projet.routes.productions')),
     
     # Ventes routes
-    path('ventes/', include('projet.ventes.urls')),
+    path('ventes/', include('projet.routes.ventes')),
 
     path('', include('projet.routes')),
 ]

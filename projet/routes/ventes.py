@@ -1,3 +1,3 @@
-urls = [
+urlpatterns = [
     # path('miels/create/', ...)
 ]
