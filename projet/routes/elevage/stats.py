@@ -1,5 +1,5 @@
 from django.urls import path
-from projet.views.elevage.stats import *
+from projet.views.elevage.stats import stats_couvain, stats_mortalite, stats_reines, stats_essaimage
 
 urlpatterns = [
     # Statistiques de couvain

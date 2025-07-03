@@ -1,5 +1,5 @@
 from django.urls import path
-from projet.views.elevage.reports import *
+from projet.views.elevage.reports import reports_index, generate_report, setup_automatic_reports
 
 urlpatterns = [
     # Page principale des rapports

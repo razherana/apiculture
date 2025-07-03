@@ -1,5 +1,5 @@
 from django.urls import path
-from projet.views.elevage.filtres import *
+from projet.views.elevage.filtres import filtres_ruches, filtres_soins, filtre_date, filtre_dropdown, filtre_search
 
 urlpatterns = [
     # Filtres pour les ruches
