@@ -1,0 +1,17 @@
+{% extends 'production/base_production.html' %}
+{% block page_header %}Alertes{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">Alertes de Pénurie de Stock</div>
+    {% for alerte in alertes_stock %}
+        <div class="alert alert-{{ alerte.level }}">{{ alerte.message }}</div>
+    {% endfor %}
+</div>
+<div class="card">
+    <div class="card-header">Alertes de Maintenance</div>
+    {% for alerte in alertes_maintenance %}
+        <div class="alert alert-{{ alerte.level }}">{{ alerte.message }}</div>
+    {% endfor %}
+</div>
+{% endblock %}

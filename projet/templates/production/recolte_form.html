@@ -1,0 +1,30 @@
+{% extends 'production/base_production.html' %}
+{% block page_header %}Enregistrer une Récolte{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 700px; margin: auto;">
+    <form method="post">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="ruche">Ruche</label>
+            <select id="ruche" name="ruche" required>
+                <option value="">--- Sélectionnez une ruche ---</option>
+                {% for ruche in ruches %}<option value="{{ ruche.id }}">{{ ruche.description }}</option>{% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="poids">Poids du miel (kg)</label>
+            <input type="number" id="poids" name="poids_miel" step="0.1" required>
+        </div>
+        <div class="form-group">
+            <label for="qualite">Qualité (de 1 à 10)</label>
+            <input type="number" id="qualite" name="qualite" min="1" max="10" required>
+        </div>
+        <div class="form-group">
+            <label for="note">Note (optionnel)</label>
+            <textarea id="note" name="note" rows="4"></textarea>
+        </div>
+        <button type="submit" class="btn">Enregistrer la récolte</button>
+    </form>
+</div>
+{% endblock %}
