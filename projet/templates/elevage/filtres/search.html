@@ -1,0 +1,234 @@
+{% extends "base_elevage.html" %}
+{% load static %}
+
+{% block title %}Recherche globale{% endblock %}
+{% block page_title %}Recherche globale{% endblock %}
+
+{% block content %}
+<div class="elevage-content">
+    <h2>Recherche globale</h2>
+    
+    <div class="elevage-card">
+        <h3 style="color: var(--honey-primary); margin-bottom: 1rem;">
+            <i class="fas fa-search"></i> Recherche multi-catégories
+        </h3>
+        
+        <p>Ce composant permet d'effectuer une recherche dans plusieurs catégories de données simultanément.</p>
+        
+        <div class="search-container" style="max-width: 100%; margin: 2rem 0;">
+            <i class="fas fa-search search-icon"></i>
+            <input type="text" id="global-search" class="search-input" placeholder="Rechercher ruches, soins, notes..." style="width: 100%;">
+        </div>
+        
+        <div class="filters-container">
+            <div class="filter-group">
+                <label class="filter-label">Catégories :</label>
+                <div class="checkbox-group" style="display: flex; gap: 1rem; align-items: center;">
+                    <label style="display: flex; align-items: center; gap: 0.5rem;">
+                        <input type="checkbox" id="search-ruches" checked>
+                        <span>Ruches</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 0.5rem;">
+                        <input type="checkbox" id="search-soins" checked>
+                        <span>Soins</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 0.5rem;">
+                        <input type="checkbox" id="search-notes" checked>
+                        <span>Notes</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Résultats de recherche pour les ruches -->
+    <div id="ruches-results" class="elevage-card" style="display: none;">
+        <h3 style="color: var(--honey-primary); margin-bottom: 1rem;">
+            <i class="fas fa-archive"></i> Ruches (<span id="ruches-count">0</span>)
+        </h3>
+        
+        <div class="table-container">
+            <table class="elevage-table">
+                <thead>
+                    <tr>
+                        <th width="20%">Nom</th>
+                        <th width="15%">Type</th>
+                        <th width="15%">Statut</th>
+                        <th width="20%">Localisation</th>
+                        <th width="15%">Installation</th>
+                        <th width="15%" class="actions-column">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="ruches-results-body">
+                    <!-- Résultats de recherche injectés ici -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Résultats de recherche pour les soins -->
+    <div id="soins-results" class="elevage-card" style="display: none;">
+        <h3 style="color: var(--honey-primary); margin-bottom: 1rem;">
+            <i class="fas fa-medkit"></i> Soins (<span id="soins-count">0</span>)
+        </h3>
+        
+        <div class="table-container">
+            <table class="elevage-table">
+                <thead>
+                    <tr>
+                        <th width="15%">Date</th>
+                        <th width="20%">Ruche</th>
+                        <th width="15%">Type</th>
+                        <th width="15%">Produit</th>
+                        <th width="20%">Notes</th>
+                        <th width="15%" class="actions-column">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="soins-results-body">
+                    <!-- Résultats de recherche injectés ici -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Message de résultats vides -->
+    <div id="no-results" class="elevage-card" style="display: none; text-align: center; padding: 2rem;">
+        <i class="fas fa-search" style="font-size: 3rem; color: var(--text-secondary); margin-bottom: 1rem;"></i>
+        <h3>Aucun résultat trouvé</h3>
+        <p>Essayez avec d'autres termes de recherche ou vérifiez les catégories sélectionnées.</p>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Éléments DOM
+    const searchInput = document.getElementById('global-search');
+    const searchRuchesCheck = document.getElementById('search-ruches');
+    const searchSoinsCheck = document.getElementById('search-soins');
+    const searchNotesCheck = document.getElementById('search-notes');
+    
+    const ruchesResults = document.getElementById('ruches-results');
+    const soinsResults = document.getElementById('soins-results');
+    const noResults = document.getElementById('no-results');
+    
+    const ruchesCount = document.getElementById('ruches-count');
+    const soinsCount = document.getElementById('soins-count');
+    const ruchesResultsBody = document.getElementById('ruches-results-body');
+    const soinsResultsBody = document.getElementById('soins-results-body');
+    
+    // Données
+    const ruches = {{ ruches|safe }};
+    const soins = {{ soins|safe }};
+    
+    // Fonction de recherche
+    function performSearch() {
+        const searchTerm = searchInput.value.toLowerCase().trim();
+        const searchRuches = searchRuchesCheck.checked;
+        const searchSoins = searchSoinsCheck.checked;
+        const searchNotes = searchNotesCheck.checked;
+        
+        // Réinitialiser les résultats
+        ruchesResultsBody.innerHTML = '';
+        soinsResultsBody.innerHTML = '';
+        ruchesResults.style.display = 'none';
+        soinsResults.style.display = 'none';
+        noResults.style.display = 'none';
+        
+        // Si la recherche est vide, ne rien afficher
+        if (!searchTerm) {
+            return;
+        }
+        
+        // Recherche dans les ruches
+        let ruchesFound = [];
+        if (searchRuches) {
+            ruchesFound = ruches.filter(ruche => {
+                const matchName = ruche.nom.toLowerCase().includes(searchTerm);
+                const matchType = ruche.type.toLowerCase().includes(searchTerm);
+                const matchStatus = ruche.statut.toLowerCase().includes(searchTerm);
+                const matchLocation = ruche.localisation.toLowerCase().includes(searchTerm);
+                
+                return matchName || matchType || matchStatus || matchLocation;
+            });
+            
+            // Afficher les résultats pour les ruches
+            if (ruchesFound.length > 0) {
+                ruchesCount.textContent = ruchesFound.length;
+                
+                ruchesFound.forEach(ruche => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${ruche.nom}</td>
+                        <td>${ruche.type}</td>
+                        <td>${ruche.statut}</td>
+                        <td>${ruche.localisation}</td>
+                        <td>${ruche.date_installation}</td>
+                        <td>
+                            <a href="/elevage/ruches/details/${ruche.id}/" class="btn btn-secondary">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </td>
+                    `;
+                    ruchesResultsBody.appendChild(row);
+                });
+                
+                ruchesResults.style.display = 'block';
+            }
+        }
+        
+        // Recherche dans les soins
+        let soinsFound = [];
+        if (searchSoins || searchNotes) {
+            soinsFound = soins.filter(soin => {
+                const matchType = searchSoins && soin.type.toLowerCase().includes(searchTerm);
+                const matchProduit = searchSoins && soin.produit.toLowerCase().includes(searchTerm);
+                const matchNotes = searchNotes && soin.notes.toLowerCase().includes(searchTerm);
+                
+                return matchType || matchProduit || matchNotes;
+            });
+            
+            // Afficher les résultats pour les soins
+            if (soinsFound.length > 0) {
+                soinsCount.textContent = soinsFound.length;
+                
+                soinsFound.forEach(soin => {
+                    const ruche = ruches.find(r => r.id === soin.ruche_id);
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${soin.date}</td>
+                        <td>${ruche ? ruche.nom : `Ruche #${soin.ruche_id}`}</td>
+                        <td>${soin.type}</td>
+                        <td>${soin.produit}</td>
+                        <td class="cell-expand">${soin.notes}</td>
+                        <td>
+                            <a href="/elevage/soins/edit/${soin.id}/" class="btn btn-secondary">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                        </td>
+                    `;
+                    soinsResultsBody.appendChild(row);
+                });
+                
+                soinsResults.style.display = 'block';
+            }
+        }
+        
+        // Afficher le message si aucun résultat
+        if (ruchesFound.length === 0 && soinsFound.length === 0) {
+            noResults.style.display = 'block';
+        }
+    }
+    
+    // Événements
+    searchInput.addEventListener('input', performSearch);
+    searchRuchesCheck.addEventListener('change', performSearch);
+    searchSoinsCheck.addEventListener('change', performSearch);
+    searchNotesCheck.addEventListener('change', performSearch);
+    
+    // Suggérer des termes de recherche
+    const searchSuggestions = ['Dadant', 'Active', 'Lavande', 'Varroa', 'Sirop', 'Acide'];
+    const randomSuggestion = searchSuggestions[Math.floor(Math.random() * searchSuggestions.length)];
+    searchInput.placeholder = `Rechercher ruches, soins, notes... (ex: "${randomSuggestion}")`;
+});
+</script>
+{% endblock %}

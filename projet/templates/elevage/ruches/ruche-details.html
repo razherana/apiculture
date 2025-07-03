@@ -1,0 +1,282 @@
+{% extends "base_elevage.html" %}
+{% load static %}
+
+{% block title %}Détails ruche {{ ruche.nom }}{% endblock %}
+{% block page_title %}Ruche: {{ ruche.nom }}{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="elevage-content">
+    <div class="detail-header">
+        <img src="{% static 'elevage/img/ruche-default.jpg' %}" alt="{{ ruche.nom }}" class="detail-image">
+        
+        <div class="detail-info">
+            <h2 class="detail-title">{{ ruche.nom }}</h2>
+            <p class="detail-subtitle">{{ ruche.type }} - Installée le {{ ruche.date_installation }}</p>
+            
+            <div class="detail-stats">
+                <div class="detail-stat">
+                    <div class="detail-stat-value">{{ ruche.force }}/10</div>
+                    <div class="detail-stat-label">Force</div>
+                </div>
+                <div class="detail-stat">
+                    <div class="detail-stat-value">{{ ruche.nb_hausses }}</div>
+                    <div class="detail-stat-label">Hausses</div>
+                </div>
+                <div class="detail-stat">
+                    <div class="detail-stat-value">{{ ruche.production }} kg</div>
+                    <div class="detail-stat-label">Production</div>
+                </div>
+                <div class="detail-stat">
+                    <div class="detail-stat-value">
+                        {% if ruche.statut == 'Active' %}
+                            <span class="text-success">{{ ruche.statut }}</span>
+                        {% elif ruche.statut == 'Faible' or ruche.statut == 'Orpheline' %}
+                            <span class="text-warning">{{ ruche.statut }}</span>
+                        {% elif ruche.statut == 'Malade' or ruche.statut == 'Inactive' %}
+                            <span class="text-danger">{{ ruche.statut }}</span>
+                        {% else %}
+                            {{ ruche.statut }}
+                        {% endif %}
+                    </div>
+                    <div class="detail-stat-label">Statut</div>
+                </div>
+            </div>
+            
+            <div class="btn-group">
+                <a href="{% url 'ruche_edit' id=ruche.id %}" class="btn btn-primary">
+                    <i class="fas fa-edit"></i> Modifier
+                </a>
+                <a href="{% url 'soin_add' %}" class="btn btn-secondary">
+                    <i class="fas fa-medkit"></i> Soin
+                </a>
+                <a href="#" class="btn btn-danger" id="deleteRuche">
+                    <i class="fas fa-trash"></i> Supprimer
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="detail-tabs">
+        <div class="detail-tab active" data-tab="overview">Vue d'ensemble</div>
+        <div class="detail-tab" data-tab="health">Santé & Soins</div>
+        <div class="detail-tab" data-tab="production">Production</div>
+        <div class="detail-tab" data-tab="queen">Reine</div>
+    </div>
+    
+    <!-- Onglet Vue d'ensemble -->
+    <div class="detail-tab-content active" id="tab-overview">
+        <div class="elevage-card">
+            <h3>Informations générales</h3>
+            <table class="elevage-table">
+                <tr>
+                    <th>Localisation</th>
+                    <td>{{ ruche.localisation }}</td>
+                </tr>
+                <tr>
+                    <th>Type</th>
+                    <td>{{ ruche.type }}</td>
+                </tr>
+                <tr>
+                    <th>Date d'installation</th>
+                    <td>{{ ruche.date_installation }}</td>
+                </tr>
+                <tr>
+                    <th>Hausses</th>
+                    <td>{{ ruche.nb_hausses }}</td>
+                </tr>
+                <tr>
+                    <th>Force de la colonie</th>
+                    <td>{{ ruche.force }}/10</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Onglet Santé & Soins -->
+    <div class="detail-tab-content" id="tab-health">
+        <div class="elevage-card">
+            <h3>Historique des soins</h3>
+            <div class="table-container">
+                <table class="elevage-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Type</th>
+                            <th>Produit</th>
+                            <th>Dose</th>
+                            <th>Note</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for soin in soins %}
+                        <tr>
+                            <td>{{ soin.date }}</td>
+                            <td>{{ soin.type }}</td>
+                            <td>{{ soin.produit }}</td>
+                            <td>{{ soin.dose }}</td>
+                            <td>{{ soin.notes }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center">Aucun soin enregistré</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Onglet Production -->
+    <div class="detail-tab-content" id="tab-production">
+        <div class="elevage-card">
+            <h3>Production de miel</h3>
+            <div class="chart-container">
+                <canvas id="productionChart" width="800" height="400"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Onglet Reine -->
+    <div class="detail-tab-content" id="tab-queen">
+        <div class="elevage-card">
+            {% if reine %}
+            <h3>Reine actuelle: {{ reine.nom }}</h3>
+            <table class="elevage-table">
+                <tr>
+                    <th>Race</th>
+                    <td>{{ reine.race }}</td>
+                </tr>
+                <tr>
+                    <th>Âge</th>
+                    <td>{{ reine.date_naissance }}</td>
+                </tr>
+                <tr>
+                    <th>Introduction</th>
+                    <td>{{ reine.date_introduction }}</td>
+                </tr>
+                <tr>
+                    <th>Qualité ponte</th>
+                    <td>{{ reine.qualite_ponte }}/10</td>
+                </tr>
+                <tr>
+                    <th>Statut</th>
+                    <td>{{ reine.statut }}</td>
+                </tr>
+                <tr>
+                    <th>Marquage</th>
+                    <td>{{ reine.marquage }}</td>
+                </tr>
+            </table>
+            <div class="btn-group" style="margin-top: 1rem;">
+                <a href="{% url 'reine_details' id=reine.id %}" class="btn btn-secondary">
+                    <i class="fas fa-eye"></i> Voir la fiche reine
+                </a>
+            </div>
+            {% else %}
+            <h3>Pas de reine</h3>
+            <p>Cette ruche n'a pas de reine actuellement.</p>
+            <div class="btn-group" style="margin-top: 1rem;">
+                <a href="{% url 'reine_add' %}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Ajouter une reine
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Gestion des onglets
+        const tabs = document.querySelectorAll('.detail-tab');
+        const contents = document.querySelectorAll('.detail-tab-content');
+        
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const target = tab.getAttribute('data-tab');
+                
+                // Activer l'onglet cliqué et désactiver les autres
+                tabs.forEach(t => t.classList.toggle('active', t === tab));
+                
+                // Afficher le contenu correspondant et masquer les autres
+                contents.forEach(c => {
+                    if (c.id === `tab-${target}`) {
+                        c.classList.add('active');
+                    } else {
+                        c.classList.remove('active');
+                    }
+                });
+            });
+        });
+        
+        // Graphique de production
+        const ctx = document.getElementById('productionChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: {{ donnees_production.dates|safe }},
+                datasets: [
+                    {
+                        label: 'Production de miel (kg)',
+                        data: {{ donnees_production.production|safe }},
+                        borderColor: '#FFD100',
+                        backgroundColor: 'rgba(255, 209, 0, 0.1)',
+                        tension: 0.3,
+                        fill: true
+                    },
+                    {
+                        label: 'Santé de la colonie',
+                        data: {{ donnees_production.sante|safe }},
+                        borderColor: '#00CC88',
+                        backgroundColor: 'rgba(0, 204, 136, 0.1)',
+                        tension: 0.3,
+                        fill: true,
+                        yAxisID: 'y1'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Production (kg)'
+                        }
+                    },
+                    y1: {
+                        beginAtZero: true,
+                        max: 10,
+                        position: 'right',
+                        title: {
+                            display: true,
+                            text: 'Santé (1-10)'
+                        },
+                        grid: {
+                            drawOnChartArea: false
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Confirmation de suppression
+        document.getElementById('deleteRuche').addEventListener('click', function(e) {
+            e.preventDefault();
+            if (confirm('Êtes-vous sûr de vouloir supprimer cette ruche ? Cette action est irréversible.')) {
+                // Rediriger vers la page de suppression ou envoyer une requête AJAX
+                // window.location.href = "{% url 'ruche_delete' id=ruche.id %}";
+                alert('Fonctionnalité de suppression à implémenter');
+            }
+        });
+    });
+</script>
+{% endblock %}

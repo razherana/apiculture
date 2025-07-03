@@ -1,0 +1,699 @@
+{% extends "base_elevage.html" %}
+{% load static %}
+
+{% block title %}Statistiques de couvain{% endblock %}
+{% block page_title %}Statistiques de couvain{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stat-summary {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .stat-card {
+        flex: 1;
+        min-width: 200px;
+        padding: 1.25rem;
+        background: var(--glass-bg);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-md);
+        border: 1px solid var(--glass-border);
+        text-align: center;
+    }
+    
+    .stat-card h3 {
+        font-size: 1.25rem;
+        color: var(--honey-primary);
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-value {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin: 0.5rem 0;
+        background: var(--gradient-honey);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+    }
+    
+    .stat-label {
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+    }
+    
+    .chart-container {
+        position: relative;
+        height: 400px;
+        margin-bottom: 1.5rem;
+    }
+    
+    .ruche-card {
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-sm);
+        background: var(--glass-bg);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid var(--glass-border);
+    }
+    
+    .ruche-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.75rem;
+    }
+    
+    .ruche-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--honey-primary);
+    }
+    
+    .couvain-gauge {
+        width: 100%;
+        height: 12px;
+        background-color: #e0e0e0;
+        border-radius: 6px;
+        overflow: hidden;
+        margin: 0.5rem 0;
+    }
+    
+    .couvain-fill {
+        height: 100%;
+        border-radius: 6px;
+    }
+    
+    .couvain-critical {
+        background-color: var(--queen-red);
+    }
+    
+    .couvain-warning {
+        background-color: var(--honey-primary);
+    }
+    
+    .couvain-good {
+        background-color: var(--pollen-green);
+    }
+    
+    .view-toggle {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+    }
+    
+    .view-toggle button {
+        padding: 0.5rem 1rem;
+        border: 1px solid var(--honey-primary);
+        background: transparent;
+        color: var(--honey-primary);
+        border-radius: var(--radius-md);
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .view-toggle button.active {
+        background: var(--honey-primary);
+        color: white;
+    }
+    
+    .filter-controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .filter-group {
+        flex: 1;
+        min-width: 150px;
+    }
+    
+    .filter-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+        color: var(--text-primary);
+    }
+    
+    .filter-group select {
+        width: 100%;
+        padding: 0.5rem;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border-color);
+        background-color: var(--input-bg);
+        color: var(--text-primary);
+    }
+    
+    .multi-chart-container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    @media (max-width: 768px) {
+        .multi-chart-container {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="elevage-content">
+    <h2>Statistiques du couvain</h2>
+    
+    <div class="stat-summary">
+        <div class="stat-card">
+            <h3>Taux moyen</h3>
+            <div class="stat-value" id="taux-moyen">-</div>
+            <div class="stat-label">Toutes ruches confondues</div>
+        </div>
+        
+        <div class="stat-card">
+            <h3>Ruches critiques</h3>
+            <div class="stat-value" id="ruches-critiques">-</div>
+            <div class="stat-label">Taux < 50%</div>
+        </div>
+        
+        <div class="stat-card">
+            <h3>Meilleure ruche</h3>
+            <div class="stat-value" id="meilleure-ruche">-</div>
+            <div class="stat-label">Plus haut taux de couvain</div>
+        </div>
+        
+        <div class="stat-card">
+            <h3>Score sanitaire</h3>
+            <div class="stat-value" id="score-sanitaire">-</div>
+            <div class="stat-label">Indice global</div>
+        </div>
+    </div>
+    
+    <div class="elevage-card">
+        <h3 style="color: var(--honey-primary); margin-bottom: 1rem;">
+            <i class="fas fa-chart-line"></i> Surface de couvain (historique)
+        </h3>
+        
+        <div class="filter-controls">
+            <div class="filter-group">
+                <label for="period-filter">Période</label>
+                <select id="period-filter">
+                    <option value="12" selected>12 mois</option>
+                    <option value="6">6 mois</option>
+                    <option value="3">3 mois</option>
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label for="rucher-filter">Rucher</label>
+                <select id="rucher-filter">
+                    <option value="" selected>Tous les ruchers</option>
+                    <option value="Champ Sud">Champ Sud</option>
+                    <option value="Verger Est">Verger Est</option>
+                    <option value="Colline Nord">Colline Nord</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="view-toggle">
+            <button id="view-all" class="active">Toutes les ruches</button>
+            <button id="view-average">Moyenne</button>
+        </div>
+        
+        <div class="chart-container">
+            <canvas id="couvain-chart"></canvas>
+        </div>
+    </div>
+    
+    <div class="elevage-card">
+        <h3 style="color: var(--honey-primary); margin-bottom: 1rem;">
+            <i class="fas fa-chart-line"></i> Évolution du taux de couvain
+        </h3>
+        
+        <div class="chart-container">
+            <canvas id="chart-evolution"></canvas>
+        </div>
+    </div>
+    
+    <div class="multi-chart-container">
+        <div class="elevage-card">
+            <h3 style="color: var(--honey-primary); margin-bottom: 1rem;">
+                <i class="fas fa-chart-bar"></i> Taux de couvain par ruche
+            </h3>
+            
+            <div class="chart-container">
+                <canvas id="chart-ruches"></canvas>
+            </div>
+        </div>
+        
+        <div class="elevage-card">
+            <h3 style="color: var(--honey-primary); margin-bottom: 1rem;">
+                <i class="fas fa-chart-pie"></i> Distribution du couvain
+            </h3>
+            
+            <div class="chart-container">
+                <canvas id="distribution-chart"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="elevage-card">
+        <h3 style="color: var(--honey-primary); margin-bottom: 1rem;">
+            <i class="fas fa-chart-line"></i> Qualité du couvain
+        </h3>
+        
+        <div class="chart-container">
+            <canvas id="qualite-chart"></canvas>
+        </div>
+    </div>
+    
+    <div class="elevage-card">
+        <h3 style="color: var(--honey-primary); margin-bottom: 1rem;">
+            <i class="fas fa-list"></i> Détail par ruche
+        </h3>
+        
+        <div id="ruches-list">
+            <!-- Liste des ruches générée par JavaScript -->
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Récupérer les données
+    const noms_ruches = {{ noms_ruches|safe }};
+    const taux_couvain = {{ taux_couvain|safe }};
+    const dates = {{ dates|safe }};
+    const historique_couvain = {{ historique_couvain|safe }};
+    const distribution_labels = {{ distribution_labels|safe }};
+    const distribution_data = {{ distribution_data|safe }};
+    const qualite_data = {{ qualite_data|safe }};
+    
+    // Calculer les statistiques
+    const tauxMoyen = taux_couvain.reduce((a, b) => a + b, 0) / taux_couvain.length;
+    const ruchesCritiques = taux_couvain.filter(taux => taux < 50).length;
+    const meilleurTaux = Math.max(...taux_couvain);
+    const meilleureRucheIndex = taux_couvain.indexOf(meilleurTaux);
+    const meilleureRucheNom = noms_ruches[meilleureRucheIndex];
+    
+    // Score sanitaire (simulation)
+    const scoreSanitaire = Math.round((tauxMoyen / 100) * 10);
+    
+    // Mettre à jour les statistiques
+    document.getElementById('taux-moyen').textContent = `${Math.round(tauxMoyen)}%`;
+    document.getElementById('ruches-critiques').textContent = ruchesCritiques;
+    document.getElementById('meilleure-ruche').textContent = `${meilleureRucheNom} (${meilleurTaux}%)`;
+    document.getElementById('score-sanitaire').textContent = `${scoreSanitaire}/10`;
+    
+    // Générer la liste des ruches
+    const ruchesList = document.getElementById('ruches-list');
+    noms_ruches.forEach((nom, index) => {
+        const taux = taux_couvain[index];
+        let statusClass = 'couvain-good';
+        let statusText = 'Excellent';
+        
+        if (taux < 50) {
+            statusClass = 'couvain-critical';
+            statusText = 'Critique';
+        } else if (taux < 65) {
+            statusClass = 'couvain-warning';
+            statusText = 'À surveiller';
+        }
+        
+        const rucheCard = document.createElement('div');
+        rucheCard.className = 'ruche-card';
+        rucheCard.innerHTML = `
+            <div class="ruche-header">
+                <div class="ruche-title">${nom}</div>
+                <div>
+                    <span class="tag ${taux < 50 ? 'tag-danger' : taux < 65 ? 'tag-warning' : 'tag-success'}">
+                        ${statusText}
+                    </span>
+                </div>
+            </div>
+            <div>
+                <strong>Taux de couvain operculé:</strong> ${taux}%
+                <div class="couvain-gauge">
+                    <div class="couvain-fill ${statusClass}" style="width: ${taux}%"></div>
+                </div>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-top: 0.75rem;">
+                <span>
+                    <i class="fas fa-calendar-alt"></i> Dernière mesure: Aujourd'hui
+                </span>
+                <a href="#" class="btn btn-secondary">
+                    <i class="fas fa-eye"></i> Détails
+                </a>
+            </div>
+        `;
+        
+        ruchesList.appendChild(rucheCard);
+    });
+    
+    // Graphique d'évolution
+    const evolutionCtx = document.getElementById('chart-evolution').getContext('2d');
+    const evolutionChart = new Chart(evolutionCtx, {
+        type: 'line',
+        data: {
+            labels: dates,
+            datasets: Object.keys(historique_couvain).map((ruche, index) => {
+                const colors = [
+                    'rgba(255, 209, 0, 0.7)',
+                    'rgba(0, 204, 136, 0.7)',
+                    'rgba(0, 136, 255, 0.7)',
+                    'rgba(255, 51, 102, 0.7)',
+                    'rgba(153, 102, 255, 0.7)',
+                    'rgba(255, 159, 64, 0.7)',
+                    'rgba(75, 192, 192, 0.7)',
+                    'rgba(54, 162, 235, 0.7)'
+                ];
+                
+                return {
+                    label: ruche,
+                    data: historique_couvain[ruche],
+                    borderColor: colors[index % colors.length],
+                    backgroundColor: colors[index % colors.length].replace('0.7', '0.1'),
+                    tension: 0.3,
+                    pointRadius: 3,
+                    pointHoverRadius: 5
+                };
+            })
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false,
+                }
+            },
+            scales: {
+                y: {
+                    min: 0,
+                    max: 100,
+                    title: {
+                        display: true,
+                        text: 'Taux de couvain operculé (%)'
+                    }
+                }
+            }
+        }
+    });
+    
+    // Graphique par ruche
+    const ruchesCtx = document.getElementById('chart-ruches').getContext('2d');
+    const ruchesChart = new Chart(ruchesCtx, {
+        type: 'bar',
+        data: {
+            labels: noms_ruches,
+            datasets: [{
+                label: 'Taux de couvain operculé (%)',
+                data: taux_couvain,
+                backgroundColor: taux_couvain.map(taux => {
+                    if (taux < 50) return 'rgba(255, 51, 102, 0.7)';
+                    if (taux < 65) return 'rgba(255, 209, 0, 0.7)';
+                    return 'rgba(0, 204, 136, 0.7)';
+                }),
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    title: {
+                        display: true,
+                        text: 'Taux (%)'
+                    }
+                }
+            }
+        }
+    });
+    
+    // Configuration du graphique de surface de couvain
+    const couvainCtx = document.getElementById('couvain-chart').getContext('2d');
+    const couvainData = {
+        labels: dates,
+        datasets: []
+    };
+    
+    {% for item in couvain_data %}
+    couvainData.datasets.push({
+        label: "{{ item.ruche.nom }}",
+        data: {{ item.values|safe }},
+        borderColor: "{{ item.ruche.couleur }}",
+        backgroundColor: "{{ item.ruche.couleur }}20",
+        borderWidth: 2,
+        tension: 0.3,
+        fill: true
+    });
+    {% endfor %}
+    
+    const couvainChart = new Chart(couvainCtx, {
+        type: 'line',
+        data: couvainData,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                title: {
+                    display: false
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false
+                },
+                legend: {
+                    position: 'top',
+                    labels: {
+                        usePointStyle: true,
+                        boxWidth: 10
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.05)'
+                    }
+                },
+                y: {
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.05)'
+                    },
+                    min: 0,
+                    title: {
+                        display: true,
+                        text: 'Surface (dm²)'
+                    }
+                }
+            }
+        }
+    });
+    
+    // Configuration du graphique de qualité du couvain
+    const qualiteCtx = document.getElementById('qualite-chart').getContext('2d');
+    const qualiteChart = new Chart(qualiteCtx, {
+        type: 'line',
+        data: {
+            labels: dates,
+            datasets: [{
+                label: "Qualité du couvain",
+                data: qualite_data,
+                borderColor: "#00CC88",
+                backgroundColor: "#00CC8820",
+                borderWidth: 2,
+                tension: 0.3,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                title: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return `Qualité: ${context.parsed.y}%`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.05)'
+                    }
+                },
+                y: {
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.05)'
+                    },
+                    min: 50,
+                    max: 100,
+                    title: {
+                        display: true,
+                        text: 'Qualité (%)'
+                    }
+                }
+            }
+        }
+    });
+    
+    // Configuration du graphique de distribution du couvain
+    const distributionCtx = document.getElementById('distribution-chart').getContext('2d');
+    const distributionChart = new Chart(distributionCtx, {
+        type: 'pie',
+        data: {
+            labels: distribution_labels,
+            datasets: [{
+                label: "Répartition du couvain",
+                data: distribution_data,
+                backgroundColor: [
+                    "#FFD100",
+                    "#0088FF",
+                    "#00CC88",
+                    "#FF3366"
+                ],
+                borderWidth: 0,
+                hoverOffset: 10
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'right',
+                    labels: {
+                        padding: 15
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return `${context.label}: ${context.parsed}%`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+    
+    // Toggle entre vue de toutes les ruches et moyenne
+    document.getElementById('view-all').addEventListener('click', function() {
+        document.getElementById('view-all').classList.add('active');
+        document.getElementById('view-average').classList.remove('active');
+        
+        // Afficher toutes les ruches
+        couvainChart.data.datasets = [];
+        {% for item in couvain_data %}
+        couvainChart.data.datasets.push({
+            label: "{{ item.ruche.nom }}",
+            data: {{ item.values|safe }},
+            borderColor: "{{ item.ruche.couleur }}",
+            backgroundColor: "{{ item.ruche.couleur }}20",
+            borderWidth: 2,
+            tension: 0.3,
+            fill: true
+        });
+        {% endfor %}
+        
+        couvainChart.update();
+    });
+    
+    document.getElementById('view-average').addEventListener('click', function() {
+        document.getElementById('view-average').classList.add('active');
+        document.getElementById('view-all').classList.remove('active');
+        
+        // Calculer et afficher uniquement la moyenne
+        const averageData = [];
+        for (let i = 0; i < dates.length; i++) {
+            let sum = 0;
+            {% for item in couvain_data %}
+            sum += {{ item.values|safe }}[i];
+            {% endfor %}
+            
+            const average = sum / {{ couvain_data|length }};
+            averageData.push(average.toFixed(1));
+        }
+        
+        couvainChart.data.datasets = [{
+            label: "Moyenne",
+            data: averageData,
+            borderColor: "#FFD100",
+            backgroundColor: "#FFD10020",
+            borderWidth: 3,
+            tension: 0.3,
+            fill: true
+        }];
+        
+        couvainChart.update();
+    });
+    
+    // Gestionnaires de filtres
+    const periodFilter = document.getElementById('period-filter');
+    const rucherFilter = document.getElementById('rucher-filter');
+    
+    // Dans une application réelle, ces filtres enverraient une requête AJAX 
+    // pour obtenir des données filtrées du serveur
+    periodFilter.addEventListener('change', function() {
+        // Simuler un chargement
+        const period = parseInt(this.value);
+        
+        if (period === 12) {
+            // Utiliser toutes les données (12 mois)
+            couvainChart.data.labels = dates;
+            qualiteChart.data.labels = dates;
+            
+            // Mise à jour des graphiques avec toutes les données
+            couvainChart.update();
+            qualiteChart.update();
+        } else {
+            // Filtrer pour n'afficher que les derniers mois demandés
+            const filteredLabels = dates.slice(-period);
+            
+            couvainChart.data.labels = filteredLabels;
+            qualiteChart.data.labels = filteredLabels;
+            
+            // Mise à jour des données pour chaque dataset
+            couvainChart.data.datasets.forEach(dataset => {
+                dataset.data = dataset.data.slice(-period);
+            });
+            
+            qualiteChart.data.datasets[0].data = qualiteChart.data.datasets[0].data.slice(-period);
+            
+            // Mise à jour des graphiques
+            couvainChart.update();
+            qualiteChart.update();
+        }
+    });
+});
+</script>
+{% endblock %}

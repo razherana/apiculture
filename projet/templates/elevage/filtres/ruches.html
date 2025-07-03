@@ -1,0 +1,375 @@
+{% extends "base_elevage.html" %}
+{% load static %}
+
+{% block title %}Filtres de ruches{% endblock %}
+{% block page_title %}Filtres de ruches{% endblock %}
+
+{% block content %}
+<div class="elevage-content">
+    <h2>Filtres multi-critères pour ruches</h2>
+    
+    <div class="elevage-card">
+        <div class="filters-container">
+            <div class="filter-group">
+                <label class="filter-label" for="status-filter">Statut:</label>
+                <select class="filter-select" id="status-filter">
+                    <option value="">Tous les statuts</option>
+                    {% for statut in statuts %}
+                        <option value="{{ statut }}">{{ statut }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label class="filter-label" for="type-filter">Type:</label>
+                <select class="filter-select" id="type-filter">
+                    <option value="">Tous les types</option>
+                    {% for type in types %}
+                        <option value="{{ type }}">{{ type }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label class="filter-label" for="location-filter">Localisation:</label>
+                <select class="filter-select" id="location-filter">
+                    <option value="">Toutes les localisations</option>
+                    {% for rucher in ruchers %}
+                        <option value="{{ rucher.emplacement }}">{{ rucher.emplacement }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label class="filter-label" for="productivity-filter">Productivité:</label>
+                <select class="filter-select" id="productivity-filter">
+                    <option value="">Toutes</option>
+                    <option value="high">Élevée (>25kg)</option>
+                    <option value="medium">Moyenne (15-25kg)</option>
+                    <option value="low">Faible (<15kg)</option>
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <div class="search-container">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="text" id="search-input" class="search-input" placeholder="Rechercher une ruche...">
+                </div>
+            </div>
+        </div>
+        
+        <div class="btn-group" style="margin-top: 1rem;">
+            <button id="reset-filters" class="btn btn-secondary">
+                <i class="fas fa-undo"></i> Réinitialiser les filtres
+            </button>
+            <button id="toggle-view" class="btn btn-secondary">
+                <i class="fas fa-th-large"></i> Vue en grille
+            </button>
+        </div>
+        
+        <!-- Vue tableau -->
+        <div id="table-view" class="table-container" style="margin-top: 1.5rem;">
+            <table class="elevage-table">
+                <thead>
+                    <tr>
+                        <th width="20%">Nom</th>
+                        <th width="15%">Type</th>
+                        <th width="15%">Statut</th>
+                        <th width="15%">Localisation</th>
+                        <th width="10%">Force</th>
+                        <th width="10%">Production</th>
+                        <th width="15%" class="actions-column">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ruche in ruches %}
+                    <tr data-status="{{ ruche.statut }}" data-type="{{ ruche.type }}" data-location="{{ ruche.localisation }}" data-productivity="{{ ruche.productivite }}">
+                        <td>{{ ruche.nom }}</td>
+                        <td>{{ ruche.type }}</td>
+                        <td>
+                            {% if ruche.statut == 'Active' %}
+                                <span class="tag tag-success">{{ ruche.statut }}</span>
+                            {% elif ruche.statut == 'Faible' or ruche.statut == 'Orpheline' %}
+                                <span class="tag tag-warning">{{ ruche.statut }}</span>
+                            {% elif ruche.statut == 'Malade' %}
+                                <span class="tag tag-danger">{{ ruche.statut }}</span>
+                            {% else %}
+                                <span class="tag tag-info">{{ ruche.statut }}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ ruche.localisation }}</td>
+                        <td>{{ ruche.force }}/10</td>
+                        <td>{{ ruche.production }} kg</td>
+                        <td>
+                            <a href="#" class="btn btn-secondary">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            <a href="#" class="btn btn-secondary">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Vue en grille -->
+        <div id="grid-view" style="display: none; margin-top: 1.5rem;">
+            <div class="info-cards">
+                {% for ruche in ruches %}
+                <div class="info-card ruche-card" data-status="{{ ruche.statut }}" data-type="{{ ruche.type }}" data-location="{{ ruche.localisation }}" data-productivity="{{ ruche.productivite }}">
+                    <div class="info-card-header">
+                        <div class="info-card-icon">
+                            <i class="fas fa-archive"></i>
+                        </div>
+                        <div class="info-card-title">{{ ruche.nom }}</div>
+                    </div>
+                    <div style="margin-top: 0.5rem;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span style="font-weight: 500;">Type:</span>
+                            <span>{{ ruche.type }}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span style="font-weight: 500;">Statut:</span>
+                            <span>
+                                {% if ruche.statut == 'Active' %}
+                                    <span class="tag tag-success">{{ ruche.statut }}</span>
+                                {% elif ruche.statut == 'Faible' or ruche.statut == 'Orpheline' %}
+                                    <span class="tag tag-warning">{{ ruche.statut }}</span>
+                                {% elif ruche.statut == 'Malade' %}
+                                    <span class="tag tag-danger">{{ ruche.statut }}</span>
+                                {% else %}
+                                    <span class="tag tag-info">{{ ruche.statut }}</span>
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span style="font-weight: 500;">Localisation:</span>
+                            <span>{{ ruche.localisation }}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span style="font-weight: 500;">Force:</span>
+                            <span>{{ ruche.force }}/10</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 1rem;">
+                            <span style="font-weight: 500;">Production:</span>
+                            <span>{{ ruche.production }} kg</span>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: auto;">
+                        <a href="#" class="btn btn-secondary">
+                            <i class="fas fa-eye"></i> Voir
+                        </a>
+                        <a href="#" class="btn btn-secondary">
+                            <i class="fas fa-edit"></i> Modifier
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Message "Aucun résultat" -->
+        <div id="no-results" style="display: none; text-align: center; padding: 2rem; margin-top: 1.5rem;">
+            <i class="fas fa-search" style="font-size: 3rem; color: var(--text-secondary); margin-bottom: 1rem;"></i>
+            <h3>Aucune ruche ne correspond aux critères</h3>
+            <p>Essayez d'autres filtres ou <button id="reset-no-results" class="btn btn-secondary" style="margin-left: 0.5rem;">réinitialisez</button></p>
+        </div>
+    </div>
+    
+    <!-- Statistiques -->
+    <div class="elevage-card">
+        <h3 style="color: var(--honey-primary); margin-bottom: 1rem;">
+            <i class="fas fa-chart-pie"></i> Statistiques des ruches filtrées
+        </h3>
+        
+        <div class="info-cards">
+            <div class="info-card">
+                <div class="info-card-header">
+                    <div class="info-card-icon">
+                        <i class="fas fa-archive"></i>
+                    </div>
+                    <div class="info-card-title">Ruches</div>
+                </div>
+                <div class="info-card-value" id="stats-count">{{ ruches|length }}</div>
+                <div class="info-card-subtitle">ruches au total</div>
+            </div>
+            
+            <div class="info-card">
+                <div class="info-card-header">
+                    <div class="info-card-icon">
+                        <i class="fas fa-heart"></i>
+                    </div>
+                    <div class="info-card-title">Force moyenne</div>
+                </div>
+                <div class="info-card-value" id="stats-force">-</div>
+                <div class="info-card-subtitle">sur 10</div>
+            </div>
+            
+            <div class="info-card">
+                <div class="info-card-header">
+                    <div class="info-card-icon">
+                        <i class="fas fa-honey-pot"></i>
+                    </div>
+                    <div class="info-card-title">Production totale</div>
+                </div>
+                <div class="info-card-value" id="stats-production">-</div>
+                <div class="info-card-subtitle">kg de miel</div>
+            </div>
+            
+            <div class="info-card">
+                <div class="info-card-header">
+                    <div class="info-card-icon">
+                        <i class="fas fa-percentage"></i>
+                    </div>
+                    <div class="info-card-title">Ruches actives</div>
+                </div>
+                <div class="info-card-value" id="stats-active">-</div>
+                <div class="info-card-subtitle">du total</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Éléments DOM
+    const statusFilter = document.getElementById('status-filter');
+    const typeFilter = document.getElementById('type-filter');
+    const locationFilter = document.getElementById('location-filter');
+    const productivityFilter = document.getElementById('productivity-filter');
+    const searchInput = document.getElementById('search-input');
+    const resetFiltersBtn = document.getElementById('reset-filters');
+    const resetNoResultsBtn = document.getElementById('reset-no-results');
+    const toggleViewBtn = document.getElementById('toggle-view');
+    const tableView = document.getElementById('table-view');
+    const gridView = document.getElementById('grid-view');
+    const noResults = document.getElementById('no-results');
+    
+    // Éléments de statistiques
+    const statsCount = document.getElementById('stats-count');
+    const statsForce = document.getElementById('stats-force');
+    const statsProduction = document.getElementById('stats-production');
+    const statsActive = document.getElementById('stats-active');
+    
+    // Éléments à filtrer
+    const tableRows = document.querySelectorAll('.elevage-table tbody tr');
+    const gridCards = document.querySelectorAll('.ruche-card');
+    
+    // Fonction pour appliquer les filtres
+    function applyFilters() {
+        const status = statusFilter.value.toLowerCase();
+        const type = typeFilter.value.toLowerCase();
+        const location = locationFilter.value.toLowerCase();
+        const productivity = productivityFilter.value.toLowerCase();
+        const search = searchInput.value.toLowerCase();
+        
+        let visibleCount = 0;
+        let totalForce = 0;
+        let totalProduction = 0;
+        let activeCount = 0;
+        
+        // Filtrer les lignes du tableau
+        tableRows.forEach(row => {
+            const rowStatus = row.getAttribute('data-status').toLowerCase();
+            const rowType = row.getAttribute('data-type').toLowerCase();
+            const rowLocation = row.getAttribute('data-location').toLowerCase();
+            const rowProductivity = row.getAttribute('data-productivity').toLowerCase();
+            const rowText = row.textContent.toLowerCase();
+            
+            const matchStatus = !status || rowStatus === status;
+            const matchType = !type || rowType === type;
+            const matchLocation = !location || rowLocation === location;
+            const matchProductivity = !productivity || rowProductivity === productivity;
+            const matchSearch = !search || rowText.includes(search);
+            
+            const isVisible = matchStatus && matchType && matchLocation && matchProductivity && matchSearch;
+            row.style.display = isVisible ? '' : 'none';
+            
+            // Mettre à jour les statistiques
+            if (isVisible) {
+                visibleCount++;
+                totalForce += parseInt(row.children[4].textContent);
+                totalProduction += parseFloat(row.children[5].textContent);
+                if (rowStatus.toLowerCase() === 'active') {
+                    activeCount++;
+                }
+            }
+        });
+        
+        // Filtrer les cartes de la grille
+        gridCards.forEach(card => {
+            const cardStatus = card.getAttribute('data-status').toLowerCase();
+            const cardType = card.getAttribute('data-type').toLowerCase();
+            const cardLocation = card.getAttribute('data-location').toLowerCase();
+            const cardProductivity = card.getAttribute('data-productivity').toLowerCase();
+            const cardText = card.textContent.toLowerCase();
+            
+            const matchStatus = !status || cardStatus === status;
+            const matchType = !type || cardType === type;
+            const matchLocation = !location || cardLocation === location;
+            const matchProductivity = !productivity || cardProductivity === productivity;
+            const matchSearch = !search || cardText.includes(search);
+            
+            const isVisible = matchStatus && matchType && matchLocation && matchProductivity && matchSearch;
+            card.style.display = isVisible ? '' : 'none';
+        });
+        
+        // Afficher ou masquer le message "Aucun résultat"
+        if (visibleCount === 0) {
+            tableView.style.display = 'none';
+            gridView.style.display = 'none';
+            noResults.style.display = 'block';
+        } else {
+            noResults.style.display = 'none';
+            if (tableView.style.display !== 'none' && gridView.style.display !== 'none') {
+                tableView.style.display = '';
+            }
+        }
+        
+        // Mettre à jour les statistiques
+        statsCount.textContent = visibleCount;
+        statsForce.textContent = visibleCount > 0 ? (totalForce / visibleCount).toFixed(1) : '-';
+        statsProduction.textContent = visibleCount > 0 ? totalProduction.toFixed(1) : '-';
+        statsActive.textContent = visibleCount > 0 ? `${(activeCount / visibleCount * 100).toFixed(1)}%` : '-';
+    }
+    
+    // Fonction pour réinitialiser les filtres
+    function resetFilters() {
+        statusFilter.value = '';
+        typeFilter.value = '';
+        locationFilter.value = '';
+        productivityFilter.value = '';
+        searchInput.value = '';
+        applyFilters();
+    }
+    
+    // Fonction pour basculer entre les vues
+    function toggleView() {
+        if (tableView.style.display === 'none') {
+            tableView.style.display = '';
+            gridView.style.display = 'none';
+            toggleViewBtn.innerHTML = '<i class="fas fa-th-large"></i> Vue en grille';
+        } else {
+            tableView.style.display = 'none';
+            gridView.style.display = '';
+            toggleViewBtn.innerHTML = '<i class="fas fa-table"></i> Vue en tableau';
+        }
+    }
+    
+    // Événements
+    statusFilter.addEventListener('change', applyFilters);
+    typeFilter.addEventListener('change', applyFilters);
+    locationFilter.addEventListener('change', applyFilters);
+    productivityFilter.addEventListener('change', applyFilters);
+    searchInput.addEventListener('input', applyFilters);
+    resetFiltersBtn.addEventListener('click', resetFilters);
+    resetNoResultsBtn.addEventListener('click', resetFilters);
+    toggleViewBtn.addEventListener('click', toggleView);
+    
+    // Initialiser les statistiques
+    applyFilters();
+});
+</script>
+{% endblock %}

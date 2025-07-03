@@ -7,8 +7,10 @@
     <title>{% block title %}Commerce & Stock{% endblock %}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="{% static 'commerce/css/commerce.css' %}">
-    <link href="https://fonts.googleapis.com/css?family=Inter:400,600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'commerce/css/dark-mode-fix.css' %}">
+    {% block extra_css %}{% endblock %}
 </head>
 
 <body>
@@ -16,79 +18,263 @@
         <aside class="sidebar">
             <div class="sidebar-title">
                 <i class="fas fa-honeycomb"></i>
-                Apiculture
+                <span class="sidebar-title-text" data-text="BeeNova">BeeNova</span>
             </div>
             
             <nav class="sidebar-nav">
                 <!-- Section Commerce -->
                 <div class="nav-section">
-                    <button class="sidebar-btn section-title">
+                    <button class="section-title">
                         <span class="icon"><i class="fas fa-store"></i></span>
                         <span class="title">Commerce</span>
                         <span class="arrow"><i class="fas fa-chevron-right"></i></span>
                     </button>
                     <div class="section-content">
-                        <a href="{% url 'test_liste_miels' %}" class="sidebar-btn sub-item">
+                        <a href="{% url 'test_liste_miels' %}" class="sidebar-btn sub-item {% if 'miels' in request.path %}active{% endif %}">
                             <span class="icon"><i class="fas fa-jar"></i></span>
                             <span class="title">Stock des Miels</span>
                         </a>
-                        <a href="{% url 'test_liste_clients' %}" class="sidebar-btn sub-item">
+                        <a href="{% url 'test_liste_clients' %}" class="sidebar-btn sub-item {% if 'clients' in request.path %}active{% endif %}">
                             <span class="icon"><i class="fas fa-users"></i></span>
                             <span class="title">Clients</span>
                         </a>
-                        <a href="{% url 'test_liste_ventes' %}" class="sidebar-btn sub-item">
+                        <a href="{% url 'test_liste_ventes' %}" class="sidebar-btn sub-item {% if 'ventes' in request.path %}active{% endif %}">
                             <span class="icon"><i class="fas fa-chart-line"></i></span>
                             <span class="title">Ventes</span>
                         </a>
-                        <a href="{% url 'test_liste_commandes' %}" class="sidebar-btn sub-item">
+                        <a href="{% url 'test_liste_commandes' %}" class="sidebar-btn sub-item {% if 'commandes' in request.path %}active{% endif %}">
                             <span class="icon"><i class="fas fa-clipboard-list"></i></span>
                             <span class="title">Commandes</span>
                         </a>
                     </div>
                 </div>
 
-                <!-- Section Élevage -->
-                <!-- Modification de la section élevage dans le sidebar -->
+                <!-- Section Élevage - Réorganisée -->
                 <div class="nav-section">
-                    <button class="sidebar-btn section-title">
+                    <button class="section-title">
                         <span class="icon">
-                            <i class="fas fa-bug"></i> <!-- Icône de ruche -->
+                            <i class="fas fa-bug"></i>
                         </span>
                         <span class="title">Élevage</span>
                         <span class="arrow"><i class="fas fa-chevron-right"></i></span>
                     </button>
                     <div class="section-content">
-                        <a href="#" class="sidebar-btn sub-item">
-                            <span class="icon"><i class="fas fa-crown"></i></span>
-                            <span class="title">Reines</span>
+                        <!-- Tableau de bord -->
+                        <a href="{% url 'dashboard_colonies' %}" class="sidebar-btn sub-item {% if 'dashboard/colonies' in request.path %}active{% endif %}">
+                            <span class="icon"><i class="fas fa-chart-pie"></i></span>
+                            <span class="title">Tableau de bord</span>
                         </a>
-                        <a href="#" class="sidebar-btn sub-item">
-                            <span class="icon"><i class="fas fa-boxes-stacked"></i></span>
-                            <span class="title">Ruches</span>
+                        
+                        <!-- Sous-section: Gestion des colonies -->
+                        <div class="sub-section">
+                            <button class="sub-section-title">
+                                <span class="icon"><i class="fas fa-boxes-stacked"></i></span>
+                                <span class="title">Gestion des colonies</span>
+                                <span class="arrow"><i class="fas fa-chevron-right"></i></span>
+                            </button>
+                            <div class="sub-section-content">
+                                <a href="{% url 'ruches_list' %}" class="sidebar-btn sub-sub-item {% if 'ruches/liste' in request.path %}active{% endif %}">
+                                    <span class="icon"><i class="fas fa-archive"></i></span>
+                                    <span class="title">Ruches</span>
+                                </a>
+                                <a href="{% url 'reines_list' %}" class="sidebar-btn sub-sub-item {% if 'reines/liste' in request.path %}active{% endif %}">
+                                    <span class="icon"><i class="fas fa-crown"></i></span>
+                                    <span class="title">Reines</span>
+                                </a>
+                                <a href="{% url 'amenagements_list' %}" class="sidebar-btn sub-sub-item {% if 'amenagements/liste' in request.path %}active{% endif %}">
+                                    <span class="icon"><i class="fas fa-house-chimney"></i></span>
+                                    <span class="title">Aménagements</span>
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <!-- Sous-section: Soins et interventions -->
+                        <div class="sub-section">
+                            <button class="sub-section-title">
+                                <span class="icon"><i class="fas fa-medkit"></i></span>
+                                <span class="title">Soins et interventions</span>
+                                <span class="arrow"><i class="fas fa-chevron-right"></i></span>
+                            </button>
+                            <div class="sub-section-content">
+                                <a href="{% url 'soins_list' %}" class="sidebar-btn sub-sub-item {% if 'soins/liste' in request.path %}active{% endif %}">
+                                    <span class="icon"><i class="fas fa-flask-vial"></i></span>
+                                    <span class="title">Journal des soins</span>
+                                </a>
+                                <a href="{% url 'taches_list' %}" class="sidebar-btn sub-sub-item {% if 'taches/' in request.path %}active{% endif %}">
+                                    <span class="icon"><i class="fas fa-clipboard-check"></i></span>
+                                    <span class="title">Tâches</span>
+                                </a>
+                                <a href="{% url 'calendrier' %}" class="sidebar-btn sub-sub-item {% if 'calendrier' in request.path %}active{% endif %}">
+                                    <span class="icon"><i class="fas fa-calendar-days"></i></span>
+                                    <span class="title">Calendrier</span>
+                                </a>
+                                <a href="{% url 'alertes_list' %}" class="sidebar-btn sub-sub-item {% if 'alertes/liste' in request.path %}active{% endif %}">  
+                                    <span class="icon"><i class="fas fa-triangle-exclamation"></i></span>
+                                    <span class="title">Alertes</span>
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <!-- Sous-section: Statistiques -->
+                        <div class="sub-section">
+                            <button class="sub-section-title">
+                                <span class="icon"><i class="fas fa-chart-line"></i></span>
+                                <span class="title">Statistiques</span>
+                                <span class="arrow"><i class="fas fa-chevron-right"></i></span>
+                            </button>
+                            <div class="sub-section-content">
+                                <a href="{% url 'stats_couvain' %}" class="sidebar-btn sub-sub-item {% if 'stats/couvain' in request.path %}active{% endif %}">
+                                    <span class="icon"><i class="fas fa-chart-column"></i></span>
+                                    <span class="title">Couvain</span>
+                                </a>
+                                <a href="{% url 'stats_mortalite' %}" class="sidebar-btn sub-sub-item {% if 'stats/mortalite' in request.path %}active{% endif %}">
+                                    <span class="icon"><i class="fas fa-skull"></i></span>
+                                    <span class="title">Mortalité</span>
+                                </a>
+                                <a href="{% url 'stats_reines' %}" class="sidebar-btn sub-sub-item {% if 'stats/reines' in request.path %}active{% endif %}">
+                                    <span class="icon"><i class="fas fa-chess-queen"></i></span>
+                                    <span class="title">Reines</span>
+                                </a>
+                                <a href="{% url 'stats_essaimage' %}" class="sidebar-btn sub-sub-item {% if 'stats/essaimage' in request.path %}active{% endif %}">
+                                    <span class="icon"><i class="fas fa-swarm"></i></span>
+                                    <span class="title">Essaimage</span>
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <!-- Sous-section: Filtres et recherche -->
+                        <div class="sub-section">
+                            <button class="sub-section-title">
+                                <span class="icon"><i class="fas fa-filter"></i></span>
+                                <span class="title">Filtres et recherche</span>
+                                <span class="arrow"><i class="fas fa-chevron-right"></i></span>
+                            </button>
+                            <div class="sub-section-content">
+                                <a href="{% url 'filtres_ruches' %}" class="sidebar-btn sub-sub-item {% if 'filtres/ruches' in request.path %}active{% endif %}">
+                                    <span class="icon"><i class="fas fa-filter"></i></span>
+                                    <span class="title">Filtres ruches</span>
+                                </a>
+                                <a href="{% url 'filtres_soins' %}" class="sidebar-btn sub-sub-item {% if 'filtres/soins' in request.path %}active{% endif %}">
+                                    <span class="icon"><i class="fas fa-filter"></i></span>
+                                    <span class="title">Filtres soins</span>
+                                </a>
+                                <a href="{% url 'filtre_search' %}" class="sidebar-btn sub-sub-item {% if 'filtres/search' in request.path %}active{% endif %}">
+                                    <span class="icon"><i class="fas fa-search"></i></span>
+                                    <span class="title">Recherche globale</span>
+                                </a>
+                                <a href="{% url 'filtre_dropdown' %}" class="sidebar-btn sub-sub-item {% if 'filtres/dropdown' in request.path %}active{% endif %}">
+                                    <span class="icon"><i class="fas fa-list"></i></span>
+                                    <span class="title">Listes dynamiques</span>
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <!-- Outils avancés -->
+                        <a href="{% url 'map_index' %}" class="sidebar-btn sub-item {% if 'map/' in request.path %}active{% endif %}">
+                            <span class="icon"><i class="fas fa-map-location-dot"></i></span>
+                            <span class="title">Carte des ruchers</span>
                         </a>
-                        <a href="#" class="sidebar-btn sub-item">
-                            <span class="icon"><i class="fas fa-temperature-half"></i></span>
-                            <span class="title">Surveillance</span>
+                        <a href="{% url 'reports_index' %}" class="sidebar-btn sub-item {% if 'reports/' in request.path %}active{% endif %}">
+                            <span class="icon"><i class="fas fa-file-export"></i></span>
+                            <span class="title">Rapports & Exports</span>
                         </a>
                     </div>
                 </div>
+                
                 <!-- Section Production -->
                 <div class="nav-section">
-                    <button class="sidebar-btn section-title">
+                    <button class="section-title">
                         <span class="icon"><i class="fas fa-industry"></i></span>
                         <span class="title">Production</span>
                         <span class="arrow"><i class="fas fa-chevron-right"></i></span>
                     </button>
                     <div class="section-content">
-                        <!-- Sous-menus à venir -->
+                        <a href="#" class="sidebar-btn sub-item">
+                            <span class="icon"><i class="fas fa-flask"></i></span>
+                            <span class="title">Laboratoire</span>
+                        </a>
+                        <a href="#" class="sidebar-btn sub-item">
+                            <span class="icon"><i class="fas fa-chart-pie"></i></span>
+                            <span class="title">Statistiques</span>
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Section Paramètres -->
+                <div class="nav-section">
+                    <button class="section-title">
+                        <span class="icon"><i class="fas fa-cog"></i></span>
+                        <span class="title">Paramètres</span>
+                        <span class="arrow"><i class="fas fa-chevron-right"></i></span>
+                    </button>
+                    <div class="section-content">
+                        <a href="#" class="sidebar-btn sub-item">
+                            <span class="icon"><i class="fas fa-user-cog"></i></span>
+                            <span class="title">Profil</span>
+                        </a>
+                        <a href="#" class="sidebar-btn sub-item theme-switcher">
+                            <span class="icon"><i class="fas fa-palette"></i></span>
+                            <span class="title">Thème</span>
+                        </a>
                     </div>
                 </div>
             </nav>
         </aside>
+        
         <main class="main-content">
             <header class="page-header">
                 <h1>{% block page_title %}Commerce & Stock{% endblock %}</h1>
+                
+                <div class="header-actions">
+                    <!-- Cloche de notification pour les alertes -->
+                    <div class="notification-bell" id="notificationBell">
+                        <i class="fas fa-bell"></i>
+                        <span class="notification-badge">{% if alertes|length > 0 %}{{ alertes|length }}{% endif %}</span>
+                        
+                        <!-- Dropdown des notifications -->
+                        <div class="notification-dropdown">
+                            <div class="notification-header">
+                                <span>Alertes récentes</span>
+                                <a href="{% url 'alertes_list' %}" class="view-all">Voir toutes</a>
+                            </div>
+                            <div class="notification-body">
+                                {% for alerte in alertes|slice:":5" %}
+                                    <div class="notification-item {{ alerte.niveau }}">
+                                        <div class="notification-icon">
+                                            {% if alerte.niveau == 'high' %}
+                                                <i class="fas fa-exclamation-triangle"></i>
+                                            {% elif alerte.niveau == 'medium' %}
+                                                <i class="fas fa-exclamation-circle"></i>
+                                            {% else %}
+                                                <i class="fas fa-info-circle"></i>
+                                            {% endif %}
+                                        </div>
+                                        <div class="notification-content">
+                                            <div class="notification-title">{{ alerte.type }}</div>
+                                            <div class="notification-text">{{ alerte.description|truncatechars:50 }}</div>
+                                            <div class="notification-time">{{ alerte.date }}</div>
+                                        </div>
+                                    </div>
+                                {% empty %}
+                                    <div class="notification-empty">
+                                        <i class="fas fa-check-circle"></i>
+                                        <p>Aucune alerte active</p>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Mode sombre/clair toggle amélioré -->
+                    <div id="themeToggle" class="theme-toggle">
+                        <div class="theme-icons">
+                            <i class="fas fa-sun sun-icon"></i>
+                            <i class="fas fa-moon moon-icon"></i>
+                        </div>
+                    </div>
+                </div>  
             </header>
+            
             <section class="main-section">
                 {% block content %}{% endblock %}
             </section>
@@ -97,42 +283,312 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            // Gestion des sections de navigation
             const sections = document.querySelectorAll('.nav-section');
-
+            
+            // Trouver si une section devrait être ouverte basée sur l'URL active
+            let activeSection = null;
+            const activeItem = document.querySelector('.sidebar-btn.sub-item.active, .sidebar-btn.sub-sub-item.active');
+            if (activeItem) {
+                activeSection = activeItem.closest('.nav-section');
+                
+                // Si l'élément actif est dans une sous-section, ouvrir aussi cette sous-section
+                const activeSubSection = activeItem.closest('.sub-section');
+                if (activeSubSection) {
+                    activeSubSection.classList.add('open');
+                    const subContent = activeSubSection.querySelector('.sub-section-content');
+                    if (subContent) {
+                        subContent.style.display = 'block';
+                        subContent.style.opacity = '1';
+                    }
+                    const subArrow = activeSubSection.querySelector('.sub-section-title .arrow i');
+                    if (subArrow) {
+                        subArrow.style.transform = 'rotate(90deg)';
+                    }
+                }
+                
+                // Scroll to active item within the submenu
+                setTimeout(() => {
+                    const content = activeSection.querySelector('.section-content');
+                    // Use scrollIntoView to scroll only the submenu content
+                    if (content) {
+                        content.scrollTop = activeItem.offsetTop - content.offsetTop - 10;
+                    }
+                }, 300);
+            }
+            
+            // Gestion des sections principales
             sections.forEach(section => {
                 const title = section.querySelector('.section-title');
                 const content = section.querySelector('.section-content');
                 const arrow = section.querySelector('.arrow i');
-
-                // Initialiser tous les contenus comme fermés
-                content.style.maxHeight = '0px';
-                content.style.opacity = '0';
-                section.classList.add('collapsed');
-
+                
+                // Ouvrir la section active par défaut, fermer les autres
+                if (section === activeSection) {
+                    section.classList.remove('collapsed');
+                    content.style.display = 'block';
+                    content.style.opacity = '1';
+                    content.style.maxHeight = '60vh'; // Hauteur maximale augmentée pour les sous-sections
+                    arrow.style.transform = 'rotate(90deg)';
+                } else {
+                    section.classList.add('collapsed');
+                    content.style.display = 'none';
+                    content.style.opacity = '0';
+                    content.style.maxHeight = '0';
+                }
+                
                 title.addEventListener('click', () => {
-                    // Fermer tous les autres sections
+                    const isCollapsed = section.classList.contains('collapsed');
+                    
+                    // Fermer toutes les autres sections
                     sections.forEach(otherSection => {
-                        if (otherSection !== section && !otherSection.classList.contains('collapsed')) {
+                        if (otherSection !== section) {
                             const otherContent = otherSection.querySelector('.section-content');
                             const otherArrow = otherSection.querySelector('.arrow i');
-                            otherContent.style.maxHeight = '0px';
-                            otherContent.style.opacity = '0';
                             otherSection.classList.add('collapsed');
+                            otherContent.style.display = 'none';
+                            otherContent.style.opacity = '0';
+                            otherContent.style.maxHeight = '0';
                             otherArrow.style.transform = 'rotate(0deg)';
                         }
                     });
-
+                    
                     // Basculer la section actuelle
-                    const isCollapsed = section.classList.contains('collapsed');
-                    content.style.maxHeight = isCollapsed ? content.scrollHeight + 'px' : '0px';
+                    content.style.display = isCollapsed ? 'block' : 'none';
                     content.style.opacity = isCollapsed ? '1' : '0';
+                    content.style.maxHeight = isCollapsed ? '60vh' : '0'; // Hauteur maximale ajustée
                     section.classList.toggle('collapsed');
                     arrow.style.transform = isCollapsed ? 'rotate(90deg)' : 'rotate(0deg)';
+                });
+            });
+            
+            // Gestion des sous-sections
+            const subSections = document.querySelectorAll('.sub-section');
+            subSections.forEach(subSection => {
+                const subTitle = subSection.querySelector('.sub-section-title');
+                const subContent = subSection.querySelector('.sub-section-content');
+                const subArrow = subSection.querySelector('.arrow i');
+                
+                // Initialiser les sous-sections fermées par défaut
+                if (!subSection.classList.contains('open')) {
+                    subContent.style.opacity = '0';
+                    subContent.style.maxHeight = '0';
+                } else {
+                    subContent.style.opacity = '1';
+                    subContent.style.maxHeight = '500px';
+                }
+                
+                subTitle.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const isOpen = subSection.classList.contains('open');
+                    
+                    // Fermer les autres sous-sections de même niveau
+                    const parentContent = subSection.closest('.section-content');
+                    if (parentContent) {
+                        const siblings = parentContent.querySelectorAll('.sub-section');
+                        siblings.forEach(sibling => {
+                            if (sibling !== subSection && sibling.classList.contains('open')) {
+                                sibling.classList.remove('open');
+                                const siblingContent = sibling.querySelector('.sub-section-content');
+                                const siblingArrow = sibling.querySelector('.arrow i');
+                                siblingContent.style.opacity = '0';
+                                siblingContent.style.maxHeight = '0';
+                                if (siblingArrow) siblingArrow.style.transform = 'rotate(0deg)';
+                            }
+                        });
+                    }
+                    
+                    // Basculer la sous-section actuelle
+                    subSection.classList.toggle('open');
+                    subContent.style.opacity = isOpen ? '0' : '1';
+                    subContent.style.maxHeight = isOpen ? '0' : '500px';
+                    if (subArrow) subArrow.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(90deg)';
+                });
+            });
+            
+            // Gestion du thème clair/sombre amélioré
+            const themeToggle = document.getElementById('themeToggle');
+            const themeSwitcher = document.querySelector('.theme-switcher');
+            const htmlRoot = document.documentElement;
+            const currentTheme = localStorage.getItem('theme') || 'dark';
+            
+            // Fonction pour basculer le thème
+            function toggleTheme() {
+                htmlRoot.classList.toggle('light-mode');
+                const isLight = htmlRoot.classList.contains('light-mode');
+                localStorage.setItem('theme', isLight ? 'light' : 'dark');
+            }
+            
+            // Appliquer le thème sauvegardé
+            if (currentTheme === 'light') {
+                htmlRoot.classList.add('light-mode');
+            }
+            
+            // Ajouter les événements de clic
+            themeToggle.addEventListener('click', toggleTheme);
+            themeSwitcher.addEventListener('click', (e) => {
+                e.preventDefault();
+                toggleTheme();
+            });
+            
+            // Animation au survol pour les éléments de navigation
+            document.querySelectorAll('.sidebar-btn.sub-item').forEach(item => {
+                item.addEventListener('mouseenter', () => {
+                    const icon = item.querySelector('.icon i');
+                    if (icon) {
+                        icon.classList.add('fa-beat-fade');
+                        setTimeout(() => {
+                            icon.classList.remove('fa-beat-fade');
+                        }, 500);
+                    }
                 });
             });
         });
     </script>
     
+    <!-- Ajout de style pour les sous-sections -->
+    <style>
+        /* Styles pour les sous-sections */
+        .sub-section {
+            margin: 0.5rem 0;
+            position: relative;
+        }
+        
+        /* Amélioration visuelle des sous-sections */
+        .sub-section-title {
+            display: flex;
+            align-items: center;
+            padding: 0.6rem 1rem 0.6rem 1.25rem;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            color: var(--text-primary);
+            background: linear-gradient(to right, rgba(255, 209, 0, 0.15), rgba(255, 209, 0, 0.05));
+            border: none;
+            width: 100%;
+            text-align: left;
+            position: relative;
+            overflow: hidden;
+            font-size: 0.85rem; /* Taille réduite pour mieux différencier des sections principales */
+        }
+        
+        /* Mettre le texte des titres de sous-sections en majuscules */
+        .sub-section-title .title {
+            text-transform:none;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+            font-size: 0.8rem;
+        }
+        
+        /* Augmentation de l'espacement entre les icônes et le texte */
+        .sidebar-btn .icon,
+        .section-title .icon,
+        .sub-section-title .icon {
+            margin-right: 12px !important; /* Augmentation de la marge droite des icônes */
+        }
+        
+        .sidebar-btn.sub-sub-item .icon {
+            margin-right: 10px !important; /* Ajustement pour les sous-sous-éléments */
+        }
+        
+        /* Ajout d'un peu d'espace après les icônes dans le menu principal */
+        .section-title .icon {
+            margin-right: 16px !important; /* Plus d'espace pour les titres de section */
+        }
+        
+        /* Repositionnement des flèches pour qu'elles soient plus éloignées du texte */
+        .section-title .arrow,
+        .sub-section-title .arrow {
+            margin-left: auto !important; /* Pousse la flèche complètement à droite */
+            padding-left: 15px !important; /* Espace entre le texte et la flèche */
+        }
+        
+        /* Ajustement pour les sections avec des titres longs */
+        .section-title .title,
+        .sub-section-title .title {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            padding-right: 10px; /* Évite que le texte ne touche la flèche */
+        }
+        
+        /* Améliorer l'indicateur visuel de sous-section */
+        .sub-section-content {
+            padding-left: 1.5rem;
+            margin-top: 0.5rem;
+            transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+            border-left: 1px dashed rgba(255, 209, 0, 0.2);
+            margin-left: 0.75rem;
+            position: relative;
+            max-height: 0;
+            overflow: hidden;
+            opacity: 0;
+        }
+        
+        /* Montrer le contenu quand ouvert */
+        .sub-section.open .sub-section-content {
+            max-height: 500px;
+            opacity: 1;
+            padding-bottom: 0.5rem;
+        }
+        
+        /* Amélioration des éléments de sous-menu */
+        .sidebar-btn.sub-sub-item {
+            padding: 0.4rem 0.5rem 0.4rem 1.2rem;
+            font-size: 0.8rem;
+            position: relative;
+            margin-bottom: 0.2rem;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex;
+            align-items: center;
+            border-radius: var(--radius-sm);
+            margin-left: 0.25rem;
+        }
+        
+        /* Indicateur de niveau hiérarchique */
+        .sidebar-btn.sub-sub-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            width: 4px;
+            height: 4px;
+            background: var(--honey-primary);
+            border-radius: 50%;
+            transform: translateY(-50%) scale(0);
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+        
+        /* Animation de séparation améliorée */
+        .sub-section-content::before,
+        .sub-section-content::after {
+            content: '';
+            position: absolute;
+            left: -4px;
+            width: 7px;
+            height: 7px;
+            background: var(--honey-primary);
+            border-radius: 50%;
+            opacity: 0.8;
+        }
+        
+        .sub-section-content::before {
+            top: 0;
+        }
+        
+        .sub-section-content::after {
+            bottom: 0;
+        }
+        
+        /* Styles pour le mode clair */
+        :root.light-mode .sub-section-title {
+            background: linear-gradient(to right, rgba(217, 119, 6, 0.1), rgba(217, 119, 6, 0.02));
+        }
+    </style>
+    
+    {% block extra_js %}{% endblock %}
 </body>
 
 </html>

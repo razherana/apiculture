@@ -11,111 +11,114 @@
             Nouvelle Commande
         </button>
     </form>
-        <form action="{% url 'commandes_stats' %}" method="post" style="display:inline;">
+    <form action="{% url 'commandes_stats' %}" method="post" style="display:inline;">
         {% csrf_token %}
         <button class="action-btn add" type="submit">
             Statistiques des commandes cette Saison
         </button>
     </form>
+    
     <!-- Section commandes EN ATTENTE -->
     <div class="table-card">
         <h3>Commandes en attente</h3>
-        <table>
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Date</th>
-                    <th>Créée le</th>
-                    <th>Livraison prévue</th>
-                    <th>Client</th>
-                    <th>Miel</th>
-                    <th>Quantité</th>
-                    <th>Statut</th>
-                    <th>Vente liée</th>
-                    <th>Note</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for commande in commandes_en_attente %}
-                <tr>
-                    <td>{{ commande.id }}</td>
-                    <td>{{ commande.date }}</td>
-                    <td>{{ commande.created_at }}</td>
-                    <td>{{ commande.livraison_date }}</td>
-                    <td>{{ commande.client }}</td>
-                    <td>{{ commande.produit }}</td>
-                    <td>{{ commande.quantite }}</td>
-                    <td>{{ commande.statut }}</td>
-                    <td>{% if commande.vente_id %}{{ commande.vente_id }}{% else %}-{% endif %}</td>
-                    <td>{{ commande.note }}</td>
-                    <td style="display:flex; gap:0.25em;">
-                        <form action="#" method="post" style="display:inline;">
-                            {% csrf_token %}
-                            <input type="hidden" name="commande_id" value="{{ commande.id }}">
-                            <button class="action-btn delete" type="submit">
-                                Annuler
-                            </button>
-                        </form>
-                        <form action="#" method="post" style="display:inline;">
-                            {% csrf_token %}
-                            <input type="hidden" name="commande_id" value="{{ commande.id }}">
-                            <button class="action-btn add" type="submit">
-                                Livrer
-                            </button>
-                        </form>
-                    </td>
-                </tr>
-                {% empty %} 
-                <tr>
-                    <td colspan="11">Aucune commande en attente.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div class="table-scroll-container">
+            <table class="commerce-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Date</th>
+                        <th>Créée le</th>
+                        <th>Livraison prévue</th>
+                        <th>Client</th>
+                        <th>Miel</th>
+                        <th>Quantité</th>
+                        <th>Statut</th>
+                        <th>Vente liée</th>
+                        <th>Note</th>
+                        <th class="actions-column">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for commande in commandes_en_attente %}
+                    <tr>
+                        <td>{{ commande.id }}</td>
+                        <td>{{ commande.date }}</td>
+                        <td>{{ commande.created_at }}</td>
+                        <td>{{ commande.livraison_date }}</td>
+                        <td>{{ commande.client }}</td>
+                        <td>{{ commande.produit }}</td>
+                        <td>{{ commande.quantite }}</td>
+                        <td>{{ commande.statut }}</td>
+                        <td>{% if commande.vente_id %}{{ commande.vente_id }}{% else %}-{% endif %}</td>
+                        <td>{{ commande.note }}</td>
+                        <td style="display:flex; gap:0.25em;">
+                            <form action="#" method="post" style="display:inline;">
+                                {% csrf_token %}
+                                <input type="hidden" name="commande_id" value="{{ commande.id }}">
+                                <button class="action-btn delete" type="submit">
+                                    Annuler
+                                </button>
+                            </form>
+                            <form action="#" method="post" style="display:inline;">
+                                {% csrf_token %}
+                                <input type="hidden" name="commande_id" value="{{ commande.id }}">
+                                <button class="action-btn add" type="submit">
+                                    Livrer
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% empty %} 
+                    <tr>
+                        <td colspan="11">Aucune commande en attente.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <!-- Section commandes LIVRÉES -->
     <div class="table-card" style="margin-top:2em;">
         <h3>Commandes livrées</h3>
-        <table>
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Date</th>
-                    <th>Créée le</th>
-                    <th>Livraison prévue</th>
-                    <th>Client</th>
-                    <th>Produit</th>
-                    <th>Quantité</th>
-                    <th>Statut</th>
-                    <th>Vente liée</th>
-                    <th>Note</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for commande in commandes_livrees %}
-                <tr>
-                    <td>{{ commande.id }}</td>
-                    <td>{{ commande.date }}</td>
-                    <td>{{ commande.created_at }}</td>
-                    <td>{{ commande.livraison_date }}</td>
-                    <td>{{ commande.client }}</td>
-                    <td>{{ commande.produit }}</td>
-                    <td>{{ commande.quantite }}</td>
-                    <td>{{ commande.statut }}</td>
-                    <td>{% if commande.vente_id %}{{ commande.vente_id }}{% else %}-{% endif %}</td>
-                    <td>{{ commande.note }}</td>
-                    <td>
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="11">Aucune commande livrée.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div class="table-scroll-container">
+            <table class="commerce-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Date</th>
+                        <th>Créée le</th>
+                        <th>Livraison prévue</th>
+                        <th>Client</th>
+                        <th>Produit</th>
+                        <th>Quantité</th>
+                        <th>Statut</th>
+                        <th>Vente liée</th>
+                        <th>Note</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for commande in commandes_livrees %}
+                    <tr>
+                        <td>{{ commande.id }}</td>
+                        <td>{{ commande.date }}</td>
+                        <td>{{ commande.created_at }}</td>
+                        <td>{{ commande.livraison_date }}</td>
+                        <td>{{ commande.client }}</td>
+                        <td>{{ commande.produit }}</td>
+                        <td>{{ commande.quantite }}</td>
+                        <td>{{ commande.statut }}</td>
+                        <td>{% if commande.vente_id %}{{ commande.vente_id }}{% else %}-{% endif %}</td>
+                        <td>{{ commande.note }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="10">Aucune commande livrée.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 {% endblock %}

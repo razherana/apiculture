@@ -1,0 +1,139 @@
+{% extends "base_elevage.html" %}
+{% load static %}
+
+{% block title %}{% if soin %}Modifier{% else %}Nouveau{% endif %} soin{% endblock %}
+{% block page_title %}{% if soin %}Modifier{% else %}Nouveau{% endif %} soin{% endblock %}
+
+{% block content %}
+<div class="elevage-content">
+    <div class="elevage-card">
+        <h2>{% if soin %}Modifier le soin{% else %}Nouveau soin{% endif %}</h2>
+        
+        <form class="form-container" method="post">
+            {% csrf_token %}
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" for="date">Date *</label>
+                    <input type="date" class="form-input" id="date" name="date" value="{{ soin.date|date:'Y-m-d' }}" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="ruche">Ruche *</label>
+                    <select class="form-select" id="ruche" name="ruche" required>
+                        <option value="" disabled {% if not soin %}selected{% endif %}>Sélectionnez une ruche</option>
+                        {% for ruche in ruches %}
+                            <option value="{{ ruche.id }}" {% if soin.ruche_id == ruche.id %}selected{% endif %}>{{ ruche.nom }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" for="type">Type de soin *</label>
+                    <select class="form-select" id="type" name="type" required>
+                        <option value="" disabled {% if not soin %}selected{% endif %}>Sélectionnez un type</option>
+                        {% for type in types_soin %}
+                            <option value="{{ type }}" {% if soin.type == type %}selected{% endif %}>{{ type }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="produit">Produit *</label>
+                    <select class="form-select" id="produit" name="produit" required>
+                        <option value="" disabled {% if not soin %}selected{% endif %}>Sélectionnez un produit</option>
+                        {% for produit in produits %}
+                            <option value="{{ produit }}" {% if soin.produit == produit %}selected{% endif %}>{{ produit }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" for="dose">Dose *</label>
+                    <input type="text" class="form-input" id="dose" name="dose" value="{{ soin.dose }}" placeholder="Ex: 5ml par cadre" required>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" for="notes">Notes</label>
+                    <textarea class="form-textarea" id="notes" name="notes" rows="4">{{ soin.notes }}</textarea>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="btn-group" style="margin-left: auto;">
+                    <a href="{% url 'soins_list' %}" class="btn btn-secondary">Annuler</a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> {% if soin %}Enregistrer{% else %}Créer{% endif %}
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Filtrer les produits en fonction du type de soin sélectionné
+        const typeSelect = document.getElementById('type');
+        const produitSelect = document.getElementById('produit');
+        
+        const produitsByType = {
+            'Traitement Varroa': ['Acide oxalique', 'Apivar', 'Acide formique', 'Thymol'],
+            'Nourrissement': ['Sirop 50/50', 'Sirop 60/40', 'Candy', 'Candy protéiné'],
+            'Médicament': ['Fumagilin B', 'Terramycine', 'Thymol'],
+            'Préventif': ['Acide oxalique', 'Thymol', 'Huile essentielle']
+        };
+        
+        // Fonction pour mettre à jour les options de produits
+        function updateProduits() {
+            const selectedType = typeSelect.value;
+            
+            // Sauvegarder la valeur sélectionnée actuellement (si elle existe)
+            const currentValue = produitSelect.value;
+            
+            // Vider le select
+            produitSelect.innerHTML = '';
+            
+            // Ajouter l'option par défaut
+            const defaultOption = document.createElement('option');
+            defaultOption.value = '';
+            defaultOption.textContent = 'Sélectionnez un produit';
+            defaultOption.disabled = true;
+            produitSelect.appendChild(defaultOption);
+            
+            // Si un type est sélectionné, ajouter les produits correspondants
+            if (selectedType && produitsByType[selectedType]) {
+                produitsByType[selectedType].forEach(produit => {
+                    const option = document.createElement('option');
+                    option.value = produit;
+                    option.textContent = produit;
+                    
+                    // Restaurer la sélection si le produit existe dans la nouvelle liste
+                    if (produit === currentValue) {
+                        option.selected = true;
+                    }
+                    
+                    produitSelect.appendChild(option);
+                });
+            }
+            
+            // Si aucun produit n'est sélectionné, sélectionner l'option par défaut
+            if (!produitSelect.value) {
+                produitSelect.selectedIndex = 0;
+            }
+        }
+        
+        // Initialiser les produits au chargement
+        updateProduits();
+        
+        // Mettre à jour les produits lorsque le type change
+        typeSelect.addEventListener('change', updateProduits);
+    });
+</script>
+{% endblock %}

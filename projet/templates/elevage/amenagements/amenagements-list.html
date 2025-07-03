@@ -1,0 +1,137 @@
+{% extends "base_elevage.html" %}
+{% load static %}
+
+{% block title %}Aménagements{% endblock %}
+{% block page_title %}Aménagements{% endblock %}
+
+{% block content %}
+<div class="elevage-content">
+    <h2>Gestion des aménagements</h2>
+    
+    <div class="btn-group">
+        <a href="{% url 'amenagement_add' %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Nouvel aménagement
+        </a>
+    </div>
+    
+    <div class="filters-container">
+        <div class="filter-group">
+            <label class="filter-label" for="type-filter">Type:</label>
+            <select class="filter-select" id="type-filter">
+                <option value="">Tous les types</option>
+                {% for type in types %}
+                    <option value="{{ type }}">{{ type }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="filter-group">
+            <label class="filter-label" for="race-filter">Race:</label>
+            <select class="filter-select" id="race-filter">
+                <option value="">Toutes les races</option>
+                {% for race in races %}
+                    <option value="{{ race }}">{{ race }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="filter-group">
+            <label class="filter-label" for="origine-filter">Origine:</label>
+            <select class="filter-select" id="origine-filter">
+                <option value="">Toutes les origines</option>
+                {% for origine in origines %}
+                    <option value="{{ origine }}">{{ origine }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="filter-group">
+            <div class="search-container">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" class="search-input" id="amenagement-search" placeholder="Rechercher...">
+            </div>
+        </div>
+    </div>
+    
+    <div class="elevage-card">
+        <div class="table-container">
+            <table class="elevage-table">
+                <thead>
+                    <tr>
+                        <th>Type</th>
+                        <th>Date</th>
+                        <th>Origine</th>
+                        <th>Race</th>
+                        <th>Force</th>
+                        <th>Ruche destination</th>
+                        <th class="actions-column">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for amenagement in amenagements %}
+                    <tr data-type="{{ amenagement.type }}" data-race="{{ amenagement.race }}" data-origine="{{ amenagement.origine }}">
+                        <td>{{ amenagement.type }}</td>
+                        <td>{{ amenagement.date }}</td>
+                        <td>{{ amenagement.origine }}</td>
+                        <td>{{ amenagement.race }}</td>
+                        <td>
+                            <div class="progress-bar">
+                                <div class="progress" style="width: {{ amenagement.force }}0%;">{{ amenagement.force }}/10</div>
+                            </div>
+                        </td>
+                        <td>{{ amenagement.ruche_destination }}</td>
+                        <td>
+                            <a href="{% url 'amenagement_edit' id=amenagement.id %}" class="btn btn-secondary">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center">Aucun aménagement trouvé</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Filtrage des aménagements
+        const typeFilter = document.getElementById('type-filter');
+        const raceFilter = document.getElementById('race-filter');
+        const origineFilter = document.getElementById('origine-filter');
+        const searchInput = document.getElementById('amenagement-search');
+        const amenagementRows = document.querySelectorAll('.elevage-table tbody tr');
+        
+        function filterAmenagements() {
+            const typeValue = typeFilter.value.toLowerCase();
+            const raceValue = raceFilter.value.toLowerCase();
+            const origineValue = origineFilter.value.toLowerCase();
+            const searchValue = searchInput.value.toLowerCase();
+            
+            amenagementRows.forEach(row => {
+                const type = row.getAttribute('data-type').toLowerCase();
+                const race = row.getAttribute('data-race').toLowerCase();
+                const origine = row.getAttribute('data-origine').toLowerCase();
+                const text = row.textContent.toLowerCase();
+                
+                const matchesType = !typeValue || type === typeValue;
+                const matchesRace = !raceValue || race === raceValue;
+                const matchesOrigine = !origineValue || origine === origineValue;
+                const matchesSearch = !searchValue || text.includes(searchValue);
+                
+                if (matchesType && matchesRace && matchesOrigine && matchesSearch) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+        
+        typeFilter.addEventListener('change', filterAmenagements);
+        raceFilter.addEventListener('change', filterAmenagements);
+        origineFilter.addEventListener('change', filterAmenagements);
+        searchInput.addEventListener('input', filterAmenagements);
+    });
+</script>
+{% endblock %}

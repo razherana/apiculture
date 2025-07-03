@@ -1,0 +1,189 @@
+{% extends "base_elevage.html" %}
+{% load static %}
+
+{% block title %}Liste des ruches{% endblock %}
+{% block page_title %}Ruches{% endblock %}
+
+{% block content %}
+<div class="elevage-content">
+    <h2>Gestion des ruches</h2>
+    
+    <div class="btn-group">
+        <a href="{% url 'ruche_add' %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Nouvelle ruche
+        </a>
+    </div>
+    
+    <div class="filters-container">
+        <div class="filter-group">
+            <label class="filter-label" for="race-filter">Race:</label>
+            <select class="filter-select" id="race-filter">
+                <option value="">Toutes les races</option>
+                {% for race in races %}
+                    <option value="{{ race }}">{{ race }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="filter-group">
+            <label class="filter-label" for="status-filter">Statut:</label>
+            <select class="filter-select" id="status-filter">
+                <option value="">Tous les statuts</option>
+                {% for statut in statuts %}
+                    <option value="{{ statut }}">{{ statut }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="filter-group">
+            <label class="filter-label" for="age-filter">Âge:</label>
+            <select class="filter-select" id="age-filter">
+                <option value="">Tous les âges</option>
+                <option value="0-1">< 1 an</option>
+                <option value="1-2">1-2 ans</option>
+                <option value="2+">2+ ans</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <div class="search-container">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" class="search-input" id="reine-search" placeholder="Rechercher...">
+            </div>
+        </div>
+    </div>
+    
+    <div class="elevage-card">
+        <table class="elevage-table">
+            <thead>
+                <tr>
+                    <th>Nom</th>
+                    <th>Race</th>
+                    <th>Ruche</th>
+                    <th>Née le</th>
+                    <th>Âge</th>
+                    <th>Qualité ponte</th>
+                    <th>Statut</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for reine in reines %}
+                <tr data-race="{{ reine.race }}" data-status="{{ reine.statut }}">
+                    <td>{{ reine.nom }}</td>
+                    <td>{{ reine.race }}</td>
+                    <td>
+                        {% if reine.ruche_id %}
+                            <a href="{% url 'ruche_details' id=reine.ruche_id %}">Ruche #{{ reine.ruche_id }}</a>
+                        {% else %}
+                            Non assignée
+                        {% endif %}
+                    </td>
+                    <td>{{ reine.date_naissance }}</td>
+                    <td class="age-data" data-birth="{{ reine.date_naissance|date:'Y-m-d' }}">
+                        <!-- Calculé par JS -->
+                    </td>
+                    <td>
+                        <div class="progress-bar">
+                            <div class="progress" style="width: {{ reine.qualite_ponte }}0%;">{{ reine.qualite_ponte }}/10</div>
+                        </div>
+                    </td>
+                    <td>
+                        {% if reine.statut == 'Active' %}
+                            <span class="tag tag-success">{{ reine.statut }}</span>
+                        {% elif reine.statut == 'Vieillissante' %}
+                            <span class="tag tag-warning">{{ reine.statut }}</span>
+                        {% elif reine.statut == 'Morte' or reine.statut == 'Remplacée' %}
+                            <span class="tag tag-danger">{{ reine.statut }}</span>
+                        {% else %}
+                            <span class="tag">{{ reine.statut }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{% url 'reine_details' id=reine.id %}" class="btn btn-secondary">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                        <a href="{% url 'reine_edit' id=reine.id %}" class="btn btn-secondary">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="text-center">Aucune ruche trouvée</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Calcul de l'âge des reines
+        const ageElements = document.querySelectorAll('.age-data');
+        const today = new Date();
+        
+        ageElements.forEach(element => {
+            const birthDateStr = element.getAttribute('data-birth');
+            if (birthDateStr) {
+                const birthDate = new Date(birthDateStr);
+                const ageInYears = (today - birthDate) / (365.25 * 24 * 60 * 60 * 1000);
+                
+                if (ageInYears < 1) {
+                    const ageInMonths = Math.floor(ageInYears * 12);
+                    element.textContent = `${ageInMonths} mois`;
+                } else {
+                    element.textContent = `${Math.floor(ageInYears)} an${Math.floor(ageInYears) > 1 ? 's' : ''}`;
+                }
+                
+                // Stocker l'âge en années pour le filtrage
+                element.setAttribute('data-age-years', ageInYears);
+            }
+        });
+        
+        // Filtrage des reines
+        const raceFilter = document.getElementById('race-filter');
+        const statusFilter = document.getElementById('status-filter');
+        const ageFilter = document.getElementById('age-filter');
+        const searchInput = document.getElementById('reine-search');
+        const reineRows = document.querySelectorAll('.elevage-table tbody tr');
+        
+        function filterReines() {
+            const raceValue = raceFilter.value.toLowerCase();
+            const statusValue = statusFilter.value.toLowerCase();
+            const ageValue = ageFilter.value;
+            const searchValue = searchInput.value.toLowerCase();
+            
+            reineRows.forEach(row => {
+                const race = row.getAttribute('data-race').toLowerCase();
+                const status = row.getAttribute('data-status').toLowerCase();
+                const ageElement = row.querySelector('.age-data');
+                const ageYears = ageElement ? parseFloat(ageElement.getAttribute('data-age-years')) : 0;
+                const text = row.textContent.toLowerCase();
+                
+                const matchesRace = !raceValue || race === raceValue;
+                const matchesStatus = !statusValue || status === statusValue;
+                const matchesSearch = !searchValue || text.includes(searchValue);
+                
+                let matchesAge = true;
+                if (ageValue === '0-1') {
+                    matchesAge = ageYears < 1;
+                } else if (ageValue === '1-2') {
+                    matchesAge = ageYears >= 1 && ageYears < 2;
+                } else if (ageValue === '2+') {
+                    matchesAge = ageYears >= 2;
+                }
+                
+                if (matchesRace && matchesStatus && matchesAge && matchesSearch) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+        
+        raceFilter.addEventListener('change', filterReines);
+        statusFilter.addEventListener('change', filterReines);
+        ageFilter.addEventListener('change', filterReines);
+        searchInput.addEventListener('input', filterReines);
+    });
+</script>
+{% endblock %}

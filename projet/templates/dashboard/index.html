@@ -1,86 +1,349 @@
 <!DOCTYPE html>
-<html lang="en">
-  <head>
+<html lang="fr">
+<head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Welcome</title>
+    <title>BeeNova | Apiculture Intelligente</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
     <style>
-      body {
-        margin: 0;
-        padding: 0;
-        font-family: "Arial", sans-serif;
-        background-color: #0f1a20;
-        color: #e0e0e0;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 100vh;
-        overflow: hidden;
-      }
-      .container {
-        text-align: center;
-        position: relative;
-      }
-      h1 {
-        font-size: 5rem;
-        letter-spacing: 8px;
-        margin: 0;
-        text-transform: uppercase;
-        background: linear-gradient(90deg, #4286f4, #42c5f4);
-        background-clip: text;
-        -webkit-text-fill-color: transparent;
-        transition: letter-spacing 0.3s ease, scale 0.3s ease;
-        position: relative;
-        animation: pulse 2s infinite;
-      }
+        :root {
+            --primary: #FFD100;
+            --primary-light: #FFE45C;
+            --primary-dark: #E6BC00;
+            --secondary: #242424;
+            --accent: #006FFF;
+            --accent-alt: #00C2FF;
+            --text-light: #F8F8F8;
+            --text-dark: #1A1A1A;
+            --bg-light: #FFFFFF;
+            --bg-dark: #121212;
+            --grid-color: rgba(255, 209, 0, 0.08);
+            --grid-size: 30px;
+            --glass-bg: rgba(255, 255, 255, 0.08);
+            --glass-border: rgba(255, 255, 255, 0.12);
+            --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            --transition-slow: 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+            --transition-fast: 0.3s cubic-bezier(0.19, 1, 0.22, 1);
+            --honeycomb-size: 100px;
+        }
 
-      h1:hover {
-        cursor: pointer;
-        letter-spacing: 12px;
-        scale: 1.2;
-      }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-      h1::after {
-        content: "";
-        position: absolute;
-        bottom: -15px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 100px;
-        height: 2px;
-        background: linear-gradient(90deg, #4286f4, #42c5f4);
-      }
-      .grid {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-image: linear-gradient(
-            rgba(66, 134, 244, 0.1) 1px,
-            transparent 1px
-          ),
-          linear-gradient(90deg, rgba(66, 134, 244, 0.1) 1px, transparent 1px);
-        background-size: 20px 20px;
-        z-index: -1;
-      }
-      @keyframes pulse {
-        0% {
-          text-shadow: 0 0 10px rgba(66, 197, 244, 0.5);
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            min-height: 100vh;
+            overflow: hidden;
+            position: relative;
+            transition: background-color var(--transition-slow);
         }
-        50% {
-          text-shadow: 0 0 20px rgba(66, 197, 244, 0.8);
+
+        body.light-mode {
+            background-color: var(--bg-light);
+            color: var(--text-dark);
         }
-        100% {
-          text-shadow: 0 0 10px rgba(66, 197, 244, 0.5);
+
+        .theme-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 100;
+            background: var(--glass-bg);
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--glass-shadow);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all var(--transition-fast);
         }
-      }
+
+        .theme-toggle:hover {
+            transform: scale(1.1);
+        }
+
+        .theme-icon {
+            width: 24px;
+            height: 24px;
+            transition: all var(--transition-fast);
+        }
+
+        .moon {
+            display: block;
+        }
+
+        .sun {
+            display: none;
+        }
+
+        body.light-mode .moon {
+            display: none;
+        }
+
+        body.light-mode .sun {
+            display: block;
+        }
+
+        .grid-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(var(--grid-color) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+            background-size: var(--grid-size) var(--grid-size);
+            z-index: -1;
+            opacity: 0.6;
+        }
+
+        .hero {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            padding: 0 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .logo {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 6rem;
+            font-weight: 700;
+            letter-spacing: 3px;
+            margin-bottom: 20px;
+            position: relative;
+            display: inline-block;
+        }
+
+        .logo-text {
+            background: linear-gradient(90deg, var(--primary) 0%, var(--primary-light) 50%, var(--primary) 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: shimmer 3s infinite;
+            position: relative;
+        }
+
+        .logo-highlight {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(255, 209, 0, 0.6) 0%, rgba(255, 209, 0, 0) 70%);
+            filter: blur(20px);
+            z-index: -1;
+            opacity: 0.5;
+            animation: pulse 4s infinite;
+        }
+
+        .tagline {
+            font-size: 1.5rem;
+            color: var(--text-light);
+            margin-bottom: 40px;
+            text-align: center;
+            max-width: 600px;
+            font-weight: 300;
+            opacity: 0.8;
+            transform: translateY(0);
+            animation: float 6s ease-in-out infinite;
+        }
+
+        body.light-mode .tagline {
+            color: var(--text-dark);
+        }
+
+        .cta-button {
+            background: transparent;
+            border: 2px solid var(--primary);
+            color: var(--primary);
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 600;
+            padding: 12px 40px;
+            border-radius: 50px;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: all var(--transition-fast);
+            z-index: 1;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .cta-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 0%;
+            height: 100%;
+            background-color: var(--primary);
+            transition: all var(--transition-slow);
+            z-index: -1;
+        }
+
+        .cta-button:hover {
+            color: var(--secondary);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .cta-button:hover::before {
+            width: 100%;
+        }
+
+        .honeycomb {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .honeycomb-cell {
+            position: absolute;
+            background: radial-gradient(circle, rgba(255, 209, 0, 0.15) 0%, rgba(255, 209, 0, 0) 70%);
+            width: var(--honeycomb-size);
+            height: calc(var(--honeycomb-size) * 1.732);
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            animation: float-random 10s infinite alternate;
+            opacity: 0.2;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: -100% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.1); opacity: 0.7; }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        @keyframes float-random {
+            0% { transform: translateY(0) scale(1); }
+            100% { transform: translateY(20px) scale(1.1); }
+        }
+
+        @media (max-width: 768px) {
+            .logo {
+                font-size: 4rem;
+            }
+            
+            .tagline {
+                font-size: 1.2rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .logo {
+                font-size: 3rem;
+            }
+            
+            .tagline {
+                font-size: 1rem;
+            }
+            
+            .cta-button {
+                font-size: 1rem;
+                padding: 10px 30px;
+            }
+        }
     </style>
-  </head>
-  <body>
-    <div class="grid"></div>
-    <div class="container">
-      <h1>Welcome</h1>
+</head>
+<body>
+    <div class="grid-bg"></div>
+    <div class="honeycomb" id="honeycomb"></div>
+    
+    <div class="theme-toggle" id="themeToggle">
+        <svg class="theme-icon moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#FFD100" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+        </svg>
+        <svg class="theme-icon sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#FFD100" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+        </svg>
     </div>
-  </body>
+    
+    <div class="hero">
+        <h1 class="logo">
+            <span class="logo-text">BeeNova</span>
+            <span class="logo-highlight"></span>
+        </h1>
+        <p class="tagline">Révolutionnez votre apiculture avec des solutions intelligentes et durables</p>
+        <button class="cta-button">Démarrer</button>
+    </div>
+
+    <script>
+        // Génération dynamique du fond en nid d'abeille
+        const honeycomb = document.getElementById('honeycomb');
+        const cellCount = 15;
+        
+        for (let i = 0; i < cellCount; i++) {
+            const cell = document.createElement('div');
+            cell.classList.add('honeycomb-cell');
+            
+            // Position aléatoire
+            const randomX = Math.random() * 100;
+            const randomY = Math.random() * 100;
+            
+            // Taille aléatoire
+            const randomSize = 80 + Math.random() * 120;
+            
+            // Animation aléatoire
+            const randomDuration = 8 + Math.random() * 7;
+            const randomDelay = Math.random() * 5;
+            
+            cell.style.left = `${randomX}%`;
+            cell.style.top = `${randomY}%`;
+            cell.style.width = `${randomSize}px`;
+            cell.style.height = `${randomSize * 1.732}px`;
+            cell.style.animationDuration = `${randomDuration}s`;
+            cell.style.animationDelay = `${randomDelay}s`;
+            
+            honeycomb.appendChild(cell);
+        }
+        
+        // Bascule du thème clair/sombre
+        const themeToggle = document.getElementById('themeToggle');
+        themeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('light-mode');
+            localStorage.setItem('theme', document.body.classList.contains('light-mode') ? 'light' : 'dark');
+        });
+        
+        // Vérifier le thème préféré
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'light') {
+            document.body.classList.add('light-mode');
+        }
+    </script>
+</body>
 </html>

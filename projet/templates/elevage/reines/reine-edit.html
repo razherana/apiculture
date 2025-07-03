@@ -1,0 +1,151 @@
+{% extends "base_elevage.html" %}
+{% load static %}
+
+{% block title %}{% if reine %}Modifier{% else %}Nouvelle{% endif %} reine{% endblock %}
+{% block page_title %}{% if reine %}Modifier{% else %}Nouvelle{% endif %} reine{% endblock %}
+
+{% block content %}
+<div class="elevage-content">
+    <div class="elevage-card">
+        <h2>{% if reine %}Modifier la reine{% else %}Nouvelle reine{% endif %}</h2>
+        
+        <form class="form-container" method="post">
+            {% csrf_token %}
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" for="nom">Nom de la reine *</label>
+                    <input type="text" class="form-input" id="nom" name="nom" value="{{ reine.nom }}" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="race">Race *</label>
+                    <select class="form-select" id="race" name="race" required>
+                        <option value="" disabled {% if not reine %}selected{% endif %}>Sélectionnez une race</option>
+                        {% for race in races %}
+                            <option value="{{ race }}" {% if reine.race == race %}selected{% endif %}>{{ race }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" for="date_naissance">Date de naissance *</label>
+                    <input type="date" class="form-input" id="date_naissance" name="date_naissance" value="{{ reine.date_naissance|date:'Y-m-d' }}" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="date_introduction">Date d'introduction</label>
+                    <input type="date" class="form-input" id="date_introduction" name="date_introduction" value="{{ reine.date_introduction|date:'Y-m-d' }}">
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" for="origine">Origine *</label>
+                    <select class="form-select" id="origine" name="origine" required>
+                        <option value="" disabled {% if not reine %}selected{% endif %}>Sélectionnez une origine</option>
+                        {% for origine in origines %}
+                            <option value="{{ origine }}" {% if reine.origine == origine %}selected{% endif %}>{{ origine }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="ruche">Ruche d'affectation</label>
+                    <select class="form-select" id="ruche" name="ruche">
+                        <option value="">Aucune (stockage)</option>
+                        {% for ruche in ruches %}
+                            <option value="{{ ruche.id }}" {% if reine.ruche_id == ruche.id %}selected{% endif %}>{{ ruche.nom }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" for="qualite_ponte">Qualité de ponte (1-10)</label>
+                    <input type="range" class="form-input" id="qualite_ponte" name="qualite_ponte" value="{{ reine.qualite_ponte|default:7 }}" min="1" max="10" oninput="ponteValue.value = qualite_ponte.value">
+                    <output id="ponteValue">{{ reine.qualite_ponte|default:7 }}</output>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="statut">Statut *</label>
+                    <select class="form-select" id="statut" name="statut" required>
+                        <option value="" disabled {% if not reine %}selected{% endif %}>Sélectionnez un statut</option>
+                        {% for statut in statuts %}
+                            <option value="{{ statut }}" {% if reine.statut == statut %}selected{% endif %}>{{ statut }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" for="marquage">Couleur de marquage *</label>
+                    <select class="form-select" id="marquage" name="marquage" required>
+                        <option value="" disabled {% if not reine %}selected{% endif %}>Sélectionnez une couleur</option>
+                        {% for couleur in couleurs_marquage %}
+                            <option value="{{ couleur }}" {% if reine.marquage == couleur %}selected{% endif %}>{{ couleur }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="btn-group" style="margin-left: auto;">
+                    <a href="{% url 'reines_list' %}" class="btn btn-secondary">Annuler</a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> {% if reine %}Enregistrer{% else %}Créer{% endif %}
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Mise à jour de la valeur affichée pour le slider de qualité de ponte
+        const ponteSlider = document.getElementById('qualite_ponte');
+        const ponteOutput = document.getElementById('ponteValue');
+        
+        ponteSlider.addEventListener('input', function() {
+            ponteOutput.textContent = this.value;
+        });
+        
+        // Auto-sélection de la couleur de marquage basée sur l'année de naissance
+        const dateNaissance = document.getElementById('date_naissance');
+        const marquageSelect = document.getElementById('marquage');
+        
+        dateNaissance.addEventListener('change', function() {
+            if (this.value) {
+                const annee = new Date(this.value).getFullYear();
+                const couleur = getCouleurMarquage(annee);
+                
+                // Trouver et sélectionner l'option correspondante
+                for (let i = 0; i < marquageSelect.options.length; i++) {
+                    if (marquageSelect.options[i].value === couleur) {
+                        marquageSelect.selectedIndex = i;
+                        break;
+                    }
+                }
+            }
+        });
+        
+        // Système international de marquage des reines (basé sur la fin de l'année)
+        function getCouleurMarquage(annee) {
+            const reste = annee % 5;
+            switch (reste) {
+                case 0: return "Bleu";
+                case 1: return "Blanc";
+                case 2: return "Jaune";
+                case 3: return "Rouge";
+                case 4: return "Vert";
+                default: return "Blanc";
+            }
+        }
+    });
+</script>
+{% endblock %}

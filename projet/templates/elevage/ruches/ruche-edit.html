@@ -1,0 +1,92 @@
+{% extends "base_elevage.html" %}
+{% load static %}
+
+{% block title %}{% if ruche %}Modifier{% else %}Nouvelle{% endif %} ruche{% endblock %}
+{% block page_title %}{% if ruche %}Modifier{% else %}Nouvelle{% endif %} ruche{% endblock %}
+
+{% block content %}
+<div class="elevage-content">
+    <div class="elevage-card">
+        <h2>{% if ruche %}Modifier la ruche{% else %}Nouvelle ruche{% endif %}</h2>
+        
+        <form class="form-container" method="post">
+            {% csrf_token %}
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" for="nom">Nom de la ruche *</label>
+                    <input type="text" class="form-input" id="nom" name="nom" value="{{ ruche.nom }}" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="type">Type de ruche *</label>
+                    <select class="form-select" id="type" name="type" required>
+                        <option value="" disabled {% if not ruche %}selected{% endif %}>Sélectionnez un type</option>
+                        {% for type in types_ruche %}
+                            <option value="{{ type }}" {% if ruche.type == type %}selected{% endif %}>{{ type }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" for="localisation">Localisation *</label>
+                    <select class="form-select" id="localisation" name="localisation" required>
+                        <option value="" disabled {% if not ruche %}selected{% endif %}>Sélectionnez une localisation</option>
+                        {% for loc in localisations %}
+                            <option value="{{ loc }}" {% if ruche.localisation == loc %}selected{% endif %}>{{ loc }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="date_installation">Date d'installation *</label>
+                    <input type="date" class="form-input" id="date_installation" name="date_installation" value="{{ ruche.date_installation|date:'Y-m-d' }}" required>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" for="nb_hausses">Nombre de hausses</label>
+                    <input type="number" class="form-input" id="nb_hausses" name="nb_hausses" value="{{ ruche.nb_hausses|default:0 }}" min="0" max="10">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="force">Force de la colonie (1-10)</label>
+                    <input type="range" class="form-input" id="force" name="force" value="{{ ruche.force|default:5 }}" min="1" max="10" oninput="forceValue.value = force.value">
+                    <output id="forceValue">{{ ruche.force|default:5 }}</output>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" for="description">Description</label>
+                    <textarea class="form-textarea" id="description" name="description" rows="4">{{ ruche.description }}</textarea>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="btn-group" style="margin-left: auto;">
+                    <a href="{% url 'ruches_list' %}" class="btn btn-secondary">Annuler</a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> {% if ruche %}Enregistrer{% else %}Créer{% endif %}
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Mise à jour de la valeur affichée pour le slider de force
+        const forceSlider = document.getElementById('force');
+        const forceOutput = document.getElementById('forceValue');
+        
+        forceSlider.addEventListener('input', function() {
+            forceOutput.textContent = this.value;
+        });
+    });
+</script>
+{% endblock %}

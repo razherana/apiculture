@@ -12,41 +12,43 @@
         </button>
     </form>
     <div class="table-card">
-        <table>
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Type</th>
-                    <th>Conteneur</th>
-                    <th>Stock actuel</th>
-                    <th>Prix</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for miel in miels %}
-                <tr>
-                    <td>{{ miel.id }}</td>
-                    <td>{{ miel.type }}</td>
-                    <td>{{ miel.conteneur }}</td>
-                    <td>{{ miel.stock }}</td>
-                    <td>{{ miel.prix }} Ar</td>
-                    <td>
-                        <form action="{% url 'test_stocks_miels' %}" method="post">
-                            {% csrf_token %}
-                            <button class="action-btn view" type="submit">
-                                Gerer
-                            </button>
-                        </form>
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="5">Aucun miel trouvé.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div class="table-scroll-container">
+            <table class="commerce-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Type</th>
+                        <th>Conteneur</th>
+                        <th>Stock actuel</th>
+                        <th>Prix</th>
+                        <th class="actions-column">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for miel in miels %}
+                    <tr>
+                        <td>{{ miel.id }}</td>
+                        <td>{{ miel.type }}</td>
+                        <td>{{ miel.conteneur }}</td>
+                        <td>{{ miel.stock }}</td>
+                        <td>{{ miel.prix }} Ar</td>
+                        <td>
+                            <form action="{% url 'test_stocks_miels' %}" method="post">
+                                {% csrf_token %}
+                                <button class="action-btn view" type="submit">
+                                    Gerer
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6">Aucun miel trouvé.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 {% endblock %}

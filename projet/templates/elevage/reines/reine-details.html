@@ -1,0 +1,260 @@
+{% extends "base_elevage.html" %}
+{% load static %}
+
+{% block title %}Détails ruche {{ ruche.nom }}{% endblock %}
+{% block page_title %}Ruche: {{ ruche.nom }}{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="elevage-content">
+    <div class="detail-header">
+        <img src="{% static 'elevage/img/ruche-default.jpg' %}" alt="{{ ruche.nom }}" class="detail-image">
+        
+        <div class="detail-info">
+            <h2 class="detail-title">{{ ruche.nom }}</h2>
+            <p class="detail-subtitle">Située à {{ ruche.emplacement }}</p>
+            
+            <div class="detail-stats">
+                <div class="detail-stat">
+                    <div class="detail-stat-value">{{ ruche.nb_reines }}</div>
+                    <div class="detail-stat-label">Nombre de reines</div>
+                </div>
+                <div class="detail-stat">
+                    <div class="detail-stat-value">{{ ruche.statut }}</div>
+                    <div class="detail-stat-label">Statut</div>
+                </div>
+            </div>
+            
+            <div class="btn-group">
+                <a href="{% url 'ruche_edit' id=ruche.id %}" class="btn btn-primary">
+                    <i class="fas fa-edit"></i> Modifier
+                </a>
+                <a href="#" class="btn btn-danger" id="deleteRuche">
+                    <i class="fas fa-trash"></i> Supprimer
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="detail-tabs">
+        <div class="detail-tab active" data-tab="overview">Vue d'ensemble</div>
+        <div class="detail-tab" data-tab="performance">Performance</div>
+        <div class="detail-tab" data-tab="genetics">Génétique</div>
+    </div>
+    
+    <!-- Onglet Vue d'ensemble -->
+    <div class="detail-tab-content active" id="tab-overview">
+        <div class="elevage-card">
+            <h3>Informations générales</h3>
+            <table class="elevage-table">
+                <tr>
+                    <th>Nom</th>
+                    <td>{{ ruche.nom }}</td>
+                </tr>
+                <tr>
+                    <th>Emplacement</th>
+                    <td>{{ ruche.emplacement }}</td>
+                </tr>
+                <tr>
+                    <th>Date de création</th>
+                    <td>{{ ruche.date_creation }}</td>
+                </tr>
+                <tr>
+                    <th>Nombre de reines</th>
+                    <td>{{ ruche.nb_reines }}</td>
+                </tr>
+                <tr>
+                    <th>Statut</th>
+                    <td>{{ ruche.statut }}</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Onglet Performance -->
+    <div class="detail-tab-content" id="tab-performance">
+        <div class="elevage-card">
+            <h3>Performance de la ruche</h3>
+            <div class="chart-container">
+                <canvas id="rucheChart" width="800" height="400"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Onglet Génétique -->
+    <div class="detail-tab-content" id="tab-genetics">
+        <div class="elevage-card">
+            <h3>Informations génétiques</h3>
+            <p>Race: {{ ruche.race }}</p>
+            <p>Origine: {{ ruche.origine }}</p>
+            
+            <!-- Caractéristiques de la race -->
+            <h4>Caractéristiques de la race {{ ruche.race }}</h4>
+            <div class="genetics-grid">
+                <div class="genetics-item">
+                    <div class="genetics-title">Douceur</div>
+                    <div class="genetics-bar">
+                        <div class="genetics-value" style="width: 80%"></div>
+                    </div>
+                </div>
+                <div class="genetics-item">
+                    <div class="genetics-title">Production</div>
+                    <div class="genetics-bar">
+                        <div class="genetics-value" style="width: 90%"></div>
+                    </div>
+                </div>
+                <div class="genetics-item">
+                    <div class="genetics-title">Résistance</div>
+                    <div class="genetics-bar">
+                        <div class="genetics-value" style="width: 70%"></div>
+                    </div>
+                </div>
+                <div class="genetics-item">
+                    <div class="genetics-title">Essaimage</div>
+                    <div class="genetics-bar">
+                        <div class="genetics-value" style="width: 50%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Gestion des onglets
+        const tabs = document.querySelectorAll('.detail-tab');
+        const contents = document.querySelectorAll('.detail-tab-content');
+        
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const target = tab.getAttribute('data-tab');
+                
+                // Activer l'onglet cliqué et désactiver les autres
+                tabs.forEach(t => t.classList.toggle('active', t === tab));
+                
+                // Afficher le contenu correspondant et masquer les autres
+                contents.forEach(c => {
+                    if (c.id === `tab-${target}`) {
+                        c.classList.add('active');
+                    } else {
+                        c.classList.remove('active');
+                    }
+                });
+            });
+        });
+        
+        // Graphique de la ruche
+        const ctx = document.getElementById('rucheChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: {{ donnees_ruche.dates|safe }},
+                datasets: [{
+                    label: 'Production de miel',
+                    data: {{ donnees_ruche.production|safe }},
+                    backgroundColor: '#FFD100',
+                    borderColor: '#B89C00',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Production (kg)'
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Confirmation de suppression
+        document.getElementById('deleteRuche').addEventListener('click', function(e) {
+            e.preventDefault();
+            if (confirm('Êtes-vous sûr de vouloir supprimer cette ruche ? Cette action est irréversible.')) {
+                // Commenter ou modifier cette partie qui utilise l'URL 'ruche_delete' non existante
+                // window.location.href = "{% url 'ruche_delete' id=ruche.id %}";
+                
+                // À la place, utiliser une alerte ou rediriger vers la liste
+                alert('Fonctionnalité de suppression à implémenter');
+                // window.location.href = "{% url 'ruches_list' %}";
+            }
+        });
+    });
+</script>
+{% endblock %}
+        const contents = document.querySelectorAll('.detail-tab-content');
+        
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const target = tab.getAttribute('data-tab');
+                
+                // Activer l'onglet cliqué et désactiver les autres
+                tabs.forEach(t => t.classList.toggle('active', t === tab));
+                
+                // Afficher le contenu correspondant et masquer les autres
+                contents.forEach(c => {
+                    if (c.id === `tab-${target}`) {
+                        c.classList.add('active');
+                    } else {
+                        c.classList.remove('active');
+                    }
+                });
+            });
+        });
+        
+        // Graphique de ponte
+        const ctx = document.getElementById('ponteChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: {{ donnees_ponte.dates|safe }},
+                datasets: [{
+                    label: 'Qualité de ponte',
+                    data: {{ donnees_ponte.ponte|safe }},
+                    borderColor: '#FFD100',
+                    backgroundColor: 'rgba(255, 209, 0, 0.1)',
+                    tension: 0.3,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 10,
+                        title: {
+                            display: true,
+                            text: 'Qualité (1-10)'
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Confirmation de suppression
+        document.getElementById('deleteReine').addEventListener('click', function(e) {
+            e.preventDefault();
+            if (confirm('Êtes-vous sûr de vouloir supprimer cette reine ? Cette action est irréversible.')) {
+                // Commenter ou modifier cette partie qui utilise l'URL 'reine_delete' non existante
+                // window.location.href = "{% url 'reine_delete' id=reine.id %}";
+                
+                // À la place, utiliser une alerte ou rediriger vers la liste
+                alert('Fonctionnalité de suppression à implémenter');
+                // window.location.href = "{% url 'reines_list' %}";
+            }
+        });
+    });
+</script>
+{% endblock %}
