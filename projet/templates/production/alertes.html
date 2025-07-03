@@ -3,75 +3,16 @@
 {% block page_header %}Alertes{% endblock %}
 
 {% block content %}
-<div class="elevage-card">
-    <h2>Alertes de Pénurie de Stock</h2>
+<div class="card">
+    <div class="card-header">Alertes de Pénurie de Stock</div>
     {% for alerte in alertes_stock %}
-        {% with level_class='low' %}
-            {% if alerte.level == 'danger' or alerte.level == 'critique' %}
-                {% with level_class='high' %}
-                <div class="alert-card {{ level_class }}">
-                    <div class="alert-icon {{ level_class }}">!</div>
-                    <div class="alert-content">
-                        <p class="alert-message">{{ alerte.message }}</p>
-                    </div>
-                </div>
-                {% endwith %}
-            {% elif alerte.level == 'warning' or alerte.level == 'alerte' %}
-                {% with level_class='medium' %}
-                <div class="alert-card {{ level_class }}">
-                    <div class="alert-icon {{ level_class }}">!</div>
-                    <div class="alert-content">
-                        <p class="alert-message">{{ alerte.message }}</p>
-                    </div>
-                </div>
-                {% endwith %}
-            {% else %}
-                <div class="alert-card {{ level_class }}">
-                    <div class="alert-icon {{ level_class }}">✓</div>
-                    <div class="alert-content">
-                        <p class="alert-message">{{ alerte.message }}</p>
-                    </div>
-                </div>
-            {% endif %}
-        {% endwith %}
-    {% empty %}
-        <p>Aucune alerte de pénurie de stock.</p>
+        <div class="alert alert-{{ alerte.level }}">{{ alerte.message }}</div>
     {% endfor %}
 </div>
-
-<div class="elevage-card">
-    <h2>Alertes de Maintenance</h2>
+<div class="card">
+    <div class="card-header">Alertes de Maintenance</div>
     {% for alerte in alertes_maintenance %}
-        {% with level_class='low' %}
-            {% if alerte.level == 'danger' or alerte.level == 'critique' %}
-                {% with level_class='high' %}
-                <div class="alert-card {{ level_class }}">
-                    <div class="alert-icon {{ level_class }}">!</div>
-                    <div class="alert-content">
-                        <p class="alert-message">{{ alerte.message }}</p>
-                    </div>
-                </div>
-                {% endwith %}
-            {% elif alerte.level == 'warning' or alerte.level == 'alerte' %}
-                {% with level_class='medium' %}
-                <div class="alert-card {{ level_class }}">
-                    <div class="alert-icon {{ level_class }}">!</div>
-                    <div class="alert-content">
-                        <p class="alert-message">{{ alerte.message }}</p>
-                    </div>
-                </div>
-                {% endwith %}
-            {% else %}
-                <div class="alert-card {{ level_class }}">
-                    <div class="alert-icon {{ level_class }}">✓</div>
-                    <div class="alert-content">
-                        <p class="alert-message">{{ alerte.message }}</p>
-                    </div>
-                </div>
-            {% endif %}
-        {% endwith %}
-    {% empty %}
-        <p>Aucune alerte de maintenance.</p>
+        <div class="alert alert-{{ alerte.level }}">{{ alerte.message }}</div>
     {% endfor %}
 </div>
 {% endblock %}

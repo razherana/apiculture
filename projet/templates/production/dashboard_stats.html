@@ -3,33 +3,23 @@
 {% block page_header %}Dashboard Production{% endblock %}
 
 {% block content %}
-<div class="info-cards">
-    <div class="info-card">
-        <div class="info-card-header">
-            <div class="info-card-icon"><i class="fas fa-box-open"></i></div>
-            <div class="info-card-title">Récolte Totale (kg)</div>
-        </div>
-        <div class="info-card-value">{{ total_recolte }}</div>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
+    <div class="card">
+        <div class="card-header">Récolte Totale (kg)</div>
+        <p style="font-size: 2.5rem; font-weight: bold; color: #ffd700; margin: 0;">{{ total_recolte }}</p>
     </div>
-    <div class="info-card">
-        <div class="info-card-header">
-            <div class="info-card-icon"><i class="fas fa-bug"></i></div>
-            <div class="info-card-title">Ruches Actives</div>
-        </div>
-        <div class="info-card-value">{{ nombre_ruches }}</div>
+    <div class="card">
+        <div class="card-header">Ruches Actives</div>
+        <p style="font-size: 2.5rem; font-weight: bold; margin: 0;">{{ nombre_ruches }}</p>
     </div>
-    <div class="info-card">
-        <div class="info-card-header">
-            <div class="info-card-icon"><i class="fas fa-skull-crossbones"></i></div>
-            <div class="info-card-title">Taux Mortalité</div>
-        </div>
-        <div class="info-card-value" style="color: var(--queen-red);">{{ taux_mortalite }}%</div>
+    <div class="card">
+        <div class="card-header">Taux Mortalité</div>
+        <p style="font-size: 2.5rem; font-weight: bold; color: #c00; margin: 0;">{{ taux_mortalite }}%</p>
     </div>
 </div>
-
-<div class="elevage-card" style="margin-top: 2rem;">
-    <h2>Production par Ruche</h2>
-    <div class="chart-container" style="height: 40vh;">
+<div class="card" style="margin-top: 2rem;">
+    <div class="card-header">Production par Ruche</div>
+    <div style="height: 40vh;">
         <canvas id="productionChart"></canvas>
     </div>
 </div>

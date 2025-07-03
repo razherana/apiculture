@@ -3,12 +3,12 @@
 {% block page_header %}Détail de la Récolte #{{ recolte.id }}{% endblock %}
 
 {% block page_actions %}
-    <a href="{% url 'recolte_list' %}" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Retour à la liste</a>
+    <a href="{% url 'recolte_list' %}" class="btn">Retour à la liste</a>
 {% endblock %}
 
 {% block content %}
-<div class="elevage-card">
-    <h2>Informations sur la Récolte</h2>
+<div class="card">
+    <div class="card-header">Informations sur la Récolte</div>
     <p><strong>Date :</strong> {{ recolte.created_at }}</p>
     <p><strong>Ruche :</strong> {{ recolte.ruche.description }}</p>
     <p><strong>Poids récolté :</strong> {{ recolte.poids_miel }} kg</p>

@@ -1,13 +1,11 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Production{% endblock %} - Apiculture Manager</title>
-    {% load static %}
     <link rel="stylesheet" href="{% static 'production/css/style.css' %}">
-    {# Ajout de Font Awesome pour les icônes #}
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     {% block extra_head %}{% endblock %}
 </head>
 <body>
@@ -30,9 +28,7 @@
                 </div>
             </header>
             <section class="main-section">
-                <div class="elevage-content">
-                    {% block content %}{% endblock %}
-                </div>
+                {% block content %}{% endblock %}
             </section>
         </main>
     </div>
