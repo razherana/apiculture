@@ -1,15 +1,16 @@
-{% extends 'production/base_production.html' %}
+{% extends "base_commerce.html" %}
+{% load static %}
 
 {% block page_header %}Liste des Récoltes{% endblock %}
 
 {% block page_actions %}
-    <a href="{% url 'recolte_form' %}" class="btn">Ajouter une récolte</a>
+    <a href="{% url 'recolte_form' %}" class="btn btn-primary"><i class="fas fa-plus"></i> Ajouter une récolte</a>
 {% endblock %}
 
 {% block content %}
-<div class="card">
-    <div class="table-wrapper">
-        <table>
+<div class="elevage-card">
+    <div class="table-container">
+        <table class="elevage-table">
             <thead>
                 <tr>
                     <th>Date</th>
@@ -17,7 +18,7 @@
                     <th>Poids (kg)</th>
                     <th>Qualité (/10)</th>
                     <th>Humidité (%)</th>
-                    <th>Actions</th>
+                    <th class="actions-column">Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -28,8 +29,8 @@
                     <td>{{ recolte.poids_miel }}</td>
                     <td>{{ recolte.qualite }}</td>
                     <td>{{ recolte.taux_humidite }}</td>
-                    <td>
-                        <a href="{% url 'recolte_detail' recolte.id %}" class="btn btn-sm">Détails</a>
+                    <td class="actions-column">
+                        <a href="{% url 'recolte_detail' recolte.id %}" class="btn btn-secondary">Détails</a>
                     </td>
                 </tr>
                 {% empty %}

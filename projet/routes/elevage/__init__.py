@@ -10,7 +10,7 @@ urlpatterns = [
     # Nouvelles routes pour les fonctionnalités d'Élevage
     path('', include('projet.routes.elevage.taches')),
     path('', include('projet.routes.elevage.reports')),
-    path('', include('projet.routes.elevage.map')),
+    #path('', include('projet.routes.elevage.map')),
     path('', include('projet.routes.elevage.filtres')),
     path('', include('projet.routes.elevage.stats')),
 ]

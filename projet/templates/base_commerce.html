@@ -169,10 +169,7 @@
                             </div>
                         </div>
                         
-                        <!-- Outils avancés -->
-                        <a href="{% url 'map_index' %}" class="sidebar-btn sub-item {% if 'map/' in request.path %}active{% endif %}">
-                            <span class="icon"><i class="fas fa-map-location-dot"></i></span>
-                            <span class="title">Carte des ruchers</span>
+                        
                         </a>
                         <a href="{% url 'reports_index' %}" class="sidebar-btn sub-item {% if 'reports/' in request.path %}active{% endif %}">
                             <span class="icon"><i class="fas fa-file-export"></i></span>
@@ -189,14 +186,80 @@
                         <span class="arrow"><i class="fas fa-chevron-right"></i></span>
                     </button>
                     <div class="section-content">
-                        <a href="#" class="sidebar-btn sub-item">
-                            <span class="icon"><i class="fas fa-flask"></i></span>
-                            <span class="title">Laboratoire</span>
-                        </a>
-                        <a href="#" class="sidebar-btn sub-item">
+                        <!-- Lien direct vers le dashboard des statistiques -->
+                        <a href="{% url 'dashboard_stats' %}" class="sidebar-btn sub-item {% if 'statistiques/dashboard' in request.path %}active{% endif %}">
                             <span class="icon"><i class="fas fa-chart-pie"></i></span>
-                            <span class="title">Statistiques</span>
+                            <span class="title">Tableau de bord Prod.</span>
                         </a>
+
+                        <!-- Sous-section: Production de miel -->
+                        <div class="sub-section">
+                            <button class="sub-section-title">
+                                <span class="icon"><i class="fa-solid fa-jar-wheat"></i></span>
+                                <span class="title">Gestion des récoltes</span>
+                                <span class="arrow"><i class="fas fa-chevron-right"></i></span>
+                            </button>
+                            <div class="sub-section-content">
+                                <a href="{% url 'recolte_list' %}" class="sidebar-btn sub-sub-item {% if 'recoltes' in request.path %}active{% endif %}">
+                                    <span class="icon"><i class="fas fa-list-ul"></i></span>
+                                    <span class="title">Liste des récoltes</span>
+                                </a>
+                                <a href="{% url 'historique_production' %}" class="sidebar-btn sub-sub-item {% if 'historique' in request.path %}active{% endif %}">
+                                    <span class="icon"><i class="fas fa-timeline"></i></span>
+                                    <span class="title">Historique</span>
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Sous-section: Matériel et ressources -->
+                        <div class="sub-section">
+                            <button class="sub-section-title">
+                                <span class="icon"><i class="fas fa-cogs"></i></span>
+                                <span class="title">Matériel & Ressources</span>
+                                <span class="arrow"><i class="fas fa-chevron-right"></i></span>
+                            </button>
+                            <div class="sub-section-content">
+                                <a href="{% url 'materiel_list' %}" class="sidebar-btn sub-sub-item {% if 'materiels' in request.path %}active{% endif %}">
+                                    <span class="icon"><i class="fas fa-boxes-stacked"></i></span>
+                                    <span class="title">Liste du matériel</span>
+                                </a>
+                                <a href="{% url 'stock_consommables' %}" class="sidebar-btn sub-sub-item {% if 'consommables' in request.path %}active{% endif %}">
+                                    <span class="icon"><i class="fas fa-droplet"></i></span>
+                                    <span class="title">Stock consommables</span>
+                                </a>
+                                <a href="{% url 'maintenance_planning' %}" class="sidebar-btn sub-sub-item {% if 'maintenance' in request.path %}active{% endif %}">
+                                    <span class="icon"><i class="fas fa-calendar-alt"></i></span>
+                                    <span class="title">Planning maintenance</span>
+                                </a>
+                                <a href="{% url 'alertes_penurie' %}" class="sidebar-btn sub-sub-item {% if 'alertes' in request.path %}active{% endif %}">
+                                    <span class="icon"><i class="fas fa-bell"></i></span>
+                                    <span class="title">Alertes de pénurie</span>
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Sous-section: Statistiques de Production -->
+                        <div class="sub-section">
+                            <button class="sub-section-title">
+                                <span class="icon"><i class="fas fa-chart-line"></i></span>
+                                <span class="title">Analyses & Stats</span>
+                                <span class="arrow"><i class="fas fa-chevron-right"></i></span>
+                            </button>
+                            <div class="sub-section-content">
+                                <a href="{% url 'stats_production_par_ruche' %}" class="sidebar-btn sub-sub-item {% if 'production-ruche' in request.path %}active{% endif %}">
+                                    <span class="icon"><i class="fas fa-chart-bar"></i></span>
+                                    <span class="title">Production par ruche</span>
+                                </a>
+                                <a href="{% url 'stats_mortalite' %}" class="sidebar-btn sub-sub-item {% if 'statistiques/mortalite' in request.path %}active{% endif %}">
+                                    <span class="icon"><i class="fas fa-skull-crossbones"></i></span>
+                                    <span class="title">Analyse mortalité</span>
+                                </a>
+                                <a href="{% url 'analyse_rentabilite' %}" class="sidebar-btn sub-sub-item {% if 'rentabilite' in request.path %}active{% endif %}">
+                                    <span class="icon"><i class="fas fa-euro-sign"></i></span>
+                                    <span class="title">Analyse rentabilité</span>
+                                </a>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 

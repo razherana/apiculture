@@ -1,10 +1,11 @@
-{% extends 'production/base_production.html' %}
+{% extends "base_commerce.html" %}
+{% load static %}
 {% block page_header %}Stock des Consommables{% endblock %}
 
 {% block content %}
-<div class="card">
-    <div class="table-wrapper">
-        <table>
+<div class="elevage-card">
+    <div class="table-container">
+        <table class="elevage-table">
             <thead>
                 <tr>
                     <th>Consommable</th>
@@ -15,16 +16,23 @@
             </thead>
             <tbody>
                 {% for item in consommables %}
-                <tr class="status-{{ item.statut }}">
+                <tr>
                     <td>{{ item.nom }}</td>
                     <td>{{ item.stock_actuel }} {{ item.unite }}</td>
                     <td>{{ item.seuil_alerte }} {{ item.unite }}</td>
                     <td>
-                        {% if item.statut == 'ok' %}OK
-                        {% elif item.statut == 'alerte' %}⚠️ Alerte
-                        {% else %}🚨 Critique
+                        {% if item.statut == 'ok' %}
+                            <span class="tag tag-success">OK</span>
+                        {% elif item.statut == 'alerte' %}
+                            <span class="tag tag-warning">⚠️ Alerte</span>
+                        {% else %}
+                            <span class="tag tag-danger">🚨 Critique</span>
                         {% endif %}
                     </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" style="text-align: center; padding: 2rem;">Aucun consommable en stock.</td>
                 </tr>
                 {% endfor %}
             </tbody>
