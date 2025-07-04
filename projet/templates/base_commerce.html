@@ -7,9 +7,42 @@
     <title>{% block title %}Commerce & Stock{% endblock %}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="{% static 'commerce/css/commerce.css' %}">
+    <link rel="stylesheet" href="{% static 'production/css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'production/css/dark-mode-fix.css' %}">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="{% static 'commerce/css/dark-mode-fix.css' %}">
+    
+    <!-- Ajout de la librairie Chart.js pour que les graphiques fonctionnent -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Style pour l'en-tête de page -->
+    <style>
+        .page-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            width: 100%;
+        }
+        .page-header h1 {
+            flex-grow: 1; /* Permet au titre de prendre l'espace nécessaire */
+            margin: 0;
+        }
+        .page-actions-container {
+            /* Conteneur pour les boutons "Ajouter", "Retour", etc. */
+            margin-left: auto; /* Pousse les boutons à droite avant les icônes de header */
+            padding-right: 1.5rem; /* Espace entre les boutons et les icônes de droite */
+            display: flex;
+            gap: 0.5rem;
+        }
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+    </style>
+    
     {% block extra_css %}{% endblock %}
 </head>
 
@@ -286,7 +319,11 @@
         
         <main class="main-content">
             <header class="page-header">
-                <h1>{% block page_title %}Commerce & Stock{% endblock %}</h1>
+                <h1>{% block page_header %}Commerce & Stock{% endblock %}</h1>
+                
+                <div class="page-actions-container">
+                    {% block page_actions %}{% endblock %}
+                </div>
                 
                 <div class="header-actions">
                     <!-- Cloche de notification pour les alertes -->
@@ -651,7 +688,7 @@
         }
     </style>
     
-    {% block extra_js %}{% endblock %}
+    {% block extra_scripts %}{% endblock %}
 </body>
 
 </html>
