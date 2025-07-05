@@ -128,6 +128,7 @@ class Recolte(models.Model):
     qualite = models.IntegerField(
         validators=[MinValueValidator(1), MaxValueValidator(10)])
     created_at = models.DateTimeField(auto_now_add=True)
+    note = models.TextField(blank=True, null=True)
 
     class Meta:
         db_table = 'recoltes'
