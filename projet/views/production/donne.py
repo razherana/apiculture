@@ -1,39 +1,52 @@
 from django.shortcuts import render
-
+from models.productions import Recolte
 
 def recolte_list(request):
-    recoltes = [
-        {
-            'id': 1,
-            'created_at': '2023-07-15',
+    # recoltes = [
+    #     {
+    #         'id': 1,
+    #         'created_at': '2023-07-15',
+    #         'ruche': {
+    #             'description': 'Ruche A1 - Forêt'
+    #         },
+    #         'poids_miel': 25.5,
+    #         'qualite': 8,
+    #         'taux_humidite': 17.5
+    #     },
+    #     {
+    #         'id': 2,
+    #         'created_at': '2023-07-18',
+    #         'ruche': {
+    #             'description': 'Ruche B2 - Prairie'
+    #         },
+    #         'poids_miel': 18.0,
+    #         'qualite': 9,
+    #         'taux_humidite': 16.8
+    #     },
+    #     {
+    #         'id': 3,
+    #         'created_at': '2023-08-02',
+    #         'ruche': {
+    #             'description': 'Ruche C4 - Montagne'
+    #         },
+    #         'poids_miel': 32.2,
+    #         'qualite': 7,
+    #         'taux_humidite': 18.1
+    #     },
+    # ]
+    recoltes = []
+    recolteModel = Recolte.objects.all()
+    for r in recolteModel:
+        recoltes.append({
+            'id': r.id,
+            'created_at': r.created_at.strftime('%Y-%m-%d'),
             'ruche': {
-                'description': 'Ruche A1 - Forêt'
+                'description': r.ruche.description  # ou r.ruche.__str__() si pas de champ `description`
             },
-            'poids_miel': 25.5,
-            'qualite': 8,
-            'taux_humidite': 17.5
-        },
-        {
-            'id': 2,
-            'created_at': '2023-07-18',
-            'ruche': {
-                'description': 'Ruche B2 - Prairie'
-            },
-            'poids_miel': 18.0,
-            'qualite': 9,
-            'taux_humidite': 16.8
-        },
-        {
-            'id': 3,
-            'created_at': '2023-08-02',
-            'ruche': {
-                'description': 'Ruche C4 - Montagne'
-            },
-            'poids_miel': 32.2,
-            'qualite': 7,
-            'taux_humidite': 18.1
-        },
-    ]
+            'poids_miel': r.poids_miel,
+            'qualite': r.qualite,
+            'taux_humidite': r.taux_humidite
+        })
     return render(request, 'production/recolte_list.html', {'recoltes': recoltes, 'page_title': 'Liste des Récoltes'})
 
 
