@@ -3,13 +3,14 @@ from projet.views.commerce.test import *  # Chemin absolu
 
 urlpatterns = [
     path('test/miels_liste', list_miels_test, name='test_liste_miels'),
-    path("test/clients_liste/", list_clients_test, name="test_liste_clients"),
-    path("test/commandes_liste/", list_commandes_test, name="test_liste_commandes"),
+    path("clients/", list_clients_test, name="test_liste_clients"),
+    path("test/commandes_liste/", list_commandes_test,
+         name="test_liste_commandes"),
     path("test/ventes_liste/", list_ventes_test, name="test_liste_ventes"),
     path("test/stock_miels/", stock_miels_test, name="test_stocks_miels"),
     path("test/stock_miels_form/", miels_stock_form, name="miels_stock_form"),
-    path("test/clients_vue/", client_vue, name="client_vue"),
-    path("test/clients_form/", client_form, name="client_form"),
+    path("clients/view", client_vue, name="client_vue"),
+    path("clients/add/", client_form, name="client_form"),
     path("test/vente_vue/", vente_vue, name="vente_vue"),
     path("test/vente_form", vente_form, name="vente_form"),
     path("test/commande_form", commande_form, name="commande_form"),

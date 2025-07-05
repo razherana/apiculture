@@ -1,49 +1,50 @@
-{% extends "base_commerce.html" %}
-{% load static %}
-{% block title %}Liste des clients{% endblock %}
-
-{% block content %}
-<link rel="stylesheet" href="{% static 'commerce/css/list.css' %}">
+{% extends "base_commerce.html" %} {% load static %} {% block title %}Liste des
+clients{% endblock %} {% block content %}
+<link rel="stylesheet" href="{% static 'commerce/css/list.css' %}" />
 <div class="liste-content">
-    <h2>Liste des clients</h2>
-    <form action="{% url 'client_form' %}" method="post">
-        {% csrf_token %}
-        <button class="action-btn add" type="submit">Ajouter un client</button>
-    </form>
-    <div class="table-card">
-        <div class="table-scroll-container">
-            <table class="commerce-table">
-                <thead>
-                    <tr>
-                        <th>Nom</th>
-                        <th>Email</th>
-                        <th>Téléphone</th>
-                        <th>Dernière commande</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for client in clients %}
-                    <tr>
-                        <td>{{ client.nom }}</td>
-                        <td>{{ client.email }}</td>
-                        <td>{{ client.telephone }}</td>
-                        <td>{{ client.derniere_commande }}</td>
-                        <td>
-                            <form action="{% url 'client_vue' %}" method="post">
-                            {% csrf_token %}
-                                <button class="action-btn view" type="submit">Voir</button>
-                            </form>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="5">Aucun client trouvé.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+  <h2>Liste des clients</h2>
+  <form action="{% url 'client_form' %}" method="post">
+    {% csrf_token %}
+    <button class="action-btn add" type="submit">Ajouter un client</button>
+  </form>
+  <div class="table-card">
+    <div class="table-scroll-container">
+      <table class="commerce-table">
+        <thead>
+          <tr>
+            <th>Nom</th>
+            <th>Email</th>
+            <th>Téléphone</th>
+            <th>Type</th>
+            <th>Dernière commande</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for client in clients %}
+          <tr>
+            <td>{{ client.nom }}</td>
+            <td>{{ client.email }}</td>
+            <td>{{ client.telephone }}</td>
+            <td>{{ client.type }}</td>
+            <td>{{ client.derniere_commande }}</td>
+            <td>
+              <a
+                href="{% url 'client_vue' %}?id={{ client.id }}"
+                class="action-btn view"
+                type="submit"
+                >Voir</a
+              >
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="5">Aucun client trouvé.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
+  </div>
 </div>
 {% endblock %}

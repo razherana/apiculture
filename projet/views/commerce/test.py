@@ -1,6 +1,6 @@
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 
-from projet.models.ventes import Client
+from projet.models.ventes import Client, ClientType
 
 
 def list_miels_test(request):
@@ -14,20 +14,15 @@ def list_miels_test(request):
 
 
 def list_clients_test(request):
-    # clients = [
-    #     {'id': 1, 'nom': 'Dupont', 'email': 'dupont@mail.com',
-    #         'telephone': '0601020304', 'derniere_commande': '2025-06-18'},
-    #     {'id': 2, 'nom': 'Martin', 'email': 'martin@mail.com',
-    #         'telephone': '0605060708', 'derniere_commande': '2025-06-17'},
-    # ]
     clientModels = Client.objects.all()
     clients = [
         {
             'id': client.id,
             'nom': client.name,
             'email': client.email,
+            'type': client.client_type_id.name if client.client_type_id else '-',
             'telephone': client.contact,
-            'derniere_commande': client.get_last_commande
+            'derniere_commande': client.get_last_commande,
         } for client in clientModels
     ]
     return render(request, "commerce/clients/list.html", {"clients": clients})
@@ -90,31 +85,123 @@ def miels_stock_form(request):
 
 
 def client_vue(request):
-    client = {
-        'id': 1,
-        'nom': 'Dupont Jean',
-        'note': 'Client fidèle depuis 5 ans',
-        'email': "exemple@gmail.com",
-        'telephone': '0601020304',
-        'derniere_commande': '2025-06-18',
-        'adresse': '123 Rue de Paris, 75001 Paris',
-        'client_type': 'Particulier',
-    }
-    client_types = [
-        {'id': 1, 'type': 'Particulier'},
-        {'id': 2, 'type': 'Professionnel'},
-        {'id': 3, 'type': 'Association'},
-    ]
-    return render(request, "commerce/clients/vue.html", {"client": client, "client_types": client_types})
+    if request.method == "GET" or (request.POST and not request.POST.get('modify', None)):
+        client_id = request.GET.get('id', None)
+
+        if not client_id:
+            return redirect('test_liste_clients')
+
+        client_model = Client.objects.filter(id=client_id).first()
+
+        if not client_model:
+            return redirect('test_liste_clients')
+
+        client = {
+            'id': client_model.id,
+            'nom': client_model.name,
+            'note': client_model.note,
+            'email': client_model.email,
+            'telephone': client_model.contact,
+            'adresse': client_model.adresse,
+            'client_type': client_model.client_type_id.name if client_model.client_type_id else '-'
+        }
+
+        client_types = [
+            {
+                "id": client_type.id,
+                "type": client_type.name
+            } for client_type in ClientType.objects.all()
+        ]
+        return render(request, "commerce/clients/vue.html", {"client": client, "client_types": client_types})
+    else:
+        client_id = request.POST.get('id', None)
+
+        if not client_id:
+            return redirect('test_liste_clients')
+
+        client_model = Client.objects.filter(id=client_id).first()
+
+        if not client_model:
+            return redirect('test_liste_clients')
+
+        client = {
+            'id': request.POST.get('id', client_model.id),
+            'nom': request.POST.get('nom', client_model.name),
+            'note': request.POST.get('note', client_model.note),
+            'email': request.POST.get('email', client_model.email),
+            'contact': request.POST.get('telephone', client_model.contact),
+            'adresse': request.POST.get('adresse', client_model.adresse),
+            'client_type': request.POST.get('client_type', client_model.client_type_id.name if client_model.client_type_id else None),
+        }
+
+        # Check if client_type is valid
+        if not client['client_type']:
+            print("Client type is not provided or invalid.")
+            return redirect('client_form')
+
+        try:
+            client['client_type'] = ClientType.objects.get(
+                name=client['client_type'])
+        except ClientType.DoesNotExist:
+            print("Client type does not exist.")
+            return redirect('client_form')
+
+        # Update client
+        client_model.name = client['nom']
+        client_model.note = client['note']
+        client_model.email = client['email']
+        client_model.contact = client['contact']
+        client_model.adresse = client['adresse']
+        client_model.client_type_id = client['client_type']
+
+        client_model.save()
+        
+        return redirect('test_liste_clients')
 
 
 def client_form(request):
+    if request.method == "POST":
+        return client_create(request)
     client_types = [
-        {'id': 1, 'type': 'Particulier'},
-        {'id': 2, 'type': 'Professionnel'},
-        {'id': 3, 'type': 'Association'},
+        {
+            "id": client_type.id,
+            "type": client_type.name
+        } for client_type in ClientType.objects.all()
     ]
     return render(request, "commerce/clients/form.html", {"client_types": client_types})
+
+
+def client_create(request):
+    if request.method == "POST":
+        client = {
+            'name': request.POST.get('nom', ''),
+            'note': request.POST.get('note', ''),
+            'email': request.POST.get('email', ''),
+            'contact': request.POST.get('telephone', ''),
+            'adresse': request.POST.get('adresse', ''),
+            'client_type': request.POST.get('client_type', None),
+        }
+
+        # Check if client_type is valid
+        if not client['client_type']:
+            return redirect('client_form')
+        try:
+            client['client_type'] = ClientType.objects.get(
+                name=client['client_type'])
+        except ClientType.DoesNotExist:
+            return redirect('client_form')
+
+        Client.objects.create(
+            name=client['name'],
+            note=client['note'],
+            email=client['email'],
+            contact=client['contact'],
+            adresse=client['adresse'],
+            client_type_id=client['client_type']
+        )
+
+        pass
+    return redirect('test_liste_clients')
 
 
 def vente_vue(request):

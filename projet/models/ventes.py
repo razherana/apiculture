@@ -29,7 +29,7 @@ class Client(models.Model):
             return last_vente.created_at
         elif last_commande:
             return last_commande.created_at
-        return ''
+        return '-'
 
     class Meta:
         db_table = 'clients'
