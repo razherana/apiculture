@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from projet.models.productions import Recolte
+from projet.models.ressources import Ruche
 
 
 def recolte_list(request):
@@ -28,8 +29,8 @@ def recolte_detail(request, pk):
 
 
 def recolte_form(request):
-    ruches = [{'id': 1, 'description': 'Ruche A1 - Forêt'},
-              {'id': 2, 'description': 'Ruche B2 - Prairie'}]
+    rucheModel = Ruche.objects.all()
+    ruches = [{'id': ruche.id, 'description':ruche.description} for ruche in rucheModel]
     return render(request, 'production/recolte_form.html', {'ruches': ruches, 'page_title': 'Ajouter une Récolte'})
 
 
