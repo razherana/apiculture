@@ -1,5 +1,7 @@
 from django.shortcuts import render
 
+from projet.models.ventes import Client
+
 
 def list_miels_test(request):
     miels = [
@@ -12,11 +14,21 @@ def list_miels_test(request):
 
 
 def list_clients_test(request):
+    # clients = [
+    #     {'id': 1, 'nom': 'Dupont', 'email': 'dupont@mail.com',
+    #         'telephone': '0601020304', 'derniere_commande': '2025-06-18'},
+    #     {'id': 2, 'nom': 'Martin', 'email': 'martin@mail.com',
+    #         'telephone': '0605060708', 'derniere_commande': '2025-06-17'},
+    # ]
+    clientModels = Client.objects.all()
     clients = [
-        {'id': 1, 'nom': 'Dupont', 'email': 'dupont@mail.com',
-            'telephone': '0601020304', 'derniere_commande': '2025-06-18'},
-        {'id': 2, 'nom': 'Martin', 'email': 'martin@mail.com',
-            'telephone': '0605060708', 'derniere_commande': '2025-06-17'},
+        {
+            'id': client.id,
+            'nom': client.name,
+            'email': client.email,
+            'telephone': client.contact,
+            'derniere_commande': client.get_last_commande
+        } for client in clientModels
     ]
     return render(request, "commerce/clients/list.html", {"clients": clients})
 

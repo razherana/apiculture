@@ -19,6 +19,18 @@ class Client(models.Model):
     client_type_id = models.ForeignKey(
         ClientType, on_delete=models.CASCADE, related_name='clients')
 
+    @property
+    def get_last_commande(self) -> str:
+        last_commande = self.commandes.order_by('-created_at').first()
+        last_vente = self.ventes.order_by('-created_at').first()
+        if last_vente and last_commande:
+            return max(last_vente.created_at, last_commande.created_at)
+        elif last_vente:
+            return last_vente.created_at
+        elif last_commande:
+            return last_commande.created_at
+        return ''
+
     class Meta:
         db_table = 'clients'
 
