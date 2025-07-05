@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 from projet.models.productions import Recolte
 from projet.models.ressources import Ruche
 
@@ -23,29 +23,32 @@ def recolte_list(request):
 
 
 def recolte_detail(request, pk):
-    # recolte = {'id': pk, 'created_at': '2023-07-15', 'ruche': {'description': 'Ruche A1 - Forêt'},
-    #            'poids_miel': 25.5, 'qualite': 8, 'taux_humidite': 17.5, 'note': 'Miel très parfumé, récolte par temps sec.'}
     r = Recolte.objects.select_related('ruche').values(
-    'id', 'created_at', 'poids_miel', 'qualite', 'taux_humidite', 'ruche__description','note'
+        'id', 'created_at', 'poids_miel', 'qualite', 'taux_humidite', 'ruche__description', 'note'
     ).filter(id=pk).first()
 
     if r:
         recolte = {
-        'id': r.id,
-        'created_at': r.reated_at.strftime('%Y-%m-%d'),
-        'ruche': {'description': r.ruche__description},
-        'poids_miel': r.poids_miel,
-        'qualite': r.qualite,
-        'taux_humidite': r.taux_humidite,
-        'note':r.note
+            'id': r.id,
+            'created_at': r.reated_at.strftime('%Y-%m-%d'),
+            'ruche': {'description': r.ruche__description},
+            'poids_miel': r.poids_miel,
+            'qualite': r.qualite,
+            'taux_humidite': r.taux_humidite,
+            'note': r.note
         }
+    else:
+        return redirect('recolte_list')
 
     return render(request, 'production/recolte_detail.html', {'recolte': recolte, 'page_title': f'Détail Récolte #{pk}'})
 
 
 def recolte_form(request):
     rucheModel = Ruche.objects.all()
-    ruches = [{'id': ruche.id, 'description':ruche.description} for ruche in rucheModel]
+    ruches = [
+        {'id': ruche.id, 'description': ruche.description}
+        for ruche in rucheModel
+    ]
     return render(request, 'production/recolte_form.html', {'ruches': ruches, 'page_title': 'Ajouter une Récolte'})
 
 
