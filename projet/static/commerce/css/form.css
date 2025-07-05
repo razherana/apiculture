@@ -48,6 +48,7 @@
 }
 
 .form-card input[type="text"],
+.form-card input[type="email"],
 .form-card input[type="number"],
 .form-card input[type="date"],
 .form-card select,
