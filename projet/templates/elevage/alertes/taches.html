@@ -1,0 +1,292 @@
+{% extends "base_elevage.html" %}
+{% load static %}
+
+{% block title %}Alertes de tâches{% endblock %}
+{% block page_title %}Alertes de tâches{% endblock %}
+
+{% block content %}
+<div class="elevage-content">
+    <h2>Alertes et rappels de tâches</h2>
+    
+    <div class="info-cards">
+        <div class="info-card">
+            <div class="info-card-header">
+                <div class="info-card-icon">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div class="info-card-title">Tâches urgentes</div>
+            </div>
+            <div class="info-card-value">{{ tasks_urgent_count }}</div>
+            <div class="info-card-subtitle">à effectuer dans les 48h</div>
+        </div>
+        
+        <div class="info-card">
+            <div class="info-card-header">
+                <div class="info-card-icon">
+                    <i class="fas fa-calendar-day"></i>
+                </div>
+                <div class="info-card-title">Cette semaine</div>
+            </div>
+            <div class="info-card-value">{{ tasks_this_week }}</div>
+            <div class="info-card-subtitle">tâches planifiées</div>
+        </div>
+        
+        <div class="info-card">
+            <div class="info-card-header">
+                <div class="info-card-icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="info-card-title">En retard</div>
+            </div>
+            <div class="info-card-value">{{ tasks_overdue }}</div>
+            <div class="info-card-subtitle">tâches non effectuées</div>
+        </div>
+        
+        <div class="info-card">
+            <div class="info-card-header">
+                <div class="info-card-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="info-card-title">Accomplies</div>
+            </div>
+            <div class="info-card-value">{{ tasks_completed_this_month }}</div>
+            <div class="info-card-subtitle">ce mois-ci</div>
+        </div>
+    </div>
+    
+    <!-- Tâches urgentes -->
+    <div class="elevage-card">
+        <h3 style="color: var(--honey-primary); margin-bottom: 1rem;">
+            <i class="fas fa-exclamation-triangle"></i> Tâches urgentes
+        </h3>
+        
+        {% if urgent_tasks %}
+            {% for task in urgent_tasks %}
+                <div class="alert-card high">
+                    <div class="alert-icon high">
+                        {% if task.type == 'visite' %}
+                            <i class="fas fa-eye"></i>
+                        {% elif task.type == 'traitement' %}
+                            <i class="fas fa-medkit"></i>
+                        {% elif task.type == 'recolte' %}
+                            <i class="fas fa-honey-pot"></i>
+                        {% else %}
+                            <i class="fas fa-tasks"></i>
+                        {% endif %}
+                    </div>
+                    <div class="alert-content">
+                        <div class="alert-title">
+                            {{ task.type|title }} - {{ task.rucher.nom }}
+                            {% if task.ruche %}
+                                - Ruche {{ task.ruche.nom }}
+                            {% endif %}
+                        </div>
+                        <div class="alert-message">{{ task.description }}</div>
+                        <div style="margin-top: 0.5rem; font-size: 0.8rem; color: var(--text-secondary);">
+                            <i class="fas fa-calendar-alt"></i> Prévue le {{ task.date_prevue }}
+                            {% if task.days_remaining < 0 %}
+                                <span class="tag tag-danger">En retard de {{ task.days_remaining|abs }} jour(s)</span>
+                            {% elif task.days_remaining == 0 %}
+                                <span class="tag tag-danger">Aujourd'hui</span>
+                            {% else %}
+                                <span class="tag tag-warning">Dans {{ task.days_remaining }} jour(s)</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="alert-actions">
+                        <a href="{% url 'tache_edit' id=task.id %}" class="btn btn-secondary">
+                            <i class="fas fa-edit"></i> Modifier
+                        </a>
+                        <a href="{% url 'tache_complete' id=task.id %}" class="btn btn-primary">
+                            <i class="fas fa-check"></i> Marquer comme terminée
+                        </a>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p class="text-center">Aucune tâche urgente en attente.</p>
+        {% endif %}
+    </div>
+    
+    <!-- Tâches de cette semaine -->
+    <div class="elevage-card">
+        <h3 style="color: var(--honey-primary); margin-bottom: 1rem;">
+            <i class="fas fa-calendar-week"></i> Tâches cette semaine
+        </h3>
+        
+        {% if weekly_tasks %}
+            <div class="table-container">
+                <table class="elevage-table">
+                    <thead>
+                        <tr>
+                            <th width="15%">Date</th>
+                            <th width="10%">Priorité</th>
+                            <th width="15%">Type</th>
+                            <th width="15%">Rucher</th>
+                            <th width="25%">Description</th>
+                            <th width="20%" class="actions-column">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for task in weekly_tasks %}
+                            <tr>
+                                <td>{{ task.date_prevue }}</td>
+                                <td>
+                                    {% if task.priorite == 'urgent' %}
+                                        <span class="tag tag-danger">Urgent</span>
+                                    {% elif task.priorite == 'normal' %}
+                                        <span class="tag tag-warning">Normal</span>
+                                    {% else %}
+                                        <span class="tag tag-info">Faible</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if task.type == 'visite' %}
+                                        <i class="fas fa-eye"></i> Visite
+                                    {% elif task.type == 'traitement' %}
+                                        <i class="fas fa-medkit"></i> Traitement
+                                    {% elif task.type == 'recolte' %}
+                                        <i class="fas fa-honey-pot"></i> Récolte
+                                    {% else %}
+                                        <i class="fas fa-tasks"></i> {{ task.type|title }}
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {{ task.rucher.nom }}
+                                    {% if task.ruche %}
+                                        - {{ task.ruche.nom }}
+                                    {% endif %}
+                                </td>
+                                <td class="cell-expand">{{ task.description }}</td>
+                                <td>
+                                    <a href="{% url 'tache_edit' id=task.id %}" class="btn btn-secondary">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="{% url 'tache_complete' id=task.id %}" class="btn btn-primary">
+                                        <i class="fas fa-check"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="text-center">Aucune tâche planifiée pour cette semaine.</p>
+        {% endif %}
+    </div>
+    
+    <!-- Tâches en retard -->
+    <div class="elevage-card">
+        <h3 style="color: var(--honey-primary); margin-bottom: 1rem;">
+            <i class="fas fa-exclamation-circle"></i> Tâches en retard
+        </h3>
+        
+        {% if overdue_tasks %}
+            {% for task in overdue_tasks %}
+                <div class="alert-card medium">
+                    <div class="alert-icon medium">
+                        {% if task.type == 'visite' %}
+                            <i class="fas fa-eye"></i>
+                        {% elif task.type == 'traitement' %}
+                            <i class="fas fa-medkit"></i>
+                        {% elif task.type == 'recolte' %}
+                            <i class="fas fa-honey-pot"></i>
+                        {% else %}
+                            <i class="fas fa-tasks"></i>
+                        {% endif %}
+                    </div>
+                    <div class="alert-content">
+                        <div class="alert-title">
+                            {{ task.type|title }} - {{ task.rucher.nom }}
+                            {% if task.ruche %}
+                                - Ruche {{ task.ruche.nom }}
+                            {% endif %}
+                        </div>
+                        <div class="alert-message">{{ task.description }}</div>
+                        <div style="margin-top: 0.5rem; font-size: 0.8rem; color: var(--text-secondary);">
+                            <i class="fas fa-calendar-alt"></i> Prévue le {{ task.date_prevue }}
+                            <span class="tag tag-danger">En retard de {{ task.days_remaining|abs }} jour(s)</span>
+                        </div>
+                    </div>
+                    <div class="alert-actions">
+                        <a href="{% url 'tache_edit' id=task.id %}" class="btn btn-secondary">
+                            <i class="fas fa-edit"></i> Reprogrammer
+                        </a>
+                        <a href="{% url 'tache_complete' id=task.id %}" class="btn btn-primary">
+                            <i class="fas fa-check"></i> Marquer comme terminée
+                        </a>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p class="text-center">Aucune tâche en retard. Excellent travail !</p>
+        {% endif %}
+    </div>
+    
+    <!-- Alertes système -->
+    <div class="elevage-card">
+        <h3 style="color: var(--honey-primary); margin-bottom: 1rem;">
+            <i class="fas fa-robot"></i> Alertes système automatiques
+        </h3>
+        
+        {% if system_alerts %}
+            {% for alert in system_alerts %}
+                <div class="alert-card {{ alert.level }}">
+                    <div class="alert-icon {{ alert.level }}">
+                        <i class="fas fa-{{ alert.icon }}"></i>
+                    </div>
+                    <div class="alert-content">
+                        <div class="alert-title">{{ alert.title }}</div>
+                        <div class="alert-message">{{ alert.message }}</div>
+                        <div style="margin-top: 0.5rem; font-size: 0.8rem; color: var(--text-secondary);">
+                            <i class="fas fa-calendar-alt"></i> Générée le {{ alert.created_at }}
+                        </div>
+                    </div>
+                    <div class="alert-actions">
+                        {% if alert.task_suggestion %}
+                            <a href="{% url 'tache_create_from_alert' id=alert.id %}" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Créer une tâche
+                            </a>
+                        {% endif %}
+                        <button class="btn btn-secondary dismiss-alert" data-id="{{ alert.id }}">
+                            <i class="fas fa-check"></i> Ignorer
+                        </button>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p class="text-center">Aucune alerte système active.</p>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Dismiss alert functionality
+    const dismissButtons = document.querySelectorAll('.dismiss-alert');
+    dismissButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const alertId = this.getAttribute('data-id');
+            const alertCard = this.closest('.alert-card');
+            
+            // Send request to dismiss alert
+            fetch(`/api/dismiss-alert/${alertId}/`, { method: 'POST' })
+                .then(response => {
+                    if (response.ok) {
+                        // Remove the alert card with animation
+                        alertCard.style.opacity = '0';
+                        alertCard.style.transform = 'translateX(100px)';
+                        setTimeout(() => {
+                            alertCard.remove();
+                        }, 300);
+                    } else {
+                        console.error('Failed to dismiss alert');
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+        });
+    });
+});
+</script>
+{% endblock %}

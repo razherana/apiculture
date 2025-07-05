@@ -1,6 +1,6 @@
 from django.shortcuts import render
 
-def list_miels_test(request):
+def list_miels_test(request): 
     miels = [
         {'id': 1, 'type': 'Fleurs','conteneur': 'Petit bocaux', 'stock': 40, 'prix': 8.5},
         {'id': 2, 'type': 'Acacia','conteneur': 'Grands Pots en verre', 'stock': 25, 'prix': 10.0},

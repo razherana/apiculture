@@ -1,0 +1,364 @@
+/**
+ * BeeNova Production & Gestion CSS
+ * Styles unifiés pour les modules de récolte, statistiques, maintenance, etc.
+ * Inspirés par le style du module d'élevage.
+ */
+
+/* 
+ * NOTE: Ce fichier suppose que les variables CSS (--glass-bg, --honey-primary, etc.)
+ * sont définies dans un fichier de base comme 'beenova.css' qui est chargé avant celui-ci.
+ */
+@import url('../../css/beenova.css');
+
+
+/* --- Styles Généraux & Carte Principale --- */
+
+/* --- Styles pour le Header --- */
+
+.page-header {
+    margin-bottom: 2rem;
+    padding: 1.5rem 0;
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+}
+
+.header-content h1 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--honey-primary);
+    margin: 0;
+    background: var(--gradient-honey);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+/* Responsive pour mobile */
+@media (max-width: 768px) {
+    .header-content {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    
+    .header-content h1 {
+        font-size: 1.5rem;
+    }
+    
+    .header-actions {
+        width: 100%;
+        justify-content: flex-start;
+    }
+}
+
+.card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    padding: 1.5rem 2rem;
+    border: 1px solid var(--glass-border);
+    transition: all var(--transition-medium);
+    position: relative;
+    overflow: hidden;
+    color: var(--text-primary);
+    margin-bottom: 1.5rem; /* Espace par défaut entre les cartes */
+}
+.card:last-child {
+    margin-bottom: 0;
+}
+
+.card:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-5px);
+}
+
+.card-header {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--honey-primary);
+    padding-bottom: 1rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid var(--glass-border);
+}
+
+
+/* --- Cartes de Statistiques (Dashboard, Rentabilité, Mortalité) --- */
+
+/* Style pour les grilles de cartes de stats */
+div[style*="grid"] {
+    margin-bottom: 1.5rem;
+}
+
+div[style*="grid"] > .card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 1.5rem;
+    margin-bottom: 0; /* Géré par le gap de la grille */
+}
+
+div[style*="grid"] > .card .card-header {
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.75rem;
+    font-size: 1rem;
+    width: 100%;
+    text-align: center;
+}
+
+div[style*="grid"] > .card p {
+    font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+    background: var(--gradient-honey);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    margin: 0;
+    line-height: 1.1;
+}
+
+/* Couleurs spécifiques pour les stats de rentabilité & mortalité */
+div[style*="grid"] > .card p[style*="color: green"] {
+    background: var(--gradient-pollen); /* Assumant une variable pour le vert */
+    -webkit-background-clip: text;
+}
+div[style*="grid"] > .card p[style*="color: red"],
+div[style*="grid"] > .card p[style*="color: #c00"] {
+    background: var(--gradient-queen); /* Assumant une variable pour le rouge */
+    -webkit-background-clip: text;
+}
+
+
+/* --- Tableaux (Historique, Matériel, Stock) --- */
+
+.table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: var(--honey-primary) transparent;
+}
+.table-wrapper::-webkit-scrollbar { height: 8px; }
+.table-wrapper::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.1); border-radius: 4px; }
+.table-wrapper::-webkit-scrollbar-thumb { background-color: var(--honey-primary); border-radius: 4px; }
+
+.table-wrapper table {
+    width: 100%;
+    min-width: 700px;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 0.95rem;
+}
+
+.table-wrapper thead th {
+    font-weight: 600;
+    color: var(--honey-primary);
+    background: var(--glass-bg);
+    padding: 1rem 1.2rem;
+    border-bottom: 2px solid var(--glass-border);
+    text-align: left;
+    position: sticky; top: 0; z-index: 10;
+    white-space: nowrap;
+}
+
+.table-wrapper tbody tr {
+    transition: background-color var(--transition-fast);
+}
+.table-wrapper tbody tr:hover {
+    background-color: rgba(255, 209, 0, 0.1);
+}
+
+.table-wrapper tbody td {
+    padding: 1rem 1.2rem;
+    vertical-align: middle;
+    border-bottom: 1px solid var(--glass-border);
+    white-space: nowrap;
+}
+.table-wrapper tbody tr:last-child td { border-bottom: none; }
+
+/* Styles pour les statuts dans stock_consommables.html */
+tr.status-alerte { border-left: 3px solid var(--honey-primary); }
+tr.status-critique { border-left: 3px solid var(--queen-red); }
+tr.status-alerte td, tr.status-critique td { font-weight: 500; }
+tr.status-alerte td:last-child { color: var(--honey-primary); }
+tr.status-critique td:last-child { color: var(--queen-red); }
+
+
+/* --- Formulaires (Récolte, Matériel) --- */
+
+.form-group {
+    margin-bottom: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+.form-group label {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--honey-primary);
+}
+.form-group input, .form-group select, .form-group textarea {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-md);
+    background: var(--glass-bg);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--glass-border);
+    color: var(--text-primary);
+    font-size: 1rem;
+    transition: all var(--transition-fast);
+    box-sizing: border-box;
+}
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+    outline: none;
+    border-color: var(--honey-primary);
+    box-shadow: 0 0 0 3px rgba(255, 209, 0, 0.2);
+}
+.form-group textarea { min-height: 120px; resize: vertical; }
+
+
+/* --- Alertes (alertes.html) --- */
+
+.alert {
+    padding: 1rem 1.5rem;
+    margin-bottom: 1rem;
+    border-radius: var(--radius-md);
+    border: 1px solid transparent;
+    border-left-width: 4px;
+    font-weight: 500;
+}
+.alert:last-child { margin-bottom: 0; }
+
+.alert-warning { /* Pour les alertes de niveau "warning" */
+    background-color: rgba(255, 209, 0, 0.1);
+    border-color: var(--honey-primary);
+    color: var(--honey-primary);
+}
+
+.alert-danger { /* Pour les alertes de niveau "danger" */
+    background-color: rgba(255, 51, 102, 0.1);
+    border-color: var(--queen-red);
+    color: var(--queen-red);
+}
+
+.alert-info { /* Pour les alertes de niveau "info" */
+    background-color: rgba(0, 136, 255, 0.1);
+    border-color: var(--nectar-blue);
+    color: var(--nectar-blue);
+}
+
+
+/* --- Planning de Maintenance --- */
+
+/* La carte principale a un margin-bottom. On cible la carte enfant. */
+.card .card {
+    margin-bottom: 1rem;
+    padding: 1rem 1.5rem;
+    box-shadow: none;
+    background: rgba(0,0,0,0.1); /* Légèrement plus sombre pour le contraste */
+}
+.card .card:hover {
+    transform: none;
+    box-shadow: var(--shadow-md);
+}
+
+.card .card p {
+    margin: 0 0 0.5rem 0;
+    line-height: 1.6;
+}
+.card .card p strong {
+    color: var(--text-primary);
+    min-width: 120px;
+    display: inline-block;
+}
+.card .card p:last-child { margin-bottom: 0; }
+
+.card .card span[style*="color: orange"] {
+    color: var(--honey-primary) !important;
+    font-weight: 700;
+}
+.card .card span[style*="color: green"] {
+    color: var(--pollen-green) !important;
+    font-weight: 700;
+}
+
+/* --- Graphiques --- */
+.card canvas {
+    max-width: 100%;
+}
+
+
+/* --- Boutons --- */
+
+.btn {
+    display: inline-flex;
+    align-items: center; justify-content: center;
+    gap: 0.5rem; padding: 0.7rem 1.4rem;
+    border-radius: var(--radius-md); font-size: 0.9rem;
+    font-weight: 600; text-decoration: none;
+    cursor: pointer; border: 1px solid transparent;
+    transition: all var(--transition-medium);
+}
+
+form .btn {
+    width: 100%; margin-top: 1rem;
+    background: var(--honey-primary); color: var(--hive-black);
+    border-color: var(--honey-primary);
+}
+form .btn:hover {
+    background: var(--honey-dark); border-color: var(--honey-dark);
+    transform: translateY(-2px); box-shadow: var(--shadow-honey);
+}
+
+a.btn {
+    background: var(--glass-bg); backdrop-filter: blur(10px);
+    color: var(--honey-primary); border: 1px solid var(--honey-primary);
+}
+a.btn:hover {
+    background: var(--honey-primary); color: var(--hive-black);
+}
+
+.btn-sm { padding: 0.4rem 0.8rem; font-size: 0.8rem; }
+
+
+/* --- Ajustements Mode Sombre/Clair --- */
+
+:root:not(.light-mode) .card { background: rgba(24, 24, 24, 0.9); }
+:root:not(.light-mode) .table-wrapper tbody tr { background: rgba(34, 34, 34, 0.7); }
+:root:not(.light-mode) .form-group input,
+:root:not(.light-mode) .form-group select,
+:root:not(.light-mode) .form-group textarea {
+    background-color: rgba(34, 34, 34, 0.8);
+    border-color: rgba(255, 209, 0, 0.2);
+}
+
+:root.light-mode .card {
+    background: rgba(255, 255, 255, 0.9);
+    border-color: rgba(0, 0, 0, 0.08);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+:root.light-mode .table-wrapper tbody tr { background: rgba(255, 255, 255, 0.7); }
+:root.light-mode .card p, :root.light-mode .table-wrapper tbody td { color: #555; }
+:root.light-mode .card p strong { color: #111; }
+
+:root.light-mode div[style*="grid"] > .card p {
+    background: none; -webkit-background-clip: initial;
+    background-clip: initial; color: #222;
+}
+:root.light-mode div[style*="grid"] > .card p[style*="color: green"] { color: #16a34a; }
+:root.light-mode div[style*="grid"] > .card p[style*="color: red"],
+:root.light-mode div[style*="grid"] > .card p[style*="color: #c00"] { color: #dc2626; }

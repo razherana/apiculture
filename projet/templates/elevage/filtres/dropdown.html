@@ -1,0 +1,237 @@
+{% extends "base_elevage.html" %}
+{% load static %}
+
+{% block title %}Listes déroulantes dynamiques{% endblock %}
+{% block page_title %}Listes déroulantes dynamiques{% endblock %}
+
+{% block content %}
+<div class="elevage-content">
+    <h2>Listes déroulantes dynamiques</h2>
+    
+    <div class="elevage-card">
+        <h3 style="color: var(--honey-primary); margin-bottom: 1rem;">
+            <i class="fas fa-filter"></i> Exemple de filtres dépendants
+        </h3>
+        
+        <p>Ce composant permet de créer des listes déroulantes qui se mettent à jour dynamiquement en fonction d'autres sélections.</p>
+        
+        <div class="form-container" style="margin-top: 2rem;">
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" for="rucher-select">Rucher</label>
+                    <select id="rucher-select" class="form-select">
+                        <option value="">Tous les ruchers</option>
+                        {% for rucher in ruchers %}
+                            <option value="{{ rucher.id }}">{{ rucher.nom }} ({{ rucher.emplacement }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="ruche-select">Ruche</label>
+                    <select id="ruche-select" class="form-select" disabled>
+                        <option value="">Sélectionnez d'abord un rucher</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="elevage-card">
+        <h3 style="color: var(--honey-primary); margin-bottom: 1rem;">
+            <i class="fas fa-code"></i> Code de référence
+        </h3>
+        
+        <p>Voici le code JavaScript pour implémenter des listes déroulantes dynamiques :</p>
+        
+        <div class="code-container" style="background: #1e1e1e; padding: 1rem; border-radius: var(--radius-md); overflow: auto; margin-top: 1rem;">
+            <pre style="color: #f8f8f2; margin: 0; font-family: monospace;">
+document.addEventListener('DOMContentLoaded', function() {
+    // Récupérer les éléments
+    const rucherSelect = document.getElementById('rucher-select');
+    const rucheSelect = document.getElementById('ruche-select');
+    
+    // Données des ruches (à remplacer par un appel API dans une application réelle)
+    const ruches = {{ ruches|safe }};
+    
+    // Fonction pour mettre à jour la liste des ruches
+    function updateRucheSelect(rucherId) {
+        // Vider la liste actuelle
+        rucheSelect.innerHTML = '';
+        
+        if (!rucherId) {
+            // Si aucun rucher n'est sélectionné
+            rucheSelect.innerHTML = '&lt;option value=""&gt;Sélectionnez d\'abord un rucher&lt;/option&gt;';
+            rucheSelect.disabled = true;
+            return;
+        }
+        
+        // Filtrer les ruches par rucher
+        const ruchesFiltered = ruches.filter(ruche => ruche.localisation === 
+            ruchers.find(r => r.id == rucherId)?.emplacement);
+        
+        // Option par défaut
+        rucheSelect.innerHTML = '&lt;option value=""&gt;Toutes les ruches&lt;/option&gt;';
+        
+        // Ajouter les options filtrées
+        ruchesFiltered.forEach(ruche => {
+            const option = document.createElement('option');
+            option.value = ruche.id;
+            option.textContent = ruche.nom;
+            rucheSelect.appendChild(option);
+        });
+        
+        // Activer le select
+        rucheSelect.disabled = false;
+    }
+    
+    // Écouter les changements sur le select de rucher
+    rucherSelect.addEventListener('change', function() {
+        updateRucheSelect(this.value);
+    });
+});
+            </pre>
+        </div>
+    </div>
+    
+    <div class="elevage-card">
+        <h3 style="color: var(--honey-primary); margin-bottom: 1rem;">
+            <i class="fas fa-layer-group"></i> Exemple d'utilisation avancée
+        </h3>
+        
+        <p>Cet exemple montre comment connecter plusieurs niveaux de filtres dépendants.</p>
+        
+        <div class="form-container" style="margin-top: 2rem;">
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" for="type-ruche-select">Type de ruche</label>
+                    <select id="type-ruche-select" class="form-select">
+                        <option value="">Tous les types</option>
+                        <option value="Dadant">Dadant</option>
+                        <option value="Langstroth">Langstroth</option>
+                        <option value="Warré">Warré</option>
+                        <option value="Voirnot">Voirnot</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="statut-ruche-select">Statut</label>
+                    <select id="statut-ruche-select" class="form-select">
+                        <option value="">Tous les statuts</option>
+                        <option value="Active">Active</option>
+                        <option value="Faible">Faible</option>
+                        <option value="Orpheline">Orpheline</option>
+                        <option value="Malade">Malade</option>
+                        <option value="Inactive">Inactive</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="ruches-filtrees-select">Ruches filtrées</label>
+                    <select id="ruches-filtrees-select" class="form-select">
+                        <option value="">Chargement des ruches...</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Récupérer les éléments pour le premier exemple
+    const rucherSelect = document.getElementById('rucher-select');
+    const rucheSelect = document.getElementById('ruche-select');
+    
+    // Récupérer les éléments pour le deuxième exemple
+    const typeRucheSelect = document.getElementById('type-ruche-select');
+    const statutRucheSelect = document.getElementById('statut-ruche-select');
+    const ruchesFiltreesSelect = document.getElementById('ruches-filtrees-select');
+    
+    // Données des ruchers et ruches
+    const ruchers = {{ ruchers|safe }};
+    const ruches = {{ ruches|safe }};
+    
+    // Fonction pour mettre à jour la liste des ruches (premier exemple)
+    function updateRucheSelect(rucherId) {
+        // Vider la liste actuelle
+        rucheSelect.innerHTML = '';
+        
+        if (!rucherId) {
+            // Si aucun rucher n'est sélectionné
+            rucheSelect.innerHTML = '<option value="">Sélectionnez d\'abord un rucher</option>';
+            rucheSelect.disabled = true;
+            return;
+        }
+        
+        // Filtrer les ruches par rucher
+        const rucherSelectionne = ruchers.find(r => r.id == rucherId);
+        const ruchesFiltered = ruches.filter(ruche => ruche.localisation === rucherSelectionne.emplacement);
+        
+        // Option par défaut
+        rucheSelect.innerHTML = '<option value="">Toutes les ruches</option>';
+        
+        // Ajouter les options filtrées
+        ruchesFiltered.forEach(ruche => {
+            const option = document.createElement('option');
+            option.value = ruche.id;
+            option.textContent = ruche.nom;
+            rucheSelect.appendChild(option);
+        });
+        
+        // Activer le select
+        rucheSelect.disabled = false;
+    }
+    
+    // Fonction pour mettre à jour la liste des ruches filtrées (deuxième exemple)
+    function updateRuchesFiltrees() {
+        const typeValue = typeRucheSelect.value;
+        const statutValue = statutRucheSelect.value;
+        
+        // Filtrer les ruches selon les critères sélectionnés
+        let ruchesFiltered = ruches;
+        
+        if (typeValue) {
+            ruchesFiltered = ruchesFiltered.filter(ruche => ruche.type === typeValue);
+        }
+        
+        if (statutValue) {
+            ruchesFiltered = ruchesFiltered.filter(ruche => ruche.statut === statutValue);
+        }
+        
+        // Mettre à jour le select
+        ruchesFiltreesSelect.innerHTML = '';
+        
+        if (ruchesFiltered.length === 0) {
+            const option = document.createElement('option');
+            option.value = '';
+            option.textContent = 'Aucune ruche ne correspond aux critères';
+            ruchesFiltreesSelect.appendChild(option);
+        } else {
+            const defaultOption = document.createElement('option');
+            defaultOption.value = '';
+            defaultOption.textContent = `${ruchesFiltered.length} ruche(s) trouvée(s)`;
+            ruchesFiltreesSelect.appendChild(defaultOption);
+            
+            ruchesFiltered.forEach(ruche => {
+                const option = document.createElement('option');
+                option.value = ruche.id;
+                option.textContent = `${ruche.nom} (${ruche.type}, ${ruche.statut})`;
+                ruchesFiltreesSelect.appendChild(option);
+            });
+        }
+    }
+    
+    // Écouter les changements sur les selects
+    rucherSelect.addEventListener('change', function() {
+        updateRucheSelect(this.value);
+    });
+    
+    typeRucheSelect.addEventListener('change', updateRuchesFiltrees);
+    statutRucheSelect.addEventListener('change', updateRuchesFiltrees);
+    
+    // Initialiser les listes
+    updateRuchesFiltrees();
+});
+</script>
+{% endblock %}

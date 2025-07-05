@@ -1,0 +1,38 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Production{% endblock %} - Apiculture Manager</title>
+    <link rel="stylesheet" href="{% static 'production/css/style.css' %}">
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <div class="layout">
+        <nav class="sidebar">
+            <a href="{% url 'dashboard_stats' %}" class="sidebar-title">Production</a>
+            <div class="sidebar-nav">
+                <a href="{% url 'dashboard_stats' %}" class="sidebar-btn">Dashboard</a>
+                <a href="{% url 'recolte_list' %}" class="sidebar-btn">Récoltes</a>
+                <a href="{% url 'materiel_list' %}" class="sidebar-btn">Matériels</a>
+                <a href="{% url 'stock_consommables' %}" class="sidebar-btn">Stocks</a>
+                <a href="{% url 'alertes_penurie' %}" class="sidebar-btn">Alertes</a>
+            </div>
+        </nav>
+        <main class="main-content">
+            <header class="page-header">
+                <h1>{% block page_header %}{{ page_title|default:"Page" }}{% endblock %}</h1>
+                <div>
+                    {% block page_actions %}{% endblock %}
+                </div>
+            </header>
+            <section class="main-section">
+                {% block content %}{% endblock %}
+            </section>
+        </main>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

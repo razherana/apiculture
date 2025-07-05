@@ -18,28 +18,30 @@
         </form>
     </div>
     <div class="table-card">
-        <table>
-            <thead>
-                <tr>
-                    <th>Mouvement</th>
-                    <th>Vers/Depuis</th>
-                    <th>Nombre</th>
-                    <th>Date</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for miel in miels %}
-                <tr {% if miel.stock_actuel <= miel.seuil_alerte %} style="background:#ffd6d6;" {% endif %}>
-                    <td>{{ miel.type }}</td>
-                    <td>{{ miel.source }}</td>
-                    <td>{{ miel.nombre }}</td>
-                    <td>{{ miel.date }}</td>
-                </tr>
-                {% empty %}
-                <tr><td colspan="9">Aucun miel en stock.</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div class="table-scroll-container">
+            <table class="commerce-table">
+                <thead>
+                    <tr>
+                        <th>Mouvement</th>
+                        <th>Vers/Depuis</th>
+                        <th>Nombre</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for miel in miels %}
+                    <tr {% if miel.stock_actuel <= miel.seuil_alerte %} style="background:#ffd6d6;" {% endif %}>
+                        <td>{{ miel.type }}</td>
+                        <td>{{ miel.source }}</td>
+                        <td>{{ miel.nombre }}</td>
+                        <td>{{ miel.date }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4">Aucun miel en stock.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 {% endblock %}

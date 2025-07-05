@@ -1,0 +1,230 @@
+{% extends "base_elevage.html" %}
+{% load static %}
+
+{% block title %}Tableau de bord des colonies{% endblock %}
+{% block page_title %}Tableau de bord des colonies{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="elevage-content">
+    <div class="info-cards">
+        <div class="info-card">
+            <div class="info-card-header">
+                <div class="info-card-icon">
+                    <i class="fas fa-boxes-stacked"></i>
+                </div>
+                <span class="info-card-title">Ruches</span>
+            </div>
+            <div class="info-card-value">{{ stats.nb_ruches }}</div>
+            <div class="info-card-subtitle">Total des ruches actives</div>
+        </div>
+        
+        <div class="info-card">
+            <div class="info-card-header">
+                <div class="info-card-icon">
+                    <i class="fas fa-crown"></i>
+                </div>
+                <span class="info-card-title">Reines</span>
+            </div>
+            <div class="info-card-value">{{ stats.nb_reines }}</div>
+            <div class="info-card-subtitle">Total des reines</div>
+        </div>
+        
+        <div class="info-card">
+            <div class="info-card-header">
+                <div class="info-card-icon">
+                    <i class="fas fa-triangle-exclamation"></i>
+                </div>
+                <span class="info-card-title">Alertes</span>
+            </div>
+            <div class="info-card-value">{{ stats.nb_alertes }}</div>
+            <div class="info-card-subtitle">Problèmes à résoudre</div>
+        </div>
+        
+        <div class="info-card">
+            <div class="info-card-header">
+                <div class="info-card-icon">
+                    <i class="fas fa-jar"></i>
+                </div>
+                <span class="info-card-title">Production</span>
+            </div>
+            <div class="info-card-value">{{ stats.production_moyenne }} kg</div>
+            <div class="info-card-subtitle">Production moyenne</div>
+        </div>
+    </div>
+    
+    <div class="elevage-card">
+        <h3>Production de miel</h3>
+        <div class="chart-container">
+            <canvas id="productionChart" width="800" height="300"></canvas>
+        </div>
+    </div>
+    
+    <div class="status-cards">
+        <div class="elevage-card healthy">
+            <h3>Ruches par statut</h3>
+            <div class="chart-container" style="height: 250px;">
+                <canvas id="statusChart" width="400" height="250"></canvas>
+            </div>
+        </div>
+        
+        <div class="elevage-card">
+            <h3>Types de ruches</h3>
+            <div class="chart-container" style="height: 250px;">
+                <canvas id="typesChart" width="400" height="250"></canvas>
+            </div>
+        </div>
+        
+        <div class="elevage-card">
+            <h3>Races d'abeilles</h3>
+            <div class="chart-container" style="height: 250px;">
+                <canvas id="racesChart" width="400" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="elevage-card">
+        <h3>Alertes récentes</h3>
+        {% for alerte in alertes %}
+            {% if alerte.status == 'En cours' %}
+                <div class="alert-card {{ alerte.niveau }}">
+                    <div class="alert-icon {{ alerte.niveau }}">
+                        <i class="fas fa-exclamation-circle"></i>
+                    </div>
+                    <div class="alert-content">
+                        <div class="alert-title">{{ alerte.type }} - Ruche #{{ alerte.ruche_id }}</div>
+                        <div class="alert-message">{{ alerte.description }}</div>
+                    </div>
+                    <div class="alert-actions">
+                        <a href="#" class="btn btn-secondary">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
+        {% empty %}
+            <p>Aucune alerte active.</p>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Graphique de production
+        const ctxProduction = document.getElementById('productionChart').getContext('2d');
+        new Chart(ctxProduction, {
+            type: 'line',
+            data: {
+                labels: {{ stats.production.dates|safe }},
+                datasets: [{
+                    label: 'Production totale (kg)',
+                    data: {{ stats.production.values|safe }},
+                    borderColor: '#FFD100',
+                    backgroundColor: 'rgba(255, 209, 0, 0.1)',
+                    tension: 0.3,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Production (kg)'
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Graphique de statuts
+        const ctxStatus = document.getElementById('statusChart').getContext('2d');
+        new Chart(ctxStatus, {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys({{ stats.statuts|safe }}),
+                datasets: [{
+                    data: Object.values({{ stats.statuts|safe }}),
+                    backgroundColor: [
+                        '#00CC88', // Active
+                        '#FFD100', // Faible
+                        '#FFD100', // Orpheline
+                        '#FF3366', // Malade
+                        '#444444'  // Inactive
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right'
+                    }
+                }
+            }
+        });
+        
+        // Graphique de types
+        const ctxTypes = document.getElementById('typesChart').getContext('2d');
+        new Chart(ctxTypes, {
+            type: 'bar',
+            data: {
+                labels: Object.keys({{ stats.types|safe }}),
+                datasets: [{
+                    label: 'Nombre de ruches',
+                    data: Object.values({{ stats.types|safe }}),
+                    backgroundColor: 'rgba(255, 209, 0, 0.7)'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            precision: 0
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Graphique de races
+        const ctxRaces = document.getElementById('racesChart').getContext('2d');
+        new Chart(ctxRaces, {
+            type: 'pie',
+            data: {
+                labels: Object.keys({{ stats.races|safe }}),
+                datasets: [{
+                    data: Object.values({{ stats.races|safe }}),
+                    backgroundColor: [
+                        'rgba(255, 209, 0, 0.7)',
+                        'rgba(0, 136, 255, 0.7)',
+                        'rgba(0, 204, 136, 0.7)',
+                        'rgba(255, 51, 102, 0.7)',
+                        'rgba(138, 51, 255, 0.7)'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right'
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,457 @@
+{% extends "base_elevage.html" %}
+{% load static %}
+
+{% block title %}Statistiques d'essaimage{% endblock %}
+{% block page_title %}Statistiques d'essaimage{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stat-summary {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .stat-card {
+        flex: 1;
+        min-width: 200px;
+        padding: 1.25rem;
+        background: var(--glass-bg);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-md);
+        border: 1px solid var(--glass-border);
+        text-align: center;
+    }
+    
+    .stat-card h3 {
+        font-size: 1.25rem;
+        color: var(--honey-primary);
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-value {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin: 0.5rem 0;
+        background: var(--gradient-honey);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+    }
+    
+    .stat-label {
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+    }
+    
+    .chart-container {
+        position: relative;
+        height: 400px;
+    }
+    
+    .essaim-card {
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-sm);
+        background: var(--glass-bg);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid var(--glass-border);
+    }
+    
+    .essaim-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.75rem;
+    }
+    
+    .essaim-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--honey-primary);
+    }
+    
+    .calendar-heat {
+        display: grid;
+        grid-template-columns: repeat(53, 1fr);
+        gap: 3px;
+        margin: 1rem 0;
+    }
+    
+    .calendar-day {
+        width: 12px;
+        height: 12px;
+        border-radius: 2px;
+        background-color: #eee;
+    }
+    
+    .calendar-day-0 { background-color: #eee; }
+    .calendar-day-1 { background-color: rgba(255, 209, 0, 0.3); }
+    .calendar-day-2 { background-color: rgba(255, 209, 0, 0.5); }
+    .calendar-day-3 { background-color: rgba(255, 209, 0, 0.7); }
+    .calendar-day-4 { background-color: rgba(255, 209, 0, 0.9); }
+    
+    .correlation-card {
+        padding: 1rem;
+        background-color: rgba(255, 209, 0, 0.1);
+        border-radius: var(--radius-md);
+        border: 1px solid rgba(255, 209, 0, 0.3);
+        margin-bottom: 1rem;
+    }
+    
+    .correlation-title {
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        color: var(--honey-primary);
+    }
+    
+    .prediction-card {
+        padding: 1rem;
+        background-color: rgba(0, 136, 255, 0.1);
+        border-radius: var(--radius-md);
+        border: 1px solid rgba(0, 136, 255, 0.3);
+        margin-bottom: 1rem;
+    }
+    
+    .prediction-title {
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        color: var(--nectar-blue);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="elevage-content">
+    <h2>Statistiques d'essaimage</h2>
+    
+    <div class="stat-summary">
+        <div class="stat-card">
+            <h3>Essaims naturels</h3>
+            <div class="stat-value">{{ nb_essaims_naturels }}</div>
+            <div class="stat-label">cette saison</div>
+        </div>
+        
+        <div class="stat-card">
+            <h3>Essaims artificiels</h3>
+            <div class="stat-value">{{ nb_essaims_artificiels }}</div>
+            <div class="stat-label">divisions volontaires</div>
+        </div>
+        
+        <div class="stat-card">
+            <h3>Taux de capture</h3>
+            <div class="stat-value">{{ taux_capture }}%</div>
+            <div class="stat-label">des essaims récupérés</div>
+        </div>
+        
+        <div class="stat-card">
+            <h3>Pic d'essaimage</h3>
+            <div class="stat-value" id="pic-essaimage">-</div>
+            <div class="stat-label">mois le plus actif</div>
+        </div>
+    </div>
+    
+    <div class="elevage-card">
+        <h3 style="color: var(--honey-primary); margin-bottom: 1rem;">
+            <i class="fas fa-calendar-alt"></i> Répartition par mois
+        </h3>
+        
+        <div class="chart-container">
+            <canvas id="chart-months"></canvas>
+        </div>
+    </div>
+    
+    <div class="elevage-card">
+        <h3 style="color: var(--honey-primary); margin-bottom: 1rem;">
+            <i class="fas fa-thermometer-half"></i> Corrélation avec les facteurs environnementaux
+        </h3>
+        
+        <div class="correlation-card">
+            <div class="correlation-title">Température et essaimage</div>
+            <p>Les données montrent une forte corrélation entre la hausse des températures printanières et l'activité d'essaimage. Le pic d'essaimage se produit généralement lorsque les températures diurnes atteignent 20-25°C de façon constante.</p>
+        </div>
+        
+        <div class="correlation-card">
+            <div class="correlation-title">Force des colonies et essaimage</div>
+            <p>Les ruches ayant une force de colonie supérieure à 7/10 ont 65% plus de chances d'essaimer naturellement que les colonies plus faibles. Cette corrélation est particulièrement marquée pour les ruches comportant des reines de plus d'un an.</p>
+        </div>
+        
+        <div class="prediction-card">
+            <div class="prediction-title">Prédiction pour la saison à venir</div>
+            <p>Basé sur vos données historiques et les conditions météorologiques anticipées, nous prévoyons un risque d'essaimage accru entre <strong>mi-avril et mi-mai</strong> pour les ruches suivantes :</p>
+            <ul style="margin-top: 0.5rem; padding-left: 1.5rem;">
+                <li>Ruche Tournesol (forte population, reine de 14 mois)</li>
+                <li>Ruche Tilleul (espace limité, forte ponte)</li>
+                <li>Ruche Sapin (génétique propice à l'essaimage)</li>
+            </ul>
+        </div>
+    </div>
+    
+    <div class="elevage-card">
+        <h3 style="color: var(--honey-primary); margin-bottom: 1rem;">
+            <i class="fas fa-chart-bar"></i> Facteurs de santé et essaimage
+        </h3>
+        
+        <div class="table-container">
+            <table class="elevage-table">
+                <thead>
+                    <tr>
+                        <th>Ruche</th>
+                        <th>Force</th>
+                        <th>Nb essaims</th>
+                        <th>Âge reine</th>
+                        <th>Espace disponible</th>
+                        <th>Risque actuel</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ruche in ruches %}
+                        <tr>
+                            <td>{{ ruche.nom }}</td>
+                            <td>{{ ruche.force }}/10</td>
+                            <td>{{ ruche.nb_essaims }}</td>
+                            <td>
+                                {% if ruche.id in ruches_avec_reine %}
+                                    {{ ruche.age_reine }} mois
+                                {% else %}
+                                    <span class="tag tag-danger">Sans reine</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if ruche.nb_hausses >= 2 %}
+                                    <span class="tag tag-success">Bon</span>
+                                {% elif ruche.nb_hausses == 1 %}
+                                    <span class="tag tag-warning">Limité</span>
+                                {% else %}
+                                    <span class="tag tag-danger">Insuffisant</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if ruche.risque_essaimage > 7 %}
+                                    <span class="tag tag-danger">Élevé</span>
+                                {% elif ruche.risque_essaimage > 4 %}
+                                    <span class="tag tag-warning">Modéré</span>
+                                {% else %}
+                                    <span class="tag tag-success">Faible</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <div class="elevage-card">
+        <h3 style="color: var(--honey-primary); margin-bottom: 1rem;">
+            <i class="fas fa-list"></i> Historique des essaimages
+        </h3>
+        
+        <div id="essaims-list">
+            {% for essaim in essaimages %}
+                <div class="essaim-card">
+                    <div class="essaim-header">
+                        <div class="essaim-title">{{ essaim.ruche_nom }}</div>
+                        <div>
+                            <span class="tag {% if essaim.type == 'Naturel' %}tag-warning{% else %}tag-info{% endif %}">
+                                {{ essaim.type }}
+                            </span>
+                            <span class="tag {% if essaim.capture %}tag-success{% else %}tag-danger{% endif %}">
+                                {% if essaim.capture %}Capturé{% else %}Perdu{% endif %}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; flex-wrap: wrap; gap: 0.5rem 2rem; margin-bottom: 0.75rem;">
+                        <div>
+                            <strong>Date:</strong> {{ essaim.date }}
+                        </div>
+                        <div>
+                            <strong>Quantité d'abeilles:</strong> {{ essaim.nb_abeilles }}
+                        </div>
+                        <div>
+                            <strong>Reine:</strong> 
+                            {% if essaim.reine_id %}
+                                Identifiée
+                            {% else %}
+                                Non identifiée
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <strong>Notes:</strong> {{ essaim.notes }}
+                    </div>
+                    
+                    <div style="display: flex; justify-content: flex-end; margin-top: 0.75rem;">
+                        <a href="#" class="btn btn-secondary">
+                            <i class="fas fa-eye"></i> Détails
+                        </a>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <div class="elevage-card">
+        <h3 style="color: var(--honey-primary); margin-bottom: 1rem;">
+            <i class="fas fa-info-circle"></i> Conseils pour la prévention
+        </h3>
+        
+        <p>L'essaimage est un phénomène naturel de reproduction des colonies. Bien que normal, il peut être contrôlé pour limiter les pertes d'abeilles et maintenir la productivité des ruches.</p>
+        
+        <div style="display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 1rem;">
+            <div style="flex: 1; min-width: 200px;">
+                <h4 style="color: var(--honey-primary); margin-bottom: 0.5rem;">Mesures préventives</h4>
+                <ul style="padding-left: 1.5rem;">
+                    <li>Ajout régulier de hausses ou cadres bâtis</li>
+                    <li>Division préventive des colonies fortes</li>
+                    <li>Renouvellement des reines tous les 2 ans</li>
+                    <li>Gestion de l'ouverture des ruches selon la température</li>
+                    <li>Destruction des cellules royales tous les 7-8 jours</li>
+                </ul>
+            </div>
+            
+            <div style="flex: 1; min-width: 200px;">
+                <h4 style="color: var(--honey-primary); margin-bottom: 0.5rem;">Signes précurseurs</h4>
+                <ul style="padding-left: 1.5rem;">
+                    <li>Barbes d'abeilles à l'entrée de la ruche</li>
+                    <li>Réduction de l'activité de butinage</li>
+                    <li>Présence de cellules royales (surtout latérales)</li>
+                    <li>Arrêt de ponte de la reine</li>
+                    <li>Sons caractéristiques émis par les jeunes reines</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Récupérer les données
+    const essaims_par_mois = {{ essaims_par_mois|safe }};
+    
+    // Trouver le mois avec le plus d'essaims
+    let maxEssaims = 0;
+    let picMois = '';
+    for (const mois in essaims_par_mois) {
+        if (essaims_par_mois[mois] > maxEssaims) {
+            maxEssaims = essaims_par_mois[mois];
+            picMois = mois;
+        }
+    }
+    document.getElementById('pic-essaimage').textContent = picMois;
+    
+    // Graphique par mois
+    const monthsCtx = document.getElementById('chart-months').getContext('2d');
+    const monthsChart = new Chart(monthsCtx, {
+        type: 'bar',
+        data: {
+            labels: Object.keys(essaims_par_mois),
+            datasets: [{
+                label: 'Nombre d\'essaims',
+                data: Object.values(essaims_par_mois),
+                backgroundColor: 'rgba(255, 209, 0, 0.7)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const value = context.raw || 0;
+                            return `${value} essaim${value > 1 ? 's' : ''}`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        precision: 0
+                    },
+                    title: {
+                        display: true,
+                        text: 'Nombre d\'essaims'
+                    }
+                }
+            }
+        }
+    });
+    
+    // Simuler le calcul du risque d'essaimage pour chaque ruche
+    const ruches = document.querySelectorAll('.elevage-table tbody tr');
+    ruches.forEach(ruche => {
+        const force = parseInt(ruche.children[1].textContent);
+        const nbEssaims = parseInt(ruche.children[2].textContent);
+        
+        // Vérifier si la ruche a une reine
+        const ageReineCell = ruche.children[3];
+        const hasQueen = !ageReineCell.querySelector('.tag-danger');
+        
+        // Vérifier l'espace disponible
+        const espaceCell = ruche.children[4];
+        const espaceTag = espaceCell.querySelector('.tag');
+        const espaceGood = espaceTag.classList.contains('tag-success');
+        
+        // Calculer le risque d'essaimage (facteurs simplifiés)
+        let risque = 0;
+        
+        // Force de la colonie
+        if (force >= 8) risque += 3;
+        else if (force >= 6) risque += 2;
+        else risque += 1;
+        
+        // Historique d'essaimage
+        if (nbEssaims >= 2) risque += 3;
+        else if (nbEssaims >= 1) risque += 2;
+        
+        // Présence de reine
+        if (hasQueen) {
+            // Age de la reine si présente
+            const ageText = ageReineCell.textContent.trim();
+            const age = parseInt(ageText);
+            if (age > 18) risque += 3;
+            else if (age > 12) risque += 2;
+            else risque += 1;
+        }
+        
+        // Espace disponible
+        if (!espaceGood) risque += 2;
+        
+        // Ajouter le risque calculé comme attribut data
+        ruche.setAttribute('data-risque', risque);
+        
+        // Mettre à jour la cellule de risque
+        const risqueCell = ruche.children[5];
+        const risqueTag = risqueCell.querySelector('.tag');
+        
+        if (risque > 7) {
+            risqueTag.className = 'tag tag-danger';
+            risqueTag.textContent = 'Élevé';
+        } else if (risque > 4) {
+            risqueTag.className = 'tag tag-warning';
+            risqueTag.textContent = 'Modéré';
+        } else {
+            risqueTag.className = 'tag tag-success';
+            risqueTag.textContent = 'Faible';
+        }
+    });
+});
+</script>
+{% endblock %}

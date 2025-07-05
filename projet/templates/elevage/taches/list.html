@@ -1,0 +1,204 @@
+{% extends "base_elevage.html" %}
+{% load static %}
+
+{% block title %}Liste des tâches{% endblock %}
+{% block page_title %}Gestion des tâches{% endblock %}
+
+{% block content %}
+<div class="elevage-content">
+    <h2>Liste des tâches à effectuer</h2>
+    
+    <div class="btn-group">
+        <a href="{% url 'tache_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Nouvelle tâche
+        </a>
+        <button id="filter-toggle" class="btn btn-secondary">
+            <i class="fas fa-filter"></i> Filtres
+        </button>
+    </div>
+    
+    <div id="filters-panel" class="elevage-card" style="display: none;">
+        <div class="filters-container">
+            <div class="filter-group">
+                <label class="filter-label" for="priority-filter">Priorité:</label>
+                <select class="filter-select" id="priority-filter">
+                    <option value="">Toutes les priorités</option>
+                    <option value="urgent">Urgent</option>
+                    <option value="normal">Normal</option>
+                    <option value="low">Faible</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label class="filter-label" for="type-filter">Type:</label>
+                <select class="filter-select" id="type-filter">
+                    <option value="">Tous les types</option>
+                    <option value="visite">Visite</option>
+                    <option value="traitement">Traitement</option>
+                    <option value="recolte">Récolte</option>
+                    <option value="autre">Autre</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label class="filter-label" for="status-filter">Statut:</label>
+                <select class="filter-select" id="status-filter">
+                    <option value="">Tous les statuts</option>
+                    <option value="a_faire">À faire</option>
+                    <option value="en_cours">En cours</option>
+                    <option value="termine">Terminé</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label class="filter-label" for="rucher-filter">Rucher:</label>
+                <select class="filter-select" id="rucher-filter">
+                    <option value="">Tous les ruchers</option>
+                    {% for rucher in ruchers %}
+                        <option value="{{ rucher.id }}">{{ rucher.nom }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="filter-group">
+                <div class="search-container">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="text" id="search-input" class="search-input" placeholder="Rechercher une tâche...">
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="elevage-card">
+        <div class="table-container">
+            <table class="elevage-table" id="tasks-table">
+                <thead>
+                    <tr>
+                        <th width="5%">Priorité</th>
+                        <th width="15%">Date prévue</th>
+                        <th width="15%">Type</th>
+                        <th width="15%">Rucher</th>
+                        <th width="20%">Description</th>
+                        <th width="10%">Statut</th>
+                        <th width="15%" class="actions-column">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tache in taches %}
+                    <tr data-priority="{{ tache.priorite }}" data-type="{{ tache.type }}" data-status="{{ tache.statut }}" data-rucher="{{ tache.rucher_id }}">
+                        <td>
+                            {% if tache.priorite == 'urgent' %}
+                                <span class="tag tag-danger">Urgent</span>
+                            {% elif tache.priorite == 'normal' %}
+                                <span class="tag tag-warning">Normal</span>
+                            {% else %}
+                                <span class="tag tag-info">Faible</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ tache.date_prevue }}</td>
+                        <td>
+                            {% if tache.type == 'visite' %}
+                                <i class="fas fa-eye"></i> Visite
+                            {% elif tache.type == 'traitement' %}
+                                <i class="fas fa-medkit"></i> Traitement
+                            {% elif tache.type == 'recolte' %}
+                                <i class="fas fa-honey-pot"></i> Récolte
+                            {% else %}
+                                <i class="fas fa-tasks"></i> {{ tache.type|title }}
+                            {% endif %}
+                        </td>
+                        <td>{{ tache.rucher.nom }}</td>
+                        <td class="cell-expand">{{ tache.description }}</td>
+                        <td>
+                            {% if tache.statut == 'a_faire' %}
+                                <span class="tag tag-warning">À faire</span>
+                            {% elif tache.statut == 'en_cours' %}
+                                <span class="tag tag-info">En cours</span>
+                            {% else %}
+                                <span class="tag tag-success">Terminé</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{% url 'tache_edit' id=tache.id %}" class="btn btn-secondary">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <a href="{% url 'tache_complete' id=tache.id %}" class="btn btn-primary">
+                                <i class="fas fa-check"></i>
+                            </a>
+                            <button class="btn btn-danger delete-task" data-id="{{ tache.id }}">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center">Aucune tâche trouvée</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Toggle filter panel
+    const filterToggle = document.getElementById('filter-toggle');
+    const filtersPanel = document.getElementById('filters-panel');
+    
+    filterToggle.addEventListener('click', function() {
+        filtersPanel.style.display = filtersPanel.style.display === 'none' ? 'block' : 'none';
+    });
+    
+    // Filter functionality
+    const priorityFilter = document.getElementById('priority-filter');
+    const typeFilter = document.getElementById('type-filter');
+    const statusFilter = document.getElementById('status-filter');
+    const rucherFilter = document.getElementById('rucher-filter');
+    const searchInput = document.getElementById('search-input');
+    const rows = document.querySelectorAll('#tasks-table tbody tr');
+    
+    function applyFilters() {
+        const priorityValue = priorityFilter.value.toLowerCase();
+        const typeValue = typeFilter.value.toLowerCase();
+        const statusValue = statusFilter.value.toLowerCase();
+        const rucherValue = rucherFilter.value.toLowerCase();
+        const searchValue = searchInput.value.toLowerCase();
+        
+        rows.forEach(row => {
+            if (row.querySelector('td')) { // Skip empty message row
+                const priority = row.getAttribute('data-priority');
+                const type = row.getAttribute('data-type');
+                const status = row.getAttribute('data-status');
+                const rucher = row.getAttribute('data-rucher');
+                const text = row.textContent.toLowerCase();
+                
+                const priorityMatch = !priorityValue || priority === priorityValue;
+                const typeMatch = !typeValue || type === typeValue;
+                const statusMatch = !statusValue || status === statusValue;
+                const rucherMatch = !rucherValue || rucher === rucherValue;
+                const searchMatch = !searchValue || text.includes(searchValue);
+                
+                row.style.display = (priorityMatch && typeMatch && statusMatch && rucherMatch && searchMatch) ? '' : 'none';
+            }
+        });
+    }
+    
+    // Add event listeners to filters
+    priorityFilter.addEventListener('change', applyFilters);
+    typeFilter.addEventListener('change', applyFilters);
+    statusFilter.addEventListener('change', applyFilters);
+    rucherFilter.addEventListener('change', applyFilters);
+    searchInput.addEventListener('input', applyFilters);
+    
+    // Delete task confirmation
+    const deleteButtons = document.querySelectorAll('.delete-task');
+    deleteButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const id = this.getAttribute('data-id');
+            if (confirm('Êtes-vous sûr de vouloir supprimer cette tâche ?')) {
+                window.location.href = `/elevage/taches/delete/${id}/`;
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

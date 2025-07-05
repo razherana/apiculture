@@ -1,0 +1,638 @@
+{% extends "base_elevage.html" %}
+{% load static %}
+
+{% block title %}Statistiques des reines{% endblock %}
+{% block page_title %}Statistiques des reines{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stat-summary {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .stat-card {
+        flex: 1;
+        min-width: 200px;
+        padding: 1.25rem;
+        background: var(--glass-bg);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-md);
+        border: 1px solid var(--glass-border);
+        text-align: center;
+    }
+    
+    .stat-card h3 {
+        font-size: 1.25rem;
+        color: var(--honey-primary);
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-value {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin: 0.5rem 0;
+        background: var(--gradient-honey);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+    }
+    
+    .stat-label {
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+    }
+    
+    .chart-container {
+        position: relative;
+        height: 400px;
+        margin-bottom: 1.5rem;
+    }
+    
+    .reine-card {
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-sm);
+        background: var(--glass-bg);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid var(--glass-border);
+    }
+    
+    .reine-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.75rem;
+    }
+    
+    .reine-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--honey-primary);
+    }
+    
+    .qualite-gauge {
+        width: 100%;
+        height: 12px;
+        background-color: #e0e0e0;
+        border-radius: 6px;
+        overflow: hidden;
+        margin: 0.5rem 0;
+        position: relative; /* Ajout pour positionner le texte */
+    }
+    
+    .qualite-fill {
+        height: 100%;
+        border-radius: 6px;
+        position: relative; /* Pour le contenu interne */
+    }
+    
+    /* Style pour le texte de niveau dans la barre */
+    .qualite-text {
+        position: absolute;
+        right: 8px;
+        top: -18px; /* Positionné au-dessus de la barre */
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        background-color: rgba(255, 255, 255, 0.8);
+        padding: 1px 6px;
+        border-radius: 4px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* Couleurs pour les différents niveaux */
+    .couvain-critical {
+        background-color: var(--queen-red);
+    }
+    
+    .couvain-warning {
+        background-color: var(--honey-primary);
+    }
+    
+    .couvain-good {
+        background-color: var(--pollen-green);
+    }
+    
+    .chart-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--honey-primary);
+        margin-bottom: 0.75rem;
+        text-align: center;
+    }
+    
+    .small-chart-container {
+        position: relative;
+        height: 300px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="elevage-content">
+    <h2>Statistiques des reines</h2>
+    
+    <div class="stat-summary">
+        <div class="stat-card">
+            <h3>Nombre de reines</h3>
+            <div class="stat-value">{{ reines|length }}</div>
+            <div class="stat-label">actives</div>
+        </div>
+        
+        <div class="stat-card">
+            <h3>Âge moyen</h3>
+            <div class="stat-value" id="age-moyen">-</div>
+            <div class="stat-label">mois</div>
+        </div>
+        
+        <div class="stat-card">
+            <h3>Qualité moyenne</h3>
+            <div class="stat-value" id="qualite-moyenne">-</div>
+            <div class="stat-label">sur 10</div>
+        </div>
+        
+        <div class="stat-card">
+            <h3>Reines âgées</h3>
+            <div class="stat-value" id="reines-agees">-</div>
+            <div class="stat-label">> 18 mois</div>
+        </div>
+    </div>
+    
+    <div class="elevage-card">
+        <h3 style="color: var(--honey-primary); margin-bottom: 1rem;">
+            <i class="fas fa-chart-pie"></i> Répartition par race
+        </h3>
+        
+        <div class="chart-container">
+            <canvas id="chart-races"></canvas>
+        </div>
+    </div>
+    
+    <div class="elevage-card">
+        <h3 style="color: var(--honey-primary); margin-bottom: 1rem;">
+            <i class="fas fa-chart-bar"></i> Âge et qualité de ponte
+        </h3>
+        
+        <div class="chart-container">
+            <canvas id="chart-qualite"></canvas>
+        </div>
+        
+        <div id="correlation-container">
+            <!-- La carte de corrélation sera ajoutée ici par JavaScript -->
+        </div>
+    </div>
+    
+    <div class="elevage-card">
+        <h3 style="color: var(--honey-primary); margin-bottom: 1rem;">
+            <i class="fas fa-chart-line"></i> Analyses avancées
+        </h3>
+        
+        <div class="multi-chart-container">
+            <div>
+                <div class="chart-title">Longévité moyenne par race</div>
+                <div class="small-chart-container">
+                    <canvas id="chart-longevite"></canvas>
+                </div>
+            </div>
+            
+            <div>
+                <div class="chart-title">Taux de succès d'élevage</div>
+                <div class="small-chart-container">
+                    <canvas id="chart-success"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <div class="multi-chart-container">
+            <div>
+                <div class="chart-title">Évolution de la qualité avec l'âge</div>
+                <div class="small-chart-container">
+                    <canvas id="chart-evolution-qualite"></canvas>
+                </div>
+            </div>
+            
+            <div>
+                <div class="chart-title">Développement de la colonie selon l'âge de la reine</div>
+                <div class="small-chart-container">
+                    <canvas id="chart-developpement"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="elevage-card">
+        <h3 style="color: var(--honey-primary); margin-bottom: 1rem;">
+            <i class="fas fa-list"></i> Liste des reines
+        </h3>
+        
+        <div id="reines-list">
+            <!-- Liste des reines générée par JavaScript -->
+        </div>
+    </div>
+    
+    <div class="elevage-card">
+        <h3 style="color: var(--honey-primary); margin-bottom: 1rem;">
+            <i class="fas fa-info-circle"></i> À propos de la gestion des reines
+        </h3>
+        
+        <p>La reine est l'élément central de la colonie. Sa qualité et son âge influencent directement la production, la santé et le comportement de la ruche. Les apiculteurs professionnels recommandent généralement de renouveler les reines tous les 2 ans pour maintenir une colonie forte et productive.</p>
+        
+        <div style="display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 1rem;">
+            <div style="flex: 1; min-width: 200px;">
+                <h4 style="color: var(--honey-primary); margin-bottom: 0.5rem;">Critères de qualité d'une reine</h4>
+                <ul style="padding-left: 1.5rem;">
+                    <li>Régularité du couvain (ponte en grille homogène)</li>
+                    <li>Quantité d'œufs pondus par jour (1500-2000)</li>
+                    <li>Comportement hygiénique des ouvrières</li>
+                    <li>Résistance aux maladies</li>
+                    <li>Douceur de la colonie</li>
+                </ul>
+            </div>
+            
+            <div style="flex: 1; min-width: 200px;">
+                <h4 style="color: var(--honey-primary); margin-bottom: 0.5rem;">Signes de vieillissement</h4>
+                <ul style="padding-left: 1.5rem;">
+                    <li>Diminution de la quantité de couvain</li>
+                    <li>Couvain irrégulier ou en mosaïque</li>
+                    <li>Augmentation du couvain de mâles</li>
+                    <li>Réduction de la taille de la colonie</li>
+                    <li>Apparition de cellules royales de remplacement</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Récupérer les données
+    const noms_reines = {{ noms_reines|safe }};
+    const ages_reines = {{ ages_reines|safe }};
+    const qualites_ponte = {{ qualites_ponte|safe }};
+    const reines_par_race = {{ reines_par_race|safe }};
+    const races = {{ races|safe }};
+    const longevite_moyenne = {{ longevite_moyenne|safe }};
+    const taux_success = {{ taux_success|safe }};
+    const ages_evolution = {{ ages_evolution|safe }};
+    const qualite_par_age = {{ qualite_par_age|safe }};
+    const dev_colonie = {{ dev_colonie|safe }};
+    
+    // Calculer les statistiques
+    const ageMoyen = ages_reines.reduce((a, b) => a + b, 0) / ages_reines.length;
+    const qualiteMoyenne = qualites_ponte.reduce((a, b) => a + b, 0) / qualites_ponte.length;
+    const reinesAgees = ages_reines.filter(age => age > 18).length;
+    
+    // Mettre à jour les statistiques
+    document.getElementById('age-moyen').textContent = ageMoyen.toFixed(1);
+    document.getElementById('qualite-moyenne').textContent = qualiteMoyenne.toFixed(1);
+    document.getElementById('reines-agees').textContent = reinesAgees;
+    
+    // Graphique races
+    const racesCtx = document.getElementById('chart-races').getContext('2d');
+    const racesChart = new Chart(racesCtx, {
+        type: 'pie',
+        data: {
+            labels: Object.keys(reines_par_race),
+            datasets: [{
+                label: 'Nombre de reines',
+                data: Object.values(reines_par_race),
+                backgroundColor: [
+                    'rgba(255, 209, 0, 0.7)',  // Buckfast - jaune
+                    'rgba(153, 102, 255, 0.7)', // Carnica - violet
+                    'rgba(0, 136, 255, 0.7)',   // Italienne - bleu
+                    'rgba(34, 34, 34, 0.7)'     // Noire - noir
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.raw || 0;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = Math.round((value / total) * 100);
+                            return `${label}: ${value} reines (${percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+    
+    // Graphique âge et qualité
+    const qualiteCtx = document.getElementById('chart-qualite').getContext('2d');
+    const qualiteChart = new Chart(qualiteCtx, {
+        type: 'bar',
+        data: {
+            labels: noms_reines,
+            datasets: [
+                {
+                    label: 'Âge (mois)',
+                    data: ages_reines,
+                    backgroundColor: 'rgba(0, 136, 255, 0.7)',
+                    borderWidth: 1,
+                    yAxisID: 'y'
+                },
+                {
+                    label: 'Qualité de ponte (0-10)',
+                    data: qualites_ponte,
+                    backgroundColor: 'rgba(255, 209, 0, 0.7)',
+                    borderWidth: 1,
+                    yAxisID: 'y1'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    position: 'left',
+                    title: {
+                        display: true,
+                        text: 'Âge (mois)'
+                    },
+                    min: 0,
+                    max: Math.max(...ages_reines) + 5
+                },
+                y1: {
+                    beginAtZero: true,
+                    position: 'right',
+                    title: {
+                        display: true,
+                        text: 'Qualité de ponte (0-10)'
+                    },
+                    min: 0,
+                    max: 10,
+                    grid: {
+                        drawOnChartArea: false
+                    }
+                }
+            }
+        }
+    });
+    
+    // Analyse de corrélation entre âge et qualité de ponte
+    let correlation = 0;
+    if (ages_reines.length > 1) {
+        // Calcul simple de corrélation négative (plus l'âge augmente, plus la qualité diminue en général)
+        let sumX = ages_reines.reduce((a, b) => a + b, 0);
+        let sumY = qualites_ponte.reduce((a, b) => a + b, 0);
+        let sumXY = ages_reines.map((x, i) => x * qualites_ponte[i]).reduce((a, b) => a + b, 0);
+        let sumX2 = ages_reines.map(x => x * x).reduce((a, b) => a + b, 0);
+        let sumY2 = qualites_ponte.map(y => y * y).reduce((a, b) => a + b, 0);
+        
+        let n = ages_reines.length;
+        correlation = (n * sumXY - sumX * sumY) / Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
+        
+        // Ajouter cette analyse dans l'interface
+        const correlationDiv = document.createElement('div');
+        correlationDiv.className = 'correlation-card';
+        correlationDiv.innerHTML = `
+            <div class="correlation-title">Analyse de corrélation</div>
+            <div>
+                La corrélation entre l'âge des reines et leur qualité de ponte est de ${correlation.toFixed(2)}.<br>
+                ${correlation < -0.5 ? 
+                  'Il existe une forte corrélation négative : plus les reines sont âgées, plus leur qualité de ponte diminue.' : 
+                  correlation < -0.2 ? 
+                  'Il existe une corrélation négative modérée entre l\'âge et la qualité de ponte.' : 
+                  'La corrélation entre l\'âge et la qualité de ponte est faible dans votre rucher.'}
+            </div>
+        `;
+        
+        document.getElementById('correlation-container').appendChild(correlationDiv);
+    }
+    
+    // Graphique de longévité moyenne par race
+    const longeviteCtx = document.getElementById('chart-longevite').getContext('2d');
+    const longeviteChart = new Chart(longeviteCtx, {
+        type: 'bar',
+        data: {
+            labels: races,
+            datasets: [{
+                label: 'Longévité moyenne (années)',
+                data: longevite_moyenne,
+                backgroundColor: 'rgba(0, 204, 136, 0.7)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Années'
+                    }
+                }
+            }
+        }
+    });
+    
+    // Graphique de taux de succès d'élevage
+    const successCtx = document.getElementById('chart-success').getContext('2d');
+    const successChart = new Chart(successCtx, {
+        type: 'bar',
+        data: {
+            labels: races,
+            datasets: [{
+                label: 'Taux de succès (%)',
+                data: taux_success,
+                backgroundColor: 'rgba(255, 51, 102, 0.7)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    title: {
+                        display: true,
+                        text: 'Taux de succès (%)'
+                    }
+                }
+            }
+        }
+    });
+    
+    // Graphique d'évolution de la qualité avec l'âge
+    const evolutionCtx = document.getElementById('chart-evolution-qualite').getContext('2d');
+    const evolutionChart = new Chart(evolutionCtx, {
+        type: 'line',
+        data: {
+            labels: ages_evolution.map(age => `${age} mois`),
+            datasets: [{
+                label: 'Qualité de ponte',
+                data: qualite_par_age,
+                borderColor: 'rgba(255, 209, 0, 0.7)',
+                backgroundColor: 'rgba(255, 209, 0, 0.1)',
+                borderWidth: 2,
+                tension: 0.3,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 10,
+                    title: {
+                        display: true,
+                        text: 'Qualité (0-10)'
+                    }
+                }
+            }
+        }
+    });
+    
+    // Graphique de développement de la colonie selon l'âge de la reine
+    const devCtx = document.getElementById('chart-developpement').getContext('2d');
+    const devChart = new Chart(devCtx, {
+        type: 'line',
+        data: {
+            labels: ages_evolution.map(age => `${age} mois`),
+            datasets: [{
+                label: 'Développement de la colonie (%)',
+                data: dev_colonie,
+                borderColor: 'rgba(0, 136, 255, 0.7)',
+                backgroundColor: 'rgba(0, 136, 255, 0.1)',
+                borderWidth: 2,
+                tension: 0.3,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    title: {
+                        display: true,
+                        text: 'Développement (%)'
+                    }
+                }
+            }
+        }
+    });
+    
+    // Générer la liste des reines
+    const reinesList = document.getElementById('reines-list');
+    
+    // Récupérer les reines complètes
+    const reines = {{ reines|safe }};
+    
+    reines.forEach((reine, index) => {
+        const qualite = reine.qualite_ponte;
+        let statusClass = 'qualite-fill';
+        let statusText = 'Excellente';
+        
+        if (qualite < 6) {
+            statusClass = 'qualite-fill couvain-critical';
+            statusText = 'Insuffisante';
+        } else if (qualite < 7.5) {
+            statusClass = 'qualite-fill couvain-warning';
+            statusText = 'Moyenne';
+        } else {
+            statusClass = 'qualite-fill couvain-good';
+            statusText = 'Excellente';
+        }
+        
+        // Catégorisation de l'âge
+        let ageStatus = 'Jeune';
+        if (reine.age > 24) {
+            ageStatus = 'Âgée';
+        } else if (reine.age > 12) {
+            ageStatus = 'Mature';
+        }
+        
+        const reineCard = document.createElement('div');
+        reineCard.className = 'reine-card';
+        reineCard.innerHTML = `
+            <div class="reine-header">
+                <div class="reine-title">${reine.nom} (${reine.race})</div>
+                <div>
+                    <span class="tag ${qualite < 6 ? 'tag-danger' : qualite < 7.5 ? 'tag-warning' : 'tag-success'}">
+                        ${statusText}
+                    </span>
+                    <span class="tag ${reine.age > 24 ? 'tag-danger' : reine.age > 12 ? 'tag-warning' : 'tag-success'}">
+                        ${ageStatus}
+                    </span>
+                </div>
+            </div>
+            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem 2rem; margin-bottom: 0.75rem;">
+                <div>
+                    <strong>Âge:</strong> ${reine.age} mois
+                </div>
+                <div>
+                    <strong>Qualité de ponte:</strong> ${reine.qualite_ponte}/10
+                    <div class="qualite-gauge">
+                        <div class="${statusClass}" style="width: ${reine.qualite_ponte * 10}%"></div>
+                        <span class="qualite-text">${reine.qualite_ponte}/10</span>
+                    </div>
+                </div>
+            </div>
+            <div style="display: flex; justify-content: flex-end; margin-top: 0.75rem;">
+                <a href="#" class="btn btn-secondary">
+                    <i class="fas fa-eye"></i> Détails
+                </a>
+            </div>
+        `;
+        
+        reinesList.appendChild(reineCard);
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,159 @@
+{% extends "base_elevage.html" %}
+{% load static %}
+
+{% block title %}Journal des soins{% endblock %}
+{% block page_title %}Journal des soins{% endblock %}
+
+{% block content %}
+<div class="elevage-content">
+    <h2>Journal des soins</h2>
+    
+    <div class="btn-group">
+        <a href="{% url 'soin_add' %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Nouveau soin
+        </a>
+    </div>
+    
+    <div class="filters-container">
+        <div class="filter-group">
+            <label class="filter-label" for="type-filter">Type:</label>
+            <select class="filter-select" id="type-filter">
+                <option value="">Tous les types</option>
+                {% for type in types_soin %}
+                    <option value="{{ type }}">{{ type }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="filter-group">
+            <label class="filter-label" for="ruche-filter">Ruche:</label>
+            <select class="filter-select" id="ruche-filter">
+                <option value="">Toutes les ruches</option>
+                {% for ruche in ruches %}
+                    <option value="{{ ruche.id }}">{{ ruche.nom }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="filter-group">
+            <label class="filter-label" for="periode-filter">Période:</label>
+            <select class="filter-select" id="periode-filter">
+                <option value="">Toutes les périodes</option>
+                <option value="7">7 derniers jours</option>
+                <option value="30">30 derniers jours</option>
+                <option value="90">3 derniers mois</option>
+                <option value="365">Année en cours</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <div class="search-container">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" class="search-input" id="soin-search" placeholder="Rechercher...">
+            </div>
+        </div>
+    </div>
+    
+    <div class="elevage-card">
+        <table class="elevage-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Ruche</th>
+                    <th>Type</th>
+                    <th>Produit</th>
+                    <th>Dose</th>
+                    <th>Notes</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for soin in soins %}
+                <tr data-type="{{ soin.type }}" data-ruche="{{ soin.ruche_id }}" data-date="{{ soin.date|date:'Y-m-d' }}">
+                    <td>{{ soin.date }}</td>
+                    <td>
+                        {% for ruche in ruches %}
+                            {% if ruche.id == soin.ruche_id %}
+                                <a href="{% url 'ruche_details' id=soin.ruche_id %}">{{ ruche.nom }}</a>
+                            {% endif %}
+                        {% endfor %}
+                    </td>
+                    <td>
+                        {% if soin.type == 'Traitement Varroa' %}
+                            <span class="tag tag-danger">{{ soin.type }}</span>
+                        {% elif soin.type == 'Nourrissement' %}
+                            <span class="tag tag-warning">{{ soin.type }}</span>
+                        {% elif soin.type == 'Médicament' %}
+                            <span class="tag tag-info">{{ soin.type }}</span>
+                        {% else %}
+                            <span class="tag">{{ soin.type }}</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ soin.produit }}</td>
+                    <td>{{ soin.dose }}</td>
+                    <td>{{ soin.notes }}</td>
+                    <td>
+                        <a href="{% url 'soin_edit' id=soin.id %}" class="btn btn-secondary">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center">Aucun soin enregistré</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Filtrage des soins
+        const typeFilter = document.getElementById('type-filter');
+        const rucheFilter = document.getElementById('ruche-filter');
+        const periodeFilter = document.getElementById('periode-filter');
+        const searchInput = document.getElementById('soin-search');
+        const soinRows = document.querySelectorAll('.elevage-table tbody tr');
+        
+        function filterSoins() {
+            const typeValue = typeFilter.value;
+            const rucheValue = rucheFilter.value;
+            const periodeValue = parseInt(periodeFilter.value, 10);
+            const searchValue = searchInput.value.toLowerCase();
+            
+            const today = new Date();
+            
+            soinRows.forEach(row => {
+                const type = row.getAttribute('data-type');
+                const ruche = row.getAttribute('data-ruche');
+                const dateStr = row.getAttribute('data-date');
+                const text = row.textContent.toLowerCase();
+                
+                // Vérifier les filtres de type et de ruche
+                const matchesType = !typeValue || type === typeValue;
+                const matchesRuche = !rucheValue || ruche === rucheValue;
+                const matchesSearch = !searchValue || text.includes(searchValue);
+                
+                // Vérifier le filtre de période
+                let matchesPeriode = true;
+                if (periodeValue) {
+                    const date = new Date(dateStr);
+                    const diffTime = Math.abs(today - date);
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    matchesPeriode = diffDays <= periodeValue;
+                }
+                
+                if (matchesType && matchesRuche && matchesPeriode && matchesSearch) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+        
+        typeFilter.addEventListener('change', filterSoins);
+        rucheFilter.addEventListener('change', filterSoins);
+        periodeFilter.addEventListener('change', filterSoins);
+        searchInput.addEventListener('input', filterSoins);
+    });
+</script>
+{% endblock %}
