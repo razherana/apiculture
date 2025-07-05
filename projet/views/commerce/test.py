@@ -14,7 +14,7 @@ def list_miels_test(request):
 
 
 def list_clients_test(request):
-    clientModels = Client.objects.all()
+    clientModels = Client.objects.prefetch_related("commandes", "ventes").all()
     clients = [
         {
             'id': client.id,
@@ -155,7 +155,7 @@ def client_vue(request):
         client_model.client_type_id = client['client_type']
 
         client_model.save()
-        
+
         return redirect('test_liste_clients')
 
 
