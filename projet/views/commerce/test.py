@@ -1,69 +1,92 @@
 from django.shortcuts import render
 
-def list_miels_test(request): 
+
+def list_miels_test(request):
     miels = [
-        {'id': 1, 'type': 'Fleurs','conteneur': 'Petit bocaux', 'stock': 40, 'prix': 8.5},
-        {'id': 2, 'type': 'Acacia','conteneur': 'Grands Pots en verre', 'stock': 25, 'prix': 10.0},
+        {'id': 1, 'type': 'Fleurs', 'conteneur': 'Petit bocaux',
+            'stock': 40, 'prix': 8.5},
+        {'id': 2, 'type': 'Acacia', 'conteneur': 'Grands Pots en verre',
+            'stock': 25, 'prix': 10.0},
     ]
     return render(request, "commerce/miels/list.html", {'miels': miels})
+
+
 def list_clients_test(request):
     clients = [
-        {'id': 1, 'nom': 'Dupont', 'email': 'dupont@mail.com', 'telephone': '0601020304', 'derniere_commande': '2025-06-18'},
-        {'id': 2, 'nom': 'Martin', 'email': 'martin@mail.com', 'telephone': '0605060708', 'derniere_commande': '2025-06-17'},
+        {'id': 1, 'nom': 'Dupont', 'email': 'dupont@mail.com',
+            'telephone': '0601020304', 'derniere_commande': '2025-06-18'},
+        {'id': 2, 'nom': 'Martin', 'email': 'martin@mail.com',
+            'telephone': '0605060708', 'derniere_commande': '2025-06-17'},
     ]
     return render(request, "commerce/clients/list.html", {"clients": clients})
+
+
 def list_commandes_test(request):
     commandes = [
-        {'id': 1, 'date': '2025-06-15', 'client': 'Durand', 'produit': 'Miel de fleurs', 'quantite': 20, 'statut': 'En attente', "vente_id": None,"created_at": "2025-06-01", "livraison_date": "2025-06-20", "note": "Livraison rapide"},
-        {'id': 2, 'date': '2025-06-10', 'client': 'Bernard', 'produit': 'Miel d’acacia', 'quantite': 100, 'statut': 'Livrée', 'vente_id': 1, "created_at": "2025-06-01", "livraison_date": "2025-06-20", "note": "Livraison rapide"},
+        {'id': 1, 'date': '2025-06-15', 'client': 'Durand', 'produit': 'Miel de fleurs', 'quantite': 20, 'statut': 'En attente',
+            "vente_id": None, "created_at": "2025-06-01", "livraison_date": "2025-06-20", "note": "Livraison rapide"},
+        {'id': 2, 'date': '2025-06-10', 'client': 'Bernard', 'produit': 'Miel d’acacia', 'quantite': 100, 'statut': 'Livrée',
+            'vente_id': 1, "created_at": "2025-06-01", "livraison_date": "2025-06-20", "note": "Livraison rapide"},
     ]
-    commandes_en_attente = [cmd for cmd in commandes if cmd['vente_id'] is None]
-    commandes_livrees = [cmd for cmd in commandes if cmd['vente_id'] is not None]
+    commandes_en_attente = [
+        cmd for cmd in commandes if cmd['vente_id'] is None]
+    commandes_livrees = [
+        cmd for cmd in commandes if cmd['vente_id'] is not None]
     return render(request, "commerce/commandes/list.html", {
         "commandes_en_attente": commandes_en_attente,
         "commandes_livrees": commandes_livrees,
     })
+
+
 def list_ventes_test(request):
     ventes = [
-        {'id': 1, 'date': '2025-06-18', 'client': 'Dupont', 'produit': 'Miel de fleurs', 'quantite': 2, 'montant': 17.0},
-        {'id': 2, 'date': '2025-06-17', 'client': 'Martin', 'produit': 'Miel d’acacia', 'quantite': 1, 'montant': 10.0},
+        {'id': 1, 'date': '2025-06-18', 'client': 'Dupont',
+            'produit': 'Miel de fleurs', 'quantite': 2, 'montant': 17.0},
+        {'id': 2, 'date': '2025-06-17', 'client': 'Martin',
+            'produit': 'Miel d’acacia', 'quantite': 1, 'montant': 10.0},
     ]
     return render(request, "commerce/ventes/list.html", {"ventes": ventes})
+
+
 def stock_miels_test(request):
     miel_nom = "Miel de fleurs"
     quantite_unite = 250
-    unite= "g"
+    unite = "g"
     stock_actuel = 40
     miels = [
         {
             "type": "Entrée",
-            "source":"Ruche A",
+            "source": "Ruche A",
             "nombre": 140,
-            "date": "10-11-24"  
+            "date": "10-11-24"
         },
         {
             "type": "Sortie",
-            "source":"Client A",
-            "nombre" : 100, 
+            "source": "Client A",
+            "nombre": 100,
             "date": "10-11-24"
         },
     ]
-    return render(request, "commerce/miels/stock.html", {"miels": miels, "quantite_unite": quantite_unite, "unite":unite, "stock_actuel":stock_actuel, "miel_nom":miel_nom})
+    return render(request, "commerce/miels/stock.html", {"miels": miels, "quantite_unite": quantite_unite, "unite": unite, "stock_actuel": stock_actuel, "miel_nom": miel_nom})
+
+
 def miels_stock_form(request):
     clients = ["client A", "client B", "client C"]
     ruches = ["Ruche A", "Ruche B", "Ruche C"]
-    miel_nom = "Miel de fleurs"    
+    miel_nom = "Miel de fleurs"
     return render(request, "commerce/miels/stock_form.html", {"clients": clients, "ruches": ruches, "miel_nom": miel_nom})
+
+
 def client_vue(request):
     client = {
-            'id': 1,
-            'nom': 'Dupont Jean',
-            'note': 'Client fidèle depuis 5 ans',
-            'email': "exemple@gmail.com",
-            'telephone': '0601020304',
-            'derniere_commande': '2025-06-18',
-            'adresse': '123 Rue de Paris, 75001 Paris',
-            'client_type': 'Particulier',
+        'id': 1,
+        'nom': 'Dupont Jean',
+        'note': 'Client fidèle depuis 5 ans',
+        'email': "exemple@gmail.com",
+        'telephone': '0601020304',
+        'derniere_commande': '2025-06-18',
+        'adresse': '123 Rue de Paris, 75001 Paris',
+        'client_type': 'Particulier',
     }
     client_types = [
         {'id': 1, 'type': 'Particulier'},
@@ -71,13 +94,17 @@ def client_vue(request):
         {'id': 3, 'type': 'Association'},
     ]
     return render(request, "commerce/clients/vue.html", {"client": client, "client_types": client_types})
+
+
 def client_form(request):
     client_types = [
         {'id': 1, 'type': 'Particulier'},
         {'id': 2, 'type': 'Professionnel'},
         {'id': 3, 'type': 'Association'},
     ]
-    return render(request, "commerce/clients/form.html", {"client_types":client_types})
+    return render(request, "commerce/clients/form.html", {"client_types": client_types})
+
+
 def vente_vue(request):
     vente = {
         'id': 1,
@@ -108,6 +135,8 @@ def vente_vue(request):
         "clients": clients,
         "miels": miels
     })
+
+
 def vente_form(request):
     modes_payement = [
         {'id': 1, 'mode': 'Carte bancaire'},
@@ -127,6 +156,8 @@ def vente_form(request):
         "clients": clients,
         "miels": miels
     })
+
+
 def commande_form(request):
     clients = [
         {'id': 1, 'nom': 'Durand Pierre'},
@@ -140,6 +171,8 @@ def commande_form(request):
         "clients": clients,
         "produits": produits
     })
+
+
 def miels_stats(request):
     stats = [
         {
@@ -171,6 +204,8 @@ def miels_stats(request):
         },
     ]
     return render(request, "commerce/miels/stats.html", {"stats": stats})
+
+
 def ventes_stats(request):
     stats = [
         {
@@ -201,6 +236,8 @@ def ventes_stats(request):
         }
     ]
     return render(request, "commerce/ventes/stats.html", {"stats": stats})
+
+
 def commandes_stats(request):
     stats_par_type = {
         "Fleurs": {
