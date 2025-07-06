@@ -16,7 +16,7 @@ class Client(models.Model):
     email = models.EmailField()
     note = models.TextField()
     adresse = models.CharField(max_length=255)
-    client_type_id = models.ForeignKey(
+    client_type = models.ForeignKey(
         ClientType, on_delete=models.CASCADE, related_name='clients')
 
     @property
@@ -50,9 +50,9 @@ class ModePayement(models.Model):
 
 
 class Vente(models.Model):
-    client_id = models.ForeignKey(
+    client = models.ForeignKey(
         Client, on_delete=models.CASCADE, related_name='ventes')
-    mode_payement_id = models.ForeignKey(
+    mode_payement = models.ForeignKey(
         ModePayement, on_delete=models.CASCADE, related_name='ventes')
     note = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
@@ -62,9 +62,9 @@ class Vente(models.Model):
 
 
 class VenteDetail(models.Model):
-    miel_id = models.ForeignKey(
+    miel = models.ForeignKey(
         Miel, on_delete=models.CASCADE, related_name='vente_details')
-    vente_id = models.ForeignKey(
+    vente = models.ForeignKey(
         Vente, on_delete=models.CASCADE, related_name='vente_details')
     quantite = models.IntegerField()
 
@@ -73,9 +73,9 @@ class VenteDetail(models.Model):
 
 
 class Commande(models.Model):
-    client_id = models.ForeignKey(
+    client = models.ForeignKey(
         Client, on_delete=models.CASCADE, related_name='commandes')
-    vente_id = models.ForeignKey(
+    vente = models.ForeignKey(
         Vente, on_delete=models.CASCADE, related_name='commandes')
     note = models.TextField()
     livraison_date = models.DateField()
@@ -86,9 +86,9 @@ class Commande(models.Model):
 
 
 class CommandeDetail(models.Model):
-    miel_id = models.ForeignKey(
+    miel = models.ForeignKey(
         Miel, on_delete=models.CASCADE, related_name='commande_details')
-    commande_id = models.ForeignKey(
+    commande = models.ForeignKey(
         Commande, on_delete=models.CASCADE, related_name='commande_details')
     quantite = models.IntegerField()
 
@@ -97,9 +97,9 @@ class CommandeDetail(models.Model):
 
 
 class CommandeStatusHistory(models.Model):
-    commande_id = models.ForeignKey(
+    commande = models.ForeignKey(
         Commande, on_delete=models.CASCADE, related_name='commande_status_histories')
-    commande_status_id = models.ForeignKey(
+    commande_status = models.ForeignKey(
         CommandeStatus, on_delete=models.CASCADE, related_name='commande_status_histories')
     created_at = models.DateTimeField(auto_now_add=True)
 

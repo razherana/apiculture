@@ -1,6 +1,6 @@
 from django.shortcuts import redirect, render
 
-from projet.models.ventes import Client, ClientType
+from projet.models.ventes import Client, ClientType, Commande
 
 
 def list_miels_test(request):
@@ -35,10 +35,30 @@ def list_commandes_test(request):
         {'id': 2, 'date': '2025-06-10', 'client': 'Bernard', 'produit': 'Miel d’acacia', 'quantite': 100, 'statut': 'Livrée',
             'vente_id': 1, "created_at": "2025-06-01", "livraison_date": "2025-06-20", "note": "Livraison rapide"},
     ]
+
+    # commandeModels = Commande.objects.select_related(
+    #     "client", "produit", "vente").all()
+
+    # commandes = [
+    #     {
+    #         'id': cmd.id,
+    #         'date': cmd.created_at.strftime('%Y-%m-%d'),
+    #         'client': cmd.client.name if cmd.client else '-',
+    #         'produit': cmd.vente.miel.type if cmd.vente and cmd.vente.miel_id else '-',
+    #         'quantite': cmd.quantite,
+    #         'status': cmd.status.name if cmd.status else '-',
+    #         'created_at': cmd.created_at.strftime('%Y-%m-%d'),
+    #         'livraison_date': cmd.livraison_date.strftime('%Y-%m-%d') if cmd.livraison_date else '-',
+    #         'note': cmd.note
+    #     } for cmd in commandeModels
+    # ]
+
     commandes_en_attente = [
-        cmd for cmd in commandes if cmd['vente_id'] is None]
+        cmd for cmd in commandes if cmd['statut'] == 'En attente']
+
     commandes_livrees = [
-        cmd for cmd in commandes if cmd['vente_id'] is not None]
+        cmd for cmd in commandes if cmd['statut'] == 'Livrée']
+
     return render(request, "commerce/commandes/list.html", {
         "commandes_en_attente": commandes_en_attente,
         "commandes_livrees": commandes_livrees,

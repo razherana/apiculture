@@ -13,7 +13,7 @@ class UniteMesure(models.Model):
 # Consumable Models
 class ConsommableType(models.Model):
     name = models.CharField(max_length=255)
-    unite_id = models.ForeignKey(
+    unite = models.ForeignKey(
         UniteMesure, on_delete=models.CASCADE, related_name='consommable_types')
     seuil_alerte = models.IntegerField()
 
@@ -22,7 +22,7 @@ class ConsommableType(models.Model):
 
 
 class Consommable(models.Model):
-    consommable_type_id = models.ForeignKey(
+    consommable_type = models.ForeignKey(
         ConsommableType, on_delete=models.CASCADE, related_name='consommables')
     date_de_peremption = models.DateField()
     created_at = models.DateTimeField(auto_now_add=True)
@@ -32,7 +32,7 @@ class Consommable(models.Model):
 
 
 class ConsommableConsomme(models.Model):
-    consommable_id = models.ForeignKey(
+    consommable = models.ForeignKey(
         Consommable, on_delete=models.CASCADE, related_name='consommable_consomme')
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -52,7 +52,7 @@ class MaterielType(models.Model):
 
 class Materiel(models.Model):
     durre_de_vie_estimee = models.IntegerField()
-    materiel_type_id = models.ForeignKey(
+    materiel_type = models.ForeignKey(
         MaterielType, on_delete=models.CASCADE, related_name='materiels')
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -68,9 +68,9 @@ class MaterielStatus(models.Model):
 
 
 class MaterielStatusHistory(models.Model):
-    materiel_id = models.ForeignKey(
+    materiel = models.ForeignKey(
         Materiel, on_delete=models.CASCADE, related_name='materiel_status_histories')
-    materiel_status_id = models.ForeignKey(
+    materiel_status = models.ForeignKey(
         MaterielStatus, on_delete=models.CASCADE, related_name='materiel_status_histories')
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -94,9 +94,9 @@ class EssaimRace(models.Model):
 
 
 class Essaim(models.Model):
-    essaim_origin_id = models.ForeignKey(
+    essaim_origin = models.ForeignKey(
         EssaimOrigin, on_delete=models.CASCADE, related_name='essaims')
-    essaim_race_id = models.ForeignKey(
+    essaim_race = models.ForeignKey(
         EssaimRace, on_delete=models.CASCADE, related_name='essaims')
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -112,9 +112,9 @@ class EssaimStatus(models.Model):
 
 
 class EssaimStatusHistory(models.Model):
-    issaim_id = models.ForeignKey(
+    essaim = models.ForeignKey(
         Essaim, on_delete=models.CASCADE, related_name='essaim_status_histories')
-    issaim_status_id = models.ForeignKey(
+    essaim_status = models.ForeignKey(
         EssaimStatus, on_delete=models.CASCADE, related_name='essaim_status_histories')
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -125,7 +125,7 @@ class EssaimStatusHistory(models.Model):
 class EssaimDetail(models.Model):
     note = models.TextField()
     is_death = models.BooleanField()
-    essaim_id = models.ForeignKey(
+    essaim = models.ForeignKey(
         Essaim, on_delete=models.CASCADE, related_name='essaim_details')
     ouvrier_added = models.IntegerField()
     faux_bourdon_added = models.IntegerField()
@@ -144,11 +144,11 @@ class Comportement(models.Model):
 
 
 class EssaimSanteHistory(models.Model):
-    essaim_id = models.ForeignKey(
+    essaim = models.ForeignKey(
         Essaim, on_delete=models.CASCADE, related_name='essaim_sante_histories')
     force_colonie = models.IntegerField(
         validators=[MinValueValidator(1), MaxValueValidator(10)])
-    comportement_id = models.ForeignKey(
+    comportement = models.ForeignKey(
         Comportement, on_delete=models.CASCADE, related_name='essaim_sante_histories')
     egg_present = models.BooleanField()
     couvain_present = models.BooleanField()
@@ -173,7 +173,7 @@ class CadreType(models.Model):
 class HausseType(models.Model):
     name = models.CharField(max_length=255)
     cadre_max_capacity = models.IntegerField()
-    cadre_type_id = models.ForeignKey(
+    cadre_type = models.ForeignKey(
         CadreType, on_delete=models.CASCADE, related_name='hausse_types')
 
     class Meta:
@@ -183,7 +183,7 @@ class HausseType(models.Model):
 class RucheType(models.Model):
     name = models.CharField(max_length=255)
     hausse_max_capacity = models.IntegerField()
-    hausses_type_id = models.ForeignKey(
+    hausses_type = models.ForeignKey(
         HausseType, on_delete=models.CASCADE, related_name='ruche_types')
 
     class Meta:
@@ -207,9 +207,9 @@ class Localization(models.Model):
 
 
 class LocalizationStatusHistory(models.Model):
-    localization_id = models.ForeignKey(
+    localization = models.ForeignKey(
         Localization, on_delete=models.CASCADE, related_name='localization_status_histories')
-    localization_status_id = models.ForeignKey(
+    localization_status = models.ForeignKey(
         LocalizationStatus, on_delete=models.CASCADE, related_name='localization_status_histories')
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -226,11 +226,11 @@ class RucheStatus(models.Model):
 
 class Ruche(models.Model):
     description = models.CharField(max_length=255)
-    localizations_id = models.ForeignKey(
+    localizations = models.ForeignKey(
         Localization, on_delete=models.CASCADE, related_name='ruches')
-    ruche_type_id = models.ForeignKey(
+    ruche_type = models.ForeignKey(
         RucheType, on_delete=models.CASCADE, related_name='ruches')
-    essaim_id = models.ForeignKey(
+    essaim = models.ForeignKey(
         Essaim, on_delete=models.CASCADE, related_name='ruches')
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -239,9 +239,9 @@ class Ruche(models.Model):
 
 
 class RucheStatusHistory(models.Model):
-    ruche_id = models.ForeignKey(
+    ruche = models.ForeignKey(
         Ruche, on_delete=models.CASCADE, related_name='ruche_status_histories')
-    ruche_status_id = models.ForeignKey(
+    ruche_status = models.ForeignKey(
         RucheStatus, on_delete=models.CASCADE, related_name='ruche_status_histories')
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -250,7 +250,7 @@ class RucheStatusHistory(models.Model):
 
 
 class Hausse(models.Model):
-    hausse_type_id = models.ForeignKey(
+    hausse_type = models.ForeignKey(
         HausseType, on_delete=models.CASCADE, related_name='hausses')
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -259,7 +259,7 @@ class Hausse(models.Model):
 
 
 class HausseCadre(models.Model):
-    hausse_id = models.ForeignKey(
+    hausse = models.ForeignKey(
         Hausse, on_delete=models.CASCADE, related_name='hausse_cadres')
     added_cadre = models.IntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
@@ -269,9 +269,9 @@ class HausseCadre(models.Model):
 
 
 class RucheHausseHistory(models.Model):
-    ruche_id = models.ForeignKey(
+    ruche = models.ForeignKey(
         Ruche, on_delete=models.CASCADE, related_name='ruche_hausse_histories')
-    hausse_id = models.ForeignKey(
+    hausse = models.ForeignKey(
         Hausse, on_delete=models.CASCADE, related_name='ruche_hausse_histories')
     created_at = models.DateTimeField(auto_now_add=True)
     is_removed = models.BooleanField(default=False)

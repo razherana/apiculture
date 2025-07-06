@@ -12,7 +12,7 @@ urlpatterns = [
     path("clients/view/", client_vue, name="client_vue"),
     path("clients/add/", client_form, name="client_form"),
 
-    path("test/commandes_liste/", list_commandes_test,
+    path("commandes/", list_commandes_test,
          name="test_liste_commandes"),
     path("test/ventes_liste/", list_ventes_test, name="test_liste_ventes"),
     path("test/vente_vue/", vente_vue, name="vente_vue"),

@@ -18,9 +18,9 @@ class Role(models.Model):
 
 
 class UserRole(models.Model):
-    role_id = models.ForeignKey(
+    role = models.ForeignKey(
         Role, on_delete=models.CASCADE, related_name='user_roles')
-    user_id = models.ForeignKey(
+    user = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name='user_roles')
 
     class Meta:
@@ -28,7 +28,7 @@ class UserRole(models.Model):
 
 
 class LoginHistory(models.Model):
-    user_id = models.ForeignKey(
+    user = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name='login_histories')
     created_at = models.DateTimeField(auto_now_add=True)
 
