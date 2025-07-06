@@ -29,29 +29,61 @@ def list_clients_test(request):
 
 
 def list_commandes_test(request):
-    commandes = [
-        {'id': 1, 'date': '2025-06-15', 'client': 'Durand', 'produit': 'Miel de fleurs', 'quantite': 20, 'statut': 'En attente',
-            "vente_id": None, "created_at": "2025-06-01", "livraison_date": "2025-06-20", "note": "Livraison rapide"},
-        {'id': 2, 'date': '2025-06-10', 'client': 'Bernard', 'produit': 'Miel d’acacia', 'quantite': 100, 'statut': 'Livrée',
-            'vente_id': 1, "created_at": "2025-06-01", "livraison_date": "2025-06-20", "note": "Livraison rapide"},
+    # Mock data for commande details
+    commande_details_1 = [
+        {'miel': {'name': 'Miel de fleurs'}, 'quantite': 20},
     ]
 
-    # commandeModels = Commande.objects.select_related(
-    #     "client", "produit", "vente").all()
+    commande_details_2 = [
+        {'miel': {'name': 'Miel d\'acacia'}, 'quantite': 80},
+        {'miel': {'name': 'Miel de châtaignier'}, 'quantite': 20},
+    ]
 
-    # commandes = [
-    #     {
-    #         'id': cmd.id,
-    #         'date': cmd.created_at.strftime('%Y-%m-%d'),
-    #         'client': cmd.client.name if cmd.client else '-',
-    #         'produit': cmd.vente.miel.type if cmd.vente and cmd.vente.miel_id else '-',
-    #         'quantite': cmd.quantite,
-    #         'status': cmd.status.name if cmd.status else '-',
-    #         'created_at': cmd.created_at.strftime('%Y-%m-%d'),
-    #         'livraison_date': cmd.livraison_date.strftime('%Y-%m-%d') if cmd.livraison_date else '-',
-    #         'note': cmd.note
-    #     } for cmd in commandeModels
-    # ]
+    # Mock data for status history
+    status_history_1 = [
+        {'commande_status': {'name': 'Créée'}, 'created_at': '2025-06-01 10:15'},
+        {'commande_status': {'name': 'En attente'},
+            'created_at': '2025-06-01 15:30'},
+    ]
+
+    status_history_2 = [
+        {'commande_status': {'name': 'Créée'}, 'created_at': '2025-06-01 09:00'},
+        {'commande_status': {'name': 'En préparation'},
+            'created_at': '2025-06-05 11:20'},
+        {'commande_status': {'name': 'Livrée'}, 'created_at': '2025-06-10 14:45'},
+    ]
+
+    # Enhanced commandes with details and status history
+    commandes = [
+        {
+            'id': 1,
+            'date': '2025-06-15',
+            'client': 'Durand',
+            'produit': 'Miel de fleurs',
+            'quantite': 20,
+            'statut': 'En attente',
+            'vente_id': None,
+            'created_at': '2025-06-01',
+            'livraison_date': '2025-06-20',
+            'note': 'Livraison rapide',
+            'commande_details': {'all': commande_details_1},
+            'commande_status_histories': {'all': status_history_1}
+        },
+        {
+            'id': 2,
+            'date': '2025-06-10',
+            'client': 'Bernard',
+            'produit': 'Miel d\'acacia',
+            'quantite': 100,
+            'statut': 'Livrée',
+            'vente_id': 1,
+            'created_at': '2025-06-01',
+            'livraison_date': '2025-06-20',
+            'note': 'Livraison rapide',
+            'commande_details': {'all': commande_details_2},
+            'commande_status_histories': {'all': status_history_2}
+        },
+    ]
 
     commandes_en_attente = [
         cmd for cmd in commandes if cmd['statut'] == 'En attente']
