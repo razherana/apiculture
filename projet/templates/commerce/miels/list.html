@@ -3,47 +3,77 @@
 {% block title %}Liste des miels{% endblock %}
 {% block content %}
 <link rel="stylesheet" href="{% static 'commerce/css/list.css' %}">
+<link rel="stylesheet" href="{% static 'css/beenova.css' %}">
+<link rel="stylesheet" href="{% static 'commerce/css/dark-mode-fix.css' %}">
+
 <div class="liste-content">
     <h2>Liste des miels</h2>
-    <form action="{% url 'miels_stats'%}" method="post" style="display:inline;">
-        {% csrf_token %}
-        <button class="action-btn add" type="submit">
-            Statistiques générale des stocks cette saison
-        </button>
-    </form>
-    <div class="table-card">
+    
+    <div style="display: flex; gap: var(--space-md); margin-bottom: var(--space-lg);">
+        <a href="{% url 'miel_form' %}" class="btn btn-honey action-btn">
+            <i class="fas fa-plus"></i>
+            Ajouter un miel
+        </a>
+        <a href="{% url 'miels_stats' %}" class="btn btn-glass action-btn">
+            <i class="fas fa-chart-line"></i>
+            Statistiques des miels
+        </a>
+        <a href="{% url 'stock_miels_list' %}" class="btn btn-glass action-btn">
+            <i class="fas fa-boxes-stacked"></i>
+            Gestion du stock
+        </a>
+    </div>
+    
+    <div class="card glass">
         <div class="table-scroll-container">
             <table class="commerce-table">
                 <thead>
                     <tr>
-                        <th>ID</th>
+                        <th>Miel</th>
                         <th>Type</th>
                         <th>Conteneur</th>
                         <th>Stock actuel</th>
-                        <th>Prix</th>
+                        <th>Unité</th>
+                        <th>Prix actuel</th>
+                        <th>Seuil d'alerte</th>
+                        <th>Statut</th>
                         <th class="actions-column">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for miel in miels %}
-                    <tr>
-                        <td>{{ miel.id }}</td>
-                        <td>{{ miel.type }}</td>
+                    <tr class="expandable-row {% if miel.is_low_stock %}bg-danger{% endif %}" 
+                        data-miel-id="{{ miel.id }}">
+                        <td>{{ miel.nom }}</td>
+                        <td>{{ miel.type_miel }}</td>
                         <td>{{ miel.conteneur }}</td>
-                        <td>{{ miel.stock }}</td>
-                        <td>{{ miel.prix }} Ar</td>
                         <td>
-                            <form action="{% url 'stock_miels_list' %}" method="post">
-                                {% csrf_token %}
-                                <button class="action-btn view" type="submit">
-                                    Gerer
-                                </button>
-                            </form>
+                            <span class="{% if miel.is_low_stock %}text-danger{% else %}text-success{% endif %}">
+                                {{ miel.stock_actuel }}
+                            </span>
+                        </td>
+                        <td>{{ miel.quantite_unite }}{{ miel.unite_mesure }}</td>
+                        <td>
+                            <span class="text-honey">{{ miel.prix_actuel }}€</span>
+                        </td>
+                        <td>{{ miel.seuil_alerte }}</td>
+                        <td>
+                            {% if miel.is_low_stock %}
+                                <span class="badge badge-danger">Stock faible</span>
+                            {% else %}
+                                <span class="badge badge-dark">Stock normal</span>
+                            {% endif %}
+                        </td>
+                        <td style="display: flex; gap: 0.25em;">
+                            <a href="{% url 'stock_miels_list' %}" class="action-btn view">
+                                <i class="fas fa-boxes-stacked"></i>
+                                Stock
+                            </a>
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="6">Aucun miel trouvé.</td>
+                        <td colspan="9" class="text-secondary">Aucun miel trouvé.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -51,4 +81,273 @@
         </div>
     </div>
 </div>
+
+<!-- Modal for miel details -->
+<div id="mielModal" class="modal">
+    <div class="modal-content glass">
+        <span class="close-modal">&times;</span>
+        <h3>Détails du miel <span id="modal-miel-name" class="text-honey"></span></h3>
+        
+        <div class="modal-tabs" style="display: flex; border-bottom: 1px solid var(--border-subtle); margin-bottom: var(--space-md);">
+            <div class="modal-tab active btn btn-glass" data-tab="stock" style="border-radius: var(--radius-sm) var(--radius-sm) 0 0; margin-right: var(--space-xs);">
+                Historique des stocks
+            </div>
+            <div class="modal-tab btn btn-glass" data-tab="price" style="border-radius: var(--radius-sm) var(--radius-sm) 0 0;">
+                Historique des prix
+            </div>
+        </div>
+        
+        <div id="stock-tab" class="modal-tab-content active">
+            <div class="card">
+                <table class="commerce-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Quantité ajoutée</th>
+                            <th>Type</th>
+                        </tr>
+                    </thead>
+                    <tbody id="modal-stock-body">
+                        <!-- Stock history will be populated via JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div id="price-tab" class="modal-tab-content" style="display: none;">
+            <div class="card">
+                <table class="commerce-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Prix</th>
+                        </tr>
+                    </thead>
+                    <tbody id="modal-price-body">
+                        <!-- Price history will be populated via JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const expandableRows = document.querySelectorAll(".expandable-row");
+    const modal = document.getElementById("mielModal");
+    const closeBtn = document.querySelector(".close-modal");
+    const modalMielName = document.getElementById("modal-miel-name");
+    const modalStockBody = document.getElementById("modal-stock-body");
+    const modalPriceBody = document.getElementById("modal-price-body");
+    const modalTabs = document.querySelectorAll(".modal-tab");
+    
+    // Store miel data for modal access
+    const mielData = {};
+    
+    {% for miel in miels %}
+        mielData[{{ miel.id }}] = {
+            name: "{{ miel.nom }}",
+            stockHistory: [
+                {% for stock in miel.miel_stock.all %}
+                    { 
+                        date: "{{ stock.created_at|date:'Y-m-d H:i' }}", 
+                        quantity: {{ stock.added_quantity }},
+                        type: "{% if stock.added_quantity > 0 %}Entrée{% else %}Sortie{% endif %}"
+                    },
+                {% endfor %}
+            ],
+            priceHistory: [
+                {% for price in miel.miel_price_histories.all %}
+                    { 
+                        date: "{{ price.created_at|date:'Y-m-d H:i' }}", 
+                        price: {{ price.price }}
+                    },
+                {% endfor %}
+            ]
+        };
+    {% endfor %}
+    
+    // Tab switching functionality
+    modalTabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+            modalTabs.forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.modal-tab-content').forEach(c => c.style.display = 'none');
+            
+            this.classList.add('active');
+            const tabName = this.getAttribute('data-tab');
+            document.getElementById(`${tabName}-tab`).style.display = 'block';
+        });
+    });
+    
+    // Open modal when clicking on a row (except on action buttons)
+    expandableRows.forEach(row => {
+        row.addEventListener("click", function(e) {
+            // Prevent click on buttons from opening modal
+            if (e.target.tagName === "BUTTON" || e.target.closest("button") || e.target.closest("a")) {
+                return;
+            }
+            
+            const mielId = this.getAttribute("data-miel-id");
+            const miel = mielData[mielId];
+            
+            if (!miel) return;
+            
+            modalMielName.textContent = miel.name;
+            
+            // Populate stock history tab
+            modalStockBody.innerHTML = '';
+            if (miel.stockHistory.length > 0) {
+                miel.stockHistory.forEach(stock => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${stock.date}</td>
+                        <td class="${stock.quantity > 0 ? 'text-success' : 'text-danger'}">${stock.quantity}</td>
+                        <td><span class="badge ${stock.quantity > 0 ? 'badge-dark' : 'badge-danger'}">${stock.type}</span></td>
+                    `;
+                    modalStockBody.appendChild(row);
+                });
+            } else {
+                const row = document.createElement('tr');
+                row.innerHTML = '<td colspan="3" class="text-secondary">Aucun historique de stock disponible</td>';
+                modalStockBody.appendChild(row);
+            }
+            
+            // Populate price history tab
+            modalPriceBody.innerHTML = '';
+            if (miel.priceHistory.length > 0) {
+                miel.priceHistory.forEach(price => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${price.date}</td>
+                        <td class="text-honey">${price.price}€</td>
+                    `;
+                    modalPriceBody.appendChild(row);
+                });
+            } else {
+                const row = document.createElement('tr');
+                row.innerHTML = '<td colspan="2" class="text-secondary">Aucun historique de prix disponible</td>';
+                modalPriceBody.appendChild(row);
+            }
+            
+            modal.style.display = "block";
+        });
+    });
+    
+    // Close modal when clicking on X
+    closeBtn.addEventListener("click", function() {
+        modal.style.display = "none";
+    });
+    
+    // Close modal when clicking outside of it
+    window.addEventListener("click", function(e) {
+        if (e.target === modal) {
+            modal.style.display = "none";
+        }
+    });
+    
+    // Add hover effects for rows
+    expandableRows.forEach(row => {
+        row.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-2px)';
+            this.style.boxShadow = 'var(--shadow-md)';
+        });
+        
+        row.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+            this.style.boxShadow = 'none';
+        });
+    });
+});
+</script>
+
+<style>
+/* Modal styles using BeeNova design system */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: var(--z-modal);
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+}
+
+.modal-content {
+    margin: 5% auto;
+    padding: var(--space-xl);
+    width: 90%;
+    max-width: 1000px;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    animation: fadeUp 0.3s ease-out;
+}
+
+.close-modal {
+    color: var(--text-secondary);
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: color var(--transition-fast);
+}
+
+.close-modal:hover,
+.close-modal:focus {
+    color: var(--honey-primary);
+}
+
+.modal-tab.active {
+    background: var(--honey-primary) !important;
+    color: var(--hive-black) !important;
+    transform: translateY(-2px);
+}
+
+.modal-tab-content {
+    animation: fadeUp 0.3s ease-out;
+}
+
+/* Enhanced table styles */
+.expandable-row:hover {
+    background-color: var(--bg-elevated-hover) !important;
+}
+
+/* Low stock warning animation */
+.bg-danger {
+    background-color: rgba(255, 51, 102, 0.1) !important;
+    animation: gentlePulse 3s infinite ease-in-out;
+}
+
+:root:not(.light-mode) .bg-danger {
+    background-color: rgba(255, 51, 102, 0.2) !important;
+}
+
+/* Action button styling */
+.action-btn {
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius-sm);
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all var(--transition-fast);
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-xs);
+}
+
+.action-btn.view {
+    background: var(--glass-bg);
+    backdrop-filter: blur(10px);
+    color: var(--text-primary);
+    border: 1px solid var(--glass-border);
+}
+
+.action-btn.view:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-sm);
+}
+</style>
 {% endblock %}

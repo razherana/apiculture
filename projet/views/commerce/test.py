@@ -5,13 +5,46 @@ from projet.models.ventes import Client, ClientType, Commande, CommandeStatus
 
 
 def miels_list(request):
-    miels = [
-        {'id': 1, 'type': 'Fleurs', 'conteneur': 'Petit bocaux',
-            'stock': 40, 'prix': 8.5},
-        {'id': 2, 'type': 'Acacia', 'conteneur': 'Grands Pots en verre',
-            'stock': 25, 'prix': 10.0},
-    ]
-    return render(request, "commerce/miels/list.html", {'miels': miels})
+    from projet.models.productions import Miel
+    from django.db.models import Sum
+    
+    # Get all miels with related data
+    miels_queryset = Miel.objects.select_related(
+        'miel_type', 'consommable_type', 'unite_mesure'
+    ).prefetch_related(
+        'miel_stock', 'miel_price_histories'
+    ).all()
+    
+    miels_data = []
+    for miel in miels_queryset:
+        # Calculate current stock (sum of all stock entries)
+        current_stock = miel.miel_stock.aggregate(total=Sum('added_quantity'))['total'] or 0
+        
+        # Get latest price
+        latest_price_entry = miel.miel_price_histories.order_by('-created_at').first()
+        current_price = latest_price_entry.price if latest_price_entry else 0.0
+        
+        # Check if stock is below alert threshold
+        seuil_alerte = miel.consommable_type.seuil_alerte
+        is_low_stock = current_stock <= seuil_alerte
+        
+        miel_dict = {
+            'id': miel.id,
+            'nom': f"{miel.miel_type.name} - {miel.consommable_type.name}",
+            'type_miel': miel.miel_type.name,
+            'conteneur': miel.consommable_type.name,
+            'stock_actuel': current_stock,
+            'prix_actuel': current_price,
+            'unite_mesure': miel.unite_mesure.name,
+            'quantite_unite': miel.quantite_unite,
+            'seuil_alerte': seuil_alerte,
+            'is_low_stock': is_low_stock,
+            'miel_stock': miel.miel_stock,
+            'miel_price_histories': miel.miel_price_histories
+        }
+        miels_data.append(miel_dict)
+    
+    return render(request, "commerce/miels/list.html", {'miels': miels_data})
 
 
 def clients_list(request):
@@ -599,4 +632,78 @@ def commandes_stats(request):
     return render(request, "commerce/commandes/stats.html", {
         "stats_par_type": stats_par_type,
         "stats_globales": stats_globales
+    })
+
+
+def miel_form(request):
+    from projet.models.productions import Miel, MielType, MielPriceHistory
+    from projet.models.ressources import ConsommableType, UniteMesure
+    from django.contrib import messages
+    
+    if request.method == "POST":
+        # Handle form submission
+        miel_type_id = request.POST.get('miel_type')
+        consommable_type_id = request.POST.get('consommable_type')
+        unite_mesure_id = request.POST.get('unite_mesure')
+        quantite_unite = request.POST.get('quantite_unite')
+        prix_initial = request.POST.get('prix_initial')
+        
+        try:
+            # Validate inputs
+            if not all([miel_type_id, consommable_type_id, unite_mesure_id, quantite_unite]):
+                messages.error(request, 'Tous les champs obligatoires doivent être remplis.')
+                raise ValueError("Missing required fields")
+            
+            # Get model instances
+            miel_type = MielType.objects.get(id=miel_type_id)
+            consommable_type = ConsommableType.objects.get(id=consommable_type_id)
+            unite_mesure = UniteMesure.objects.get(id=unite_mesure_id)
+            
+            quantite_unite_int = int(quantite_unite)
+            if quantite_unite_int <= 0:
+                messages.error(request, 'La quantité par unité doit être supérieure à 0.')
+                raise ValueError("Invalid quantity")
+            
+            # Create miel
+            miel = Miel.objects.create(
+                miel_type=miel_type,
+                consommable_type=consommable_type,
+                unite_mesure=unite_mesure,
+                quantite_unite=quantite_unite_int
+            )
+            
+            # Create initial price if provided
+            if prix_initial:
+                try:
+                    prix_float = float(prix_initial)
+                    if prix_float > 0:
+                        MielPriceHistory.objects.create(
+                            miel=miel,
+                            price=prix_float
+                        )
+                except ValueError:
+                    pass  # Ignore invalid price, not required
+            
+            # Success message
+            messages.success(request, f'Miel "{miel_type.name} - {consommable_type.name}" créé avec succès.')
+            
+            return redirect('miels_list')
+            
+        except (MielType.DoesNotExist, ConsommableType.DoesNotExist, UniteMesure.DoesNotExist):
+            messages.error(request, 'Une des sélections n\'est pas valide.')
+        except ValueError as e:
+            if "Invalid quantity" not in str(e) and "Missing required fields" not in str(e):
+                messages.error(request, 'Veuillez vérifier les données saisies.')
+        except Exception as e:
+            messages.error(request, 'Une erreur inattendue s\'est produite. Veuillez réessayer.')
+    
+    # GET request - show form
+    miel_types = MielType.objects.all()
+    consommable_types = ConsommableType.objects.select_related('unite').all()
+    unite_mesures = UniteMesure.objects.all()
+    
+    return render(request, "commerce/miels/form.html", {
+        "miel_types": miel_types,
+        "consommable_types": consommable_types,
+        "unite_mesures": unite_mesures
     })

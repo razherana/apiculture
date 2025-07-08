@@ -3,6 +3,7 @@ from projet.views.commerce.test import *  # Chemin absolu
 
 urlpatterns = [
     path('miels/', miels_list, name='miels_list'),
+    path('miels/add/', miel_form, name='miel_form'),
     path("miels/statistics", miels_stats, name="miels_stats"),
     
     path("stock-miels/", stock_miels_list, name="stock_miels_list"),

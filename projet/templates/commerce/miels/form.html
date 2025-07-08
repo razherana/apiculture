@@ -1,0 +1,365 @@
+{% extends "base_commerce.html" %}
+{% load static %}
+{% block title %}Ajouter un miel{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'commerce/css/form.css' %}">
+<link rel="stylesheet" href="{% static 'css/beenova.css' %}">
+<link rel="stylesheet" href="{% static 'commerce/css/dark-mode-fix.css' %}">
+
+<div class="liste-content">
+    <h2>Ajouter un nouveau miel</h2>
+    
+    <!-- Messages d'erreur et de succès -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} fade-up" role="alert">
+                <div style="display: flex; align-items: center; gap: var(--space-sm);">
+                    {% if message.tags == 'success' %}
+                        <i class="fas fa-check-circle" style="color: var(--pollen-green);"></i>
+                    {% elif message.tags == 'error' %}
+                        <i class="fas fa-exclamation-triangle" style="color: var(--queen-red);"></i>
+                    {% elif message.tags == 'warning' %}
+                        <i class="fas fa-exclamation-circle" style="color: var(--honey-primary);"></i>
+                    {% else %}
+                        <i class="fas fa-info-circle" style="color: var(--nectar-blue);"></i>
+                    {% endif %}
+                    <span>{{ message }}</span>
+                </div>
+                <button type="button" class="close-alert" onclick="this.parentElement.remove()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        {% endfor %}
+    {% endif %}
+    
+    <div class="card glass">
+        <form method="post" id="miel-form" autocomplete="off">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label for="miel_type" class="form-label">Type de miel *</label>
+                <select id="miel_type" name="miel_type" class="form-control" required>
+                    <option value="" disabled selected>-- Sélectionner un type de miel --</option>
+                    {% for miel_type in miel_types %}
+                        <option value="{{ miel_type.id }}">{{ miel_type.name }}</option>
+                    {% endfor %}
+                </select>
+                <div class="form-error" id="miel_type-error" style="display: none;"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="consommable_type" class="form-label">Type de conteneur *</label>
+                <select id="consommable_type" name="consommable_type" class="form-control" required>
+                    <option value="" disabled selected>-- Sélectionner un type de conteneur --</option>
+                    {% for consommable_type in consommable_types %}
+                        <option value="{{ consommable_type.id }}" data-unite="{{ consommable_type.unite.name }}">
+                            {{ consommable_type.name }} (Seuil d'alerte: {{ consommable_type.seuil_alerte }})
+                        </option>
+                    {% endfor %}
+                </select>
+                <div class="form-error" id="consommable_type-error" style="display: none;"></div>
+            </div>
+            
+            <div class="form-group">
+                <label for="unite_mesure" class="form-label">Unité de mesure *</label>
+                <select id="unite_mesure" name="unite_mesure" class="form-control" required>
+                    <option value="" disabled selected>-- Sélectionner une unité de mesure --</option>
+                    {% for unite_mesure in unite_mesures %}
+                        <option value="{{ unite_mesure.id }}">{{ unite_mesure.name }}</option>
+                    {% endfor %}
+                </select>
+                <div class="form-error" id="unite_mesure-error" style="display: none;"></div>
+            </div>
+            
+            <div class="form-group">
+                <label for="quantite_unite" class="form-label">Quantité par unité *</label>
+                <div style="display: flex; gap: var(--space-sm); align-items: center;">
+                    <input type="number" id="quantite_unite" name="quantite_unite" class="form-control" min="1" step="1" required style="flex: 1;" placeholder="Ex: 250, 500, 1000...">
+                    <span class="text-secondary" id="unite-display">unités</span>
+                </div>
+                <small class="text-secondary">Quantité contenue dans chaque unité (ex: 250g, 500ml, etc.)</small>
+                <div class="form-error" id="quantite_unite-error" style="display: none;"></div>
+            </div>
+            
+            <div class="form-group">
+                <label for="prix_initial" class="form-label">Prix initial (optionnel)</label>
+                <div style="display: flex; gap: var(--space-sm); align-items: center;">
+                    <input type="number" id="prix_initial" name="prix_initial" class="form-control" min="0" step="0.01" style="flex: 1;" placeholder="Ex: 8.50">
+                    <span class="text-secondary">Ar</span>
+                </div>
+                <small class="text-secondary">Prix de vente par unité. Peut être défini plus tard.</small>
+                <div class="form-error" id="prix_initial-error" style="display: none;"></div>
+            </div>
+            
+            <div style="display: flex; gap: var(--space-md); justify-content: flex-end; margin-top: var(--space-xl);">
+                <a href="{% url 'miels_list' %}" class="btn btn-glass action-btn">
+                    <i class="fas fa-arrow-left"></i>
+                    Retour
+                </a>
+                <button type="submit" class="btn btn-honey action-btn" id="submit-btn">
+                    <i class="fas fa-save"></i>
+                    Créer le miel
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Clear error messages
+function clearErrors() {
+    document.querySelectorAll('.form-error').forEach(error => {
+        error.style.display = 'none';
+        error.textContent = '';
+    });
+    
+    document.querySelectorAll('.form-control').forEach(control => {
+        control.classList.remove('error');
+    });
+}
+
+// Show error message
+function showError(fieldId, message) {
+    const errorElement = document.getElementById(`${fieldId}-error`);
+    const fieldElement = document.getElementById(fieldId);
+    
+    if (errorElement && fieldElement) {
+        errorElement.textContent = message;
+        errorElement.style.display = 'block';
+        fieldElement.classList.add('error');
+    }
+}
+
+// Update unit display when unite_mesure changes
+document.getElementById('unite_mesure').addEventListener('change', function() {
+    const selectedOption = this.options[this.selectedIndex];
+    const uniteDisplay = document.getElementById('unite-display');
+    uniteDisplay.textContent = selectedOption.text;
+});
+
+// Update unit display when consommable_type changes
+document.getElementById('consommable_type').addEventListener('change', function() {
+    const selectedOption = this.options[this.selectedIndex];
+    const unite = selectedOption.dataset.unite;
+    if (unite) {
+        const uniteSelect = document.getElementById('unite_mesure');
+        // Try to auto-select matching unit
+        for (let i = 0; i < uniteSelect.options.length; i++) {
+            if (uniteSelect.options[i].text === unite) {
+                uniteSelect.selectedIndex = i;
+                uniteSelect.dispatchEvent(new Event('change'));
+                break;
+            }
+        }
+    }
+});
+
+// Form validation
+document.getElementById('miel-form').addEventListener('submit', function(e) {
+    clearErrors();
+    
+    const mielType = document.getElementById('miel_type').value;
+    const consommableType = document.getElementById('consommable_type').value;
+    const uniteMesure = document.getElementById('unite_mesure').value;
+    const quantiteUnite = document.getElementById('quantite_unite').value;
+    const prixInitial = document.getElementById('prix_initial').value;
+    
+    let hasErrors = false;
+    
+    if (!mielType) {
+        showError('miel_type', 'Veuillez sélectionner un type de miel');
+        hasErrors = true;
+    }
+    
+    if (!consommableType) {
+        showError('consommable_type', 'Veuillez sélectionner un type de conteneur');
+        hasErrors = true;
+    }
+    
+    if (!uniteMesure) {
+        showError('unite_mesure', 'Veuillez sélectionner une unité de mesure');
+        hasErrors = true;
+    }
+    
+    if (!quantiteUnite || parseInt(quantiteUnite) <= 0) {
+        showError('quantite_unite', 'La quantité par unité doit être supérieure à 0');
+        hasErrors = true;
+    }
+    
+    if (prixInitial && parseFloat(prixInitial) < 0) {
+        showError('prix_initial', 'Le prix ne peut pas être négatif');
+        hasErrors = true;
+    }
+    
+    if (hasErrors) {
+        e.preventDefault();
+        // Scroll to first error
+        const firstError = document.querySelector('.form-error[style*="block"]');
+        if (firstError) {
+            firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        return;
+    }
+    
+    // Show loading state
+    const submitBtn = document.getElementById('submit-btn');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Création en cours...';
+});
+
+// Auto-dismiss alerts after 5 seconds
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(function() {
+        document.querySelectorAll('.alert').forEach(alert => {
+            alert.style.opacity = '0';
+            alert.style.transform = 'translateY(-20px)';
+            setTimeout(() => alert.remove(), 300);
+        });
+    }, 5000);
+});
+</script>
+
+<style>
+/* Alert styles */
+.alert {
+    padding: var(--space-md);
+    margin-bottom: var(--space-lg);
+    border-radius: var(--radius-md);
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all var(--transition-medium);
+    box-shadow: var(--shadow-sm);
+}
+
+.alert-success {
+    background-color: rgba(0, 204, 136, 0.1);
+    border: 1px solid rgba(0, 204, 136, 0.3);
+    color: var(--pollen-green);
+}
+
+.alert-error {
+    background-color: rgba(255, 51, 102, 0.1);
+    border: 1px solid rgba(255, 51, 102, 0.3);
+    color: var(--queen-red);
+}
+
+.alert-warning {
+    background-color: rgba(255, 209, 0, 0.1);
+    border: 1px solid rgba(255, 209, 0, 0.3);
+    color: var(--honey-primary);
+}
+
+.alert-info {
+    background-color: rgba(0, 136, 255, 0.1);
+    border: 1px solid rgba(0, 136, 255, 0.3);
+    color: var(--nectar-blue);
+}
+
+:root:not(.light-mode) .alert-success {
+    background-color: rgba(0, 204, 136, 0.2);
+}
+
+:root:not(.light-mode) .alert-error {
+    background-color: rgba(255, 51, 102, 0.2);
+}
+
+:root:not(.light-mode) .alert-warning {
+    background-color: rgba(255, 209, 0, 0.2);
+}
+
+:root:not(.light-mode) .alert-info {
+    background-color: rgba(0, 136, 255, 0.2);
+}
+
+.close-alert {
+    background: none;
+    border: none;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity var(--transition-fast);
+    color: inherit;
+    padding: var(--space-xs);
+}
+
+.close-alert:hover {
+    opacity: 1;
+}
+
+/* Form error styles */
+.form-error {
+    color: var(--queen-red);
+    font-size: 0.875rem;
+    margin-top: var(--space-xs);
+    display: none;
+}
+
+.form-control.error {
+    border-color: var(--queen-red);
+    box-shadow: 0 0 0 3px rgba(255, 51, 102, 0.2);
+}
+
+/* Form styling improvements */
+.form-group {
+    margin-bottom: var(--space-lg);
+}
+
+.form-label {
+    display: block;
+    margin-bottom: var(--space-xs);
+    font-weight: 600;
+    color: var(--honey-primary);
+}
+
+.form-control {
+    width: 100%;
+    padding: var(--space-sm) var(--space-md);
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-size: 1rem;
+    transition: all var(--transition-fast);
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--honey-primary);
+    box-shadow: 0 0 0 3px rgba(255, 209, 0, 0.2);
+}
+
+/* Card styling */
+.card {
+    padding: var(--space-xl);
+    margin-bottom: var(--space-lg);
+}
+
+/* Loading state for submit button */
+.btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+/* Helper text styling */
+small.text-secondary {
+    display: block;
+    margin-top: var(--space-xs);
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .form-group > div[style*="flex"] {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+    }
+    
+    .form-control {
+        width: 100% !important;
+    }
+}
+</style>
+{% endblock %}
