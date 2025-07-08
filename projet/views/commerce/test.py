@@ -4,7 +4,7 @@ from django.contrib import messages
 from projet.models.ventes import Client, ClientType, Commande, CommandeStatus
 
 
-def list_miels(request):
+def miels_list(request):
     miels = [
         {'id': 1, 'type': 'Fleurs', 'conteneur': 'Petit bocaux',
             'stock': 40, 'prix': 8.5},

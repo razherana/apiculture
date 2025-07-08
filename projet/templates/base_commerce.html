@@ -64,21 +64,25 @@
                         <span class="arrow"><i class="fas fa-chevron-right"></i></span>
                     </button>
                     <div class="section-content">
-                        <a href="{% url 'test_liste_miels' %}" class="sidebar-btn sub-item {% if 'miels' in request.path %}active{% endif %}">
+                        <a href="{% url 'miels_list' %}" class="sidebar-btn sub-item {% if request.resolver_match.url_name == 'miels_list' or '/miels/' in request.path and '/stock-miels/' not in request.path %}active{% endif %}">
                             <span class="icon"><i class="fas fa-jar"></i></span>
-                            <span class="title">Stock des Miels</span>
+                            <span class="title">Miels</span>
                         </a>
-                        <a href="{% url 'clients_list' %}" class="sidebar-btn sub-item {% if 'clients' in request.path %}active{% endif %}">
+                        <a href="{% url 'clients_list' %}" class="sidebar-btn sub-item {% if request.resolver_match.url_name == 'clients_list' or request.resolver_match.url_name == 'client_form' or request.resolver_match.url_name == 'client_vue' %}active{% endif %}">
                             <span class="icon"><i class="fas fa-users"></i></span>
                             <span class="title">Clients</span>
                         </a>
-                        <a href="{% url 'ventes_list' %}" class="sidebar-btn sub-item {% if 'ventes' in request.path %}active{% endif %}">
+                        <a href="{% url 'ventes_list' %}" class="sidebar-btn sub-item {% if request.resolver_match.url_name == 'ventes_list' or request.resolver_match.url_name == 'vente_form' or request.resolver_match.url_name == 'vente_vue' or request.resolver_match.url_name == 'ventes_stats' %}active{% endif %}">
                             <span class="icon"><i class="fas fa-chart-line"></i></span>
                             <span class="title">Ventes</span>
                         </a>
-                        <a href="{% url 'commandes_list' %}" class="sidebar-btn sub-item {% if 'commandes' in request.path %}active{% endif %}">
+                        <a href="{% url 'commandes_list' %}" class="sidebar-btn sub-item {% if request.resolver_match.url_name == 'commandes_list' or request.resolver_match.url_name == 'commande_form' or request.resolver_match.url_name == 'commandes_stats' %}active{% endif %}">
                             <span class="icon"><i class="fas fa-clipboard-list"></i></span>
                             <span class="title">Commandes</span>
+                        </a>
+                        <a href="{% url 'stock_miels_list' %}" class="sidebar-btn sub-item {% if request.resolver_match.url_name == 'stock_miels_list' or request.resolver_match.url_name == 'stock_miels_form' %}active{% endif %}">
+                            <span class="icon"><i class="fas fa-jar"></i></span>
+                            <span class="title">Stock des Miels</span>
                         </a>
                     </div>
                 </div>
@@ -94,7 +98,7 @@
                     </button>
                     <div class="section-content">
                         <!-- Tableau de bord -->
-                        <a href="{% url 'dashboard_colonies' %}" class="sidebar-btn sub-item {% if 'dashboard/colonies' in request.path %}active{% endif %}">
+                        <a href="{% url 'dashboard_colonies' %}" class="sidebar-btn sub-item {% if request.resolver_match.url_name == 'dashboard_colonies' %}active{% endif %}">
                             <span class="icon"><i class="fas fa-chart-pie"></i></span>
                             <span class="title">Tableau de bord</span>
                         </a>
@@ -107,15 +111,15 @@
                                 <span class="arrow"><i class="fas fa-chevron-right"></i></span>
                             </button>
                             <div class="sub-section-content">
-                                <a href="{% url 'ruches_list' %}" class="sidebar-btn sub-sub-item {% if 'ruches/liste' in request.path %}active{% endif %}">
+                                <a href="{% url 'ruches_list' %}" class="sidebar-btn sub-sub-item {% if request.resolver_match.url_name == 'ruches_list' %}active{% endif %}">
                                     <span class="icon"><i class="fas fa-archive"></i></span>
                                     <span class="title">Ruches</span>
                                 </a>
-                                <a href="{% url 'reines_list' %}" class="sidebar-btn sub-sub-item {% if 'reines/liste' in request.path %}active{% endif %}">
+                                <a href="{% url 'reines_list' %}" class="sidebar-btn sub-sub-item {% if request.resolver_match.url_name == 'reines_list' %}active{% endif %}">
                                     <span class="icon"><i class="fas fa-crown"></i></span>
                                     <span class="title">Reines</span>
                                 </a>
-                                <a href="{% url 'amenagements_list' %}" class="sidebar-btn sub-sub-item {% if 'amenagements/liste' in request.path %}active{% endif %}">
+                                <a href="{% url 'amenagements_list' %}" class="sidebar-btn sub-sub-item {% if request.resolver_match.url_name == 'amenagements_list' %}active{% endif %}">
                                     <span class="icon"><i class="fas fa-house-chimney"></i></span>
                                     <span class="title">Aménagements</span>
                                 </a>
@@ -130,19 +134,19 @@
                                 <span class="arrow"><i class="fas fa-chevron-right"></i></span>
                             </button>
                             <div class="sub-section-content">
-                                <a href="{% url 'soins_list' %}" class="sidebar-btn sub-sub-item {% if 'soins/liste' in request.path %}active{% endif %}">
+                                <a href="{% url 'soins_list' %}" class="sidebar-btn sub-sub-item {% if request.resolver_match.url_name == 'soins_list' %}active{% endif %}">
                                     <span class="icon"><i class="fas fa-flask-vial"></i></span>
                                     <span class="title">Journal des soins</span>
                                 </a>
-                                <a href="{% url 'taches_list' %}" class="sidebar-btn sub-sub-item {% if 'taches/' in request.path %}active{% endif %}">
+                                <a href="{% url 'taches_list' %}" class="sidebar-btn sub-sub-item {% if 'taches' in request.resolver_match.url_name %}active{% endif %}">
                                     <span class="icon"><i class="fas fa-clipboard-check"></i></span>
                                     <span class="title">Tâches</span>
                                 </a>
-                                <a href="{% url 'calendrier' %}" class="sidebar-btn sub-sub-item {% if 'calendrier' in request.path %}active{% endif %}">
+                                <a href="{% url 'calendrier' %}" class="sidebar-btn sub-sub-item {% if request.resolver_match.url_name == 'calendrier' %}active{% endif %}">
                                     <span class="icon"><i class="fas fa-calendar-days"></i></span>
                                     <span class="title">Calendrier</span>
                                 </a>
-                                <a href="{% url 'alertes_list' %}" class="sidebar-btn sub-sub-item {% if 'alertes/liste' in request.path %}active{% endif %}">  
+                                <a href="{% url 'alertes_list' %}" class="sidebar-btn sub-sub-item {% if request.resolver_match.url_name == 'alertes_list' %}active{% endif %}">  
                                     <span class="icon"><i class="fas fa-triangle-exclamation"></i></span>
                                     <span class="title">Alertes</span>
                                 </a>
@@ -157,19 +161,19 @@
                                 <span class="arrow"><i class="fas fa-chevron-right"></i></span>
                             </button>
                             <div class="sub-section-content">
-                                <a href="{% url 'stats_couvain' %}" class="sidebar-btn sub-sub-item {% if 'stats/couvain' in request.path %}active{% endif %}">
+                                <a href="{% url 'stats_couvain' %}" class="sidebar-btn sub-sub-item {% if request.resolver_match.url_name == 'stats_couvain' %}active{% endif %}">
                                     <span class="icon"><i class="fas fa-chart-column"></i></span>
                                     <span class="title">Couvain</span>
                                 </a>
-                                <a href="{% url 'stats_mortalite' %}" class="sidebar-btn sub-sub-item {% if 'stats/mortalite' in request.path %}active{% endif %}">
+                                <a href="{% url 'stats_mortalite' %}" class="sidebar-btn sub-sub-item {% if request.resolver_match.url_name == 'stats_mortalite' %}active{% endif %}">
                                     <span class="icon"><i class="fas fa-skull"></i></span>
                                     <span class="title">Mortalité</span>
                                 </a>
-                                <a href="{% url 'stats_reines' %}" class="sidebar-btn sub-sub-item {% if 'stats/reines' in request.path %}active{% endif %}">
+                                <a href="{% url 'stats_reines' %}" class="sidebar-btn sub-sub-item {% if request.resolver_match.url_name == 'stats_reines' %}active{% endif %}">
                                     <span class="icon"><i class="fas fa-chess-queen"></i></span>
                                     <span class="title">Reines</span>
                                 </a>
-                                <a href="{% url 'stats_essaimage' %}" class="sidebar-btn sub-sub-item {% if 'stats/essaimage' in request.path %}active{% endif %}">
+                                <a href="{% url 'stats_essaimage' %}" class="sidebar-btn sub-sub-item {% if request.resolver_match.url_name == 'stats_essaimage' %}active{% endif %}">
                                     <span class="icon"><i class="fas fa-swarm"></i></span>
                                     <span class="title">Essaimage</span>
                                 </a>
@@ -184,19 +188,19 @@
                                 <span class="arrow"><i class="fas fa-chevron-right"></i></span>
                             </button>
                             <div class="sub-section-content">
-                                <a href="{% url 'filtres_ruches' %}" class="sidebar-btn sub-sub-item {% if 'filtres/ruches' in request.path %}active{% endif %}">
+                                <a href="{% url 'filtres_ruches' %}" class="sidebar-btn sub-sub-item {% if request.resolver_match.url_name == 'filtres_ruches' %}active{% endif %}">
                                     <span class="icon"><i class="fas fa-filter"></i></span>
                                     <span class="title">Filtres ruches</span>
                                 </a>
-                                <a href="{% url 'filtres_soins' %}" class="sidebar-btn sub-sub-item {% if 'filtres/soins' in request.path %}active{% endif %}">
+                                <a href="{% url 'filtres_soins' %}" class="sidebar-btn sub-sub-item {% if request.resolver_match.url_name == 'filtres_soins' %}active{% endif %}">
                                     <span class="icon"><i class="fas fa-filter"></i></span>
                                     <span class="title">Filtres soins</span>
                                 </a>
-                                <a href="{% url 'filtre_search' %}" class="sidebar-btn sub-sub-item {% if 'filtres/search' in request.path %}active{% endif %}">
+                                <a href="{% url 'filtre_search' %}" class="sidebar-btn sub-sub-item {% if request.resolver_match.url_name == 'filtre_search' %}active{% endif %}">
                                     <span class="icon"><i class="fas fa-search"></i></span>
                                     <span class="title">Recherche globale</span>
                                 </a>
-                                <a href="{% url 'filtre_dropdown' %}" class="sidebar-btn sub-sub-item {% if 'filtres/dropdown' in request.path %}active{% endif %}">
+                                <a href="{% url 'filtre_dropdown' %}" class="sidebar-btn sub-sub-item {% if request.resolver_match.url_name == 'filtre_dropdown' %}active{% endif %}">
                                     <span class="icon"><i class="fas fa-list"></i></span>
                                     <span class="title">Listes dynamiques</span>
                                 </a>
@@ -205,7 +209,7 @@
                         
                         
                         </a>
-                        <a href="{% url 'reports_index' %}" class="sidebar-btn sub-item {% if 'reports/' in request.path %}active{% endif %}">
+                        <a href="{% url 'reports_index' %}" class="sidebar-btn sub-item {% if request.resolver_match.url_name == 'reports_index' or 'reports' in request.resolver_match.url_name %}active{% endif %}">
                             <span class="icon"><i class="fas fa-file-export"></i></span>
                             <span class="title">Rapports & Exports</span>
                         </a>
@@ -221,7 +225,7 @@
                     </button>
                     <div class="section-content">
                         <!-- Lien direct vers le dashboard des statistiques -->
-                        <a href="{% url 'dashboard_stats' %}" class="sidebar-btn sub-item {% if 'statistiques/dashboard' in request.path %}active{% endif %}">
+                        <a href="{% url 'dashboard_stats' %}" class="sidebar-btn sub-item {% if request.resolver_match.url_name == 'dashboard_stats' %}active{% endif %}">
                             <span class="icon"><i class="fas fa-chart-pie"></i></span>
                             <span class="title">Tableau de bord Prod.</span>
                         </a>
@@ -234,11 +238,11 @@
                                 <span class="arrow"><i class="fas fa-chevron-right"></i></span>
                             </button>
                             <div class="sub-section-content">
-                                <a href="{% url 'recolte_list' %}" class="sidebar-btn sub-sub-item {% if 'recoltes' in request.path %}active{% endif %}">
+                                <a href="{% url 'recolte_list' %}" class="sidebar-btn sub-sub-item {% if request.resolver_match.url_name == 'recolte_list' or 'recolte' in request.resolver_match.url_name %}active{% endif %}">
                                     <span class="icon"><i class="fas fa-list-ul"></i></span>
                                     <span class="title">Liste des récoltes</span>
                                 </a>
-                                <a href="{% url 'historique_production' %}" class="sidebar-btn sub-sub-item {% if 'historique' in request.path %}active{% endif %}">
+                                <a href="{% url 'historique_production' %}" class="sidebar-btn sub-sub-item {% if request.resolver_match.url_name == 'historique_production' %}active{% endif %}">
                                     <span class="icon"><i class="fas fa-timeline"></i></span>
                                     <span class="title">Historique</span>
                                 </a>
@@ -253,19 +257,19 @@
                                 <span class="arrow"><i class="fas fa-chevron-right"></i></span>
                             </button>
                             <div class="sub-section-content">
-                                <a href="{% url 'materiel_list' %}" class="sidebar-btn sub-sub-item {% if 'materiels' in request.path %}active{% endif %}">
+                                <a href="{% url 'materiel_list' %}" class="sidebar-btn sub-sub-item {% if request.resolver_match.url_name == 'materiel_list' or 'materiel' in request.resolver_match.url_name %}active{% endif %}">
                                     <span class="icon"><i class="fas fa-boxes-stacked"></i></span>
                                     <span class="title">Liste du matériel</span>
                                 </a>
-                                <a href="{% url 'stock_consommables' %}" class="sidebar-btn sub-sub-item {% if 'consommables' in request.path %}active{% endif %}">
+                                <a href="{% url 'stock_consommables' %}" class="sidebar-btn sub-sub-item {% if request.resolver_match.url_name == 'stock_consommables' or 'consommable' in request.resolver_match.url_name %}active{% endif %}">
                                     <span class="icon"><i class="fas fa-droplet"></i></span>
                                     <span class="title">Stock consommables</span>
                                 </a>
-                                <a href="{% url 'maintenance_planning' %}" class="sidebar-btn sub-sub-item {% if 'maintenance' in request.path %}active{% endif %}">
+                                <a href="{% url 'maintenance_planning' %}" class="sidebar-btn sub-sub-item {% if request.resolver_match.url_name == 'maintenance_planning' %}active{% endif %}">
                                     <span class="icon"><i class="fas fa-calendar-alt"></i></span>
                                     <span class="title">Planning maintenance</span>
                                 </a>
-                                <a href="{% url 'alertes_penurie' %}" class="sidebar-btn sub-sub-item {% if 'alertes' in request.path %}active{% endif %}">
+                                <a href="{% url 'alertes_penurie' %}" class="sidebar-btn sub-sub-item {% if request.resolver_match.url_name == 'alertes_penurie' %}active{% endif %}">
                                     <span class="icon"><i class="fas fa-bell"></i></span>
                                     <span class="title">Alertes de pénurie</span>
                                 </a>
@@ -280,15 +284,15 @@
                                 <span class="arrow"><i class="fas fa-chevron-right"></i></span>
                             </button>
                             <div class="sub-section-content">
-                                <a href="{% url 'stats_production_par_ruche' %}" class="sidebar-btn sub-sub-item {% if 'production-ruche' in request.path %}active{% endif %}">
+                                <a href="{% url 'stats_production_par_ruche' %}" class="sidebar-btn sub-sub-item {% if request.resolver_match.url_name == 'stats_production_par_ruche' %}active{% endif %}">
                                     <span class="icon"><i class="fas fa-chart-bar"></i></span>
                                     <span class="title">Production par ruche</span>
                                 </a>
-                                <a href="{% url 'stats_mortalite' %}" class="sidebar-btn sub-sub-item {% if 'statistiques/mortalite' in request.path %}active{% endif %}">
+                                <a href="{% url 'stats_mortalite' %}" class="sidebar-btn sub-sub-item {% if request.resolver_match.url_name == 'stats_mortalite' and 'statistiques' in request.path %}active{% endif %}">
                                     <span class="icon"><i class="fas fa-skull-crossbones"></i></span>
                                     <span class="title">Analyse mortalité</span>
                                 </a>
-                                <a href="{% url 'analyse_rentabilite' %}" class="sidebar-btn sub-sub-item {% if 'rentabilite' in request.path %}active{% endif %}">
+                                <a href="{% url 'analyse_rentabilite' %}" class="sidebar-btn sub-sub-item {% if request.resolver_match.url_name == 'analyse_rentabilite' %}active{% endif %}">
                                     <span class="icon"><i class="fas fa-euro-sign"></i></span>
                                     <span class="title">Analyse rentabilité</span>
                                 </a>

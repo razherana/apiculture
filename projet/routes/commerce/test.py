@@ -2,8 +2,8 @@ from django.urls import path
 from projet.views.commerce.test import *  # Chemin absolu
 
 urlpatterns = [
-    path('test/miels_liste', list_miels, name='test_liste_miels'),
-    path("test/miels_stats", miels_stats, name="miels_stats"),
+    path('miels/', miels_list, name='miels_list'),
+    path("miels/statistics", miels_stats, name="miels_stats"),
     
     path("stock-miels/", stock_miels_list, name="stock_miels_list"),
     path("stock-miels/add/", stock_miels_form, name="stock_miels_form"),
