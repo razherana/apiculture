@@ -1,9 +1,9 @@
 from django.shortcuts import redirect, render
 
-from projet.models.ventes import Client, ClientType, Commande
+from projet.models.ventes import Client, ClientType, Commande, CommandeStatus
 
 
-def list_miels_test(request):
+def list_miels(request):
     miels = [
         {'id': 1, 'type': 'Fleurs', 'conteneur': 'Petit bocaux',
             'stock': 40, 'prix': 8.5},
@@ -13,7 +13,7 @@ def list_miels_test(request):
     return render(request, "commerce/miels/list.html", {'miels': miels})
 
 
-def list_clients_test(request):
+def list_clients(request):
     clientModels = Client.objects.prefetch_related("commandes", "ventes").all()
     clients = [
         {
@@ -28,68 +28,54 @@ def list_clients_test(request):
     return render(request, "commerce/clients/list.html", {"clients": clients})
 
 
-def list_commandes_test(request):
-    # Mock data for commande details
-    commande_details_1 = [
-        {'miel': {'name': 'Miel de fleurs'}, 'quantite': 20},
-    ]
+def list_commandes(request):
+    # Get all commandes with related data
+    commandes_queryset = Commande.objects.prefetch_related(
+        'commande_details__miel',
+        'commande_status_histories__commande_status',
+        'client'
+    ).select_related('client', 'vente').all()
+    
+    # Get current status for each commande (latest status)
+    commandes_data = []
+    for commande in commandes_queryset:
+        # Get the latest status
+        latest_status = commande.commande_status_histories.order_by('-created_at').first()
+        current_status = latest_status.commande_status.name if latest_status else 'Non défini'
+        
+        # Calculate total quantity from commande details
+        total_quantity = sum(detail.quantite for detail in commande.commande_details.all())
+        
+        # Get first product name for display (or concatenate multiple)
+        product_names = [detail.miel.miel_type.name for detail in commande.commande_details.all()]
+        product_display = ', '.join(product_names) if product_names else 'Aucun produit'
+        
+        commande_dict = {
+            'id': commande.id,
+            'date': commande.created_at.strftime('%Y-%m-%d'),
+            'client': commande.client.name,
+            'produit': product_display,
+            'quantite': total_quantity,
+            'statut': current_status,
+            'vente_id': commande.vente.id if commande.vente else None,
+            'created_at': commande.created_at.strftime('%Y-%m-%d'),
+            'livraison_date': commande.livraison_date.strftime('%Y-%m-%d'),
+            'note': commande.note,
+            'commande_details': commande.commande_details,
+            'commande_status_histories': commande.commande_status_histories
+        }
+        commandes_data.append(commande_dict)
 
-    commande_details_2 = [
-        {'miel': {'name': 'Miel d\'acacia'}, 'quantite': 80},
-        {'miel': {'name': 'Miel de châtaignier'}, 'quantite': 20},
-    ]
-
-    # Mock data for status history
-    status_history_1 = [
-        {'commande_status': {'name': 'Créée'}, 'created_at': '2025-06-01 10:15'},
-        {'commande_status': {'name': 'En attente'},
-            'created_at': '2025-06-01 15:30'},
-    ]
-
-    status_history_2 = [
-        {'commande_status': {'name': 'Créée'}, 'created_at': '2025-06-01 09:00'},
-        {'commande_status': {'name': 'En préparation'},
-            'created_at': '2025-06-05 11:20'},
-        {'commande_status': {'name': 'Livrée'}, 'created_at': '2025-06-10 14:45'},
-    ]
-
-    # Enhanced commandes with details and status history
-    commandes = [
-        {
-            'id': 1,
-            'date': '2025-06-15',
-            'client': 'Durand',
-            'produit': 'Miel de fleurs',
-            'quantite': 20,
-            'statut': 'En attente',
-            'vente_id': None,
-            'created_at': '2025-06-01',
-            'livraison_date': '2025-06-20',
-            'note': 'Livraison rapide',
-            'commande_details': {'all': commande_details_1},
-            'commande_status_histories': {'all': status_history_1}
-        },
-        {
-            'id': 2,
-            'date': '2025-06-10',
-            'client': 'Bernard',
-            'produit': 'Miel d\'acacia',
-            'quantite': 100,
-            'statut': 'Livrée',
-            'vente_id': 1,
-            'created_at': '2025-06-01',
-            'livraison_date': '2025-06-20',
-            'note': 'Livraison rapide',
-            'commande_details': {'all': commande_details_2},
-            'commande_status_histories': {'all': status_history_2}
-        },
-    ]
-
+    # Separate commandes by status
     commandes_en_attente = [
-        cmd for cmd in commandes if cmd['statut'] == 'En attente']
+        cmd for cmd in commandes_data 
+        if cmd['statut'] in ['En attente', 'Créée', 'En préparation']
+    ]
 
     commandes_livrees = [
-        cmd for cmd in commandes if cmd['statut'] == 'Livrée']
+        cmd for cmd in commandes_data 
+        if cmd['statut'] in ['Livrée', 'Terminée']
+    ]
 
     return render(request, "commerce/commandes/list.html", {
         "commandes_en_attente": commandes_en_attente,
@@ -310,17 +296,78 @@ def vente_form(request):
 
 
 def commande_form(request):
-    clients = [
-        {'id': 1, 'nom': 'Durand Pierre'},
-        {'id': 2, 'nom': 'Bernard Luc'},
-    ]
-    produits = [
-        {'id': 1, 'nom': 'Miel de fleurs'},
-        {'id': 2, 'nom': 'Miel d’acacia'},
-    ]
+    from projet.models.productions import Miel
+    
+    if request.method == "POST":
+        # Handle form submission
+        client_id = request.POST.get('client')
+        livraison_date = request.POST.get('livraison_date')
+        note = request.POST.get('note', '')
+        
+        # Get client
+        try:
+            client = Client.objects.get(id=client_id)
+        except Client.DoesNotExist:
+            return redirect('commande_form')
+        
+        # Create commande
+        commande = Commande.objects.create(
+            client=client,
+            livraison_date=livraison_date,
+            note=note,
+            vente=None  # No vente initially
+        )
+        
+        # Process cart items
+        cart_items = request.POST.getlist('cart_items')
+        for item in cart_items:
+            if item:  # Skip empty items
+                miel_id, quantite = item.split('|')
+                try:
+                    miel = Miel.objects.get(id=miel_id)
+                    from projet.models.ventes import CommandeDetail
+                    CommandeDetail.objects.create(
+                        commande=commande,
+                        miel=miel,
+                        quantite=int(quantite)
+                    )
+                except (Miel.DoesNotExist, ValueError):
+                    continue
+        
+        # Create initial status
+        try:
+            initial_status = CommandeStatus.objects.get(name='Créée')
+            from projet.models.ventes import CommandeStatusHistory
+            CommandeStatusHistory.objects.create(
+                commande=commande,
+                commande_status=initial_status
+            )
+        except CommandeStatus.DoesNotExist:
+            pass
+        
+        return redirect('test_liste_commandes')
+    
+    # GET request - show form
+    clients = Client.objects.all().values('id', 'name')
+    miels = Miel.objects.select_related('miel_type', 'consommable_type', 'unite_mesure').all()
+    
+    miels_data = []
+    for miel in miels:
+        # Get latest price
+        latest_price = miel.miel_price_histories.order_by('-created_at').first()
+        price = latest_price.price if latest_price else 0.0
+        
+        miels_data.append({
+            'id': miel.id,
+            'nom': f"{miel.miel_type.name} - {miel.consommable_type.name}",
+            'prix': price,
+            'unite': miel.unite_mesure.name,
+            'quantite_unite': miel.quantite_unite
+        })
+    
     return render(request, "commerce/commandes/form.html", {
         "clients": clients,
-        "produits": produits
+        "miels": miels_data
     })
 
 
