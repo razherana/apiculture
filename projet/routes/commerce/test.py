@@ -4,20 +4,23 @@ from projet.views.commerce.test import *  # Chemin absolu
 urlpatterns = [
     path('test/miels_liste', list_miels, name='test_liste_miels'),
     path("test/miels_stats", miels_stats, name="miels_stats"),
-    path("test/stock_miels/", stock_miels_test, name="test_stocks_miels"),
-    path("test/stock_miels_form/", miels_stock_form, name="miels_stock_form"),
+    
+    path("stock-miels/", stock_miels_list, name="stock_miels_list"),
+    path("stock-miels/add/", stock_miels_form, name="stock_miels_form"),
 
     # Clients
     path("clients/", list_clients, name="test_liste_clients"),
     path("clients/view/", client_vue, name="client_vue"),
     path("clients/add/", client_form, name="client_form"),
 
-    path("commandes/", list_commandes,
-         name="test_liste_commandes"),
-    path("test/ventes_liste/", list_ventes_test, name="test_liste_ventes"),
-    path("test/vente_vue/", vente_vue, name="vente_vue"),
-    path("test/vente_form", vente_form, name="vente_form"),
-    path("test/commande_form", commande_form, name="commande_form"),
+    path("commandes/", commandes_list,
+         name="commandes_list"),
+    path("commandes/add/", commande_form, name="commande_form"),
+    
+    path("ventes/", ventes_list, name="ventes_list"),
+    path("ventes/vue/", vente_vue, name="vente_vue"),
+    path("ventes/add", vente_form, name="vente_form"),
+    
     path("test/ventes_stats", ventes_stats, name="ventes_stats"),
     path("test/commandes_stats", commandes_stats, name="commandes_stats"),
 ]

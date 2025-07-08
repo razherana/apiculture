@@ -33,7 +33,7 @@
                         <td>{{ miel.stock }}</td>
                         <td>{{ miel.prix }} Ar</td>
                         <td>
-                            <form action="{% url 'test_stocks_miels' %}" method="post">
+                            <form action="{% url 'stock_miels_list' %}" method="post">
                                 {% csrf_token %}
                                 <button class="action-btn view" type="submit">
                                     Gerer

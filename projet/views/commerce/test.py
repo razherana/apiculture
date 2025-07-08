@@ -1,4 +1,5 @@
 from django.shortcuts import redirect, render
+from django.contrib import messages
 
 from projet.models.ventes import Client, ClientType, Commande, CommandeStatus
 
@@ -20,7 +21,7 @@ def list_clients(request):
             'id': client.id,
             'nom': client.name,
             'email': client.email,
-            'type': client.client_type_id.name if client.client_type_id else '-',
+            'type': client.client_type.name if client.client_type else '-',
             'telephone': client.contact,
             'derniere_commande': client.get_last_commande,
         } for client in clientModels
@@ -28,7 +29,7 @@ def list_clients(request):
     return render(request, "commerce/clients/list.html", {"clients": clients})
 
 
-def list_commandes(request):
+def commandes_list(request):
     # Get all commandes with related data
     commandes_queryset = Commande.objects.prefetch_related(
         'commande_details__miel',
@@ -83,7 +84,7 @@ def list_commandes(request):
     })
 
 
-def list_ventes_test(request):
+def ventes_list(request):
     ventes = [
         {'id': 1, 'date': '2025-06-18', 'client': 'Dupont',
             'produit': 'Miel de fleurs', 'quantite': 2, 'montant': 17.0},
@@ -93,33 +94,128 @@ def list_ventes_test(request):
     return render(request, "commerce/ventes/list.html", {"ventes": ventes})
 
 
-def stock_miels_test(request):
-    miel_nom = "Miel de fleurs"
-    quantite_unite = 250
-    unite = "g"
-    stock_actuel = 40
-    miels = [
-        {
-            "type": "Entrée",
-            "source": "Ruche A",
-            "nombre": 140,
-            "date": "10-11-24"
-        },
-        {
-            "type": "Sortie",
-            "source": "Client A",
-            "nombre": 100,
-            "date": "10-11-24"
-        },
-    ]
-    return render(request, "commerce/miels/stock.html", {"miels": miels, "quantite_unite": quantite_unite, "unite": unite, "stock_actuel": stock_actuel, "miel_nom": miel_nom})
+def stock_miels_list(request):
+    from projet.models.productions import Miel, MielStock, MielPriceHistory
+    from django.db.models import Sum
+    from datetime import datetime, date
+    
+    # Get selected date from request or use today
+    selected_date = request.GET.get('date', date.today().strftime('%Y-%m-%d'))
+    try:
+        filter_date = datetime.strptime(selected_date, '%Y-%m-%d').date()
+    except ValueError:
+        filter_date = date.today()
+        selected_date = filter_date.strftime('%Y-%m-%d')
+    
+    # Get all miels with related data
+    miels_queryset = Miel.objects.select_related(
+        'miel_type', 'consommable_type', 'unite_mesure'
+    ).prefetch_related(
+        'miel_stock', 'miel_price_histories'
+    ).all()
+    
+    miels_data = []
+    for miel in miels_queryset:
+        # Calculate current stock (sum of all stock entries up to selected date)
+        stock_entries = miel.miel_stock.filter(created_at__date__lte=filter_date)
+        current_stock = stock_entries.aggregate(total=Sum('added_quantity'))['total'] or 0
+        
+        # Get latest price up to selected date
+        latest_price_entry = miel.miel_price_histories.filter(
+            created_at__date__lte=filter_date
+        ).order_by('-created_at').first()
+        current_price = latest_price_entry.price if latest_price_entry else 0.0
+        
+        # Check if stock is below alert threshold
+        seuil_alerte = miel.consommable_type.seuil_alerte
+        is_low_stock = current_stock <= seuil_alerte
+        
+        miel_dict = {
+            'id': miel.id,
+            'nom': f"{miel.miel_type.name} - {miel.consommable_type.name}",
+            'type_miel': miel.miel_type.name,
+            'conteneur': miel.consommable_type.name,
+            'stock_actuel': current_stock,
+            'prix_actuel': current_price,
+            'unite_mesure': miel.unite_mesure.name,
+            'quantite_unite': miel.quantite_unite,
+            'seuil_alerte': seuil_alerte,
+            'is_low_stock': is_low_stock,
+            'miel_stock': miel.miel_stock,
+            'miel_price_histories': miel.miel_price_histories
+        }
+        miels_data.append(miel_dict)
+    
+    return render(request, "commerce/miels/stock.html", {
+        "miels": miels_data,
+        "selected_date": selected_date
+    })
 
 
-def miels_stock_form(request):
-    clients = ["client A", "client B", "client C"]
-    ruches = ["Ruche A", "Ruche B", "Ruche C"]
-    miel_nom = "Miel de fleurs"
-    return render(request, "commerce/miels/stock_form.html", {"clients": clients, "ruches": ruches, "miel_nom": miel_nom})
+def stock_miels_form(request):
+    from projet.models.productions import Miel, MielStock, MielPriceHistory
+    from django.contrib import messages
+    
+    if request.method == "POST":
+        # Handle form submission
+        miel_id = request.POST.get('miel')
+        operation_type = request.POST.get('type')
+        quantity = request.POST.get('quantity')
+        date = request.POST.get('date')
+        
+        try:
+            # Validate inputs
+            if not all([miel_id, operation_type, quantity, date]):
+                messages.error(request, 'Tous les champs sont obligatoires.')
+                raise ValueError("Missing required fields")
+            
+            miel = Miel.objects.get(id=miel_id)
+            quantity_int = int(quantity)
+            
+            if quantity_int <= 0:
+                messages.error(request, 'La quantité doit être supérieure à 0.')
+                raise ValueError("Invalid quantity")
+            
+            # Calculate quantity based on operation type
+            if operation_type == 'Sortie':
+                added_quantity = -quantity_int
+            else:
+                added_quantity = quantity_int
+            
+            # Create stock entry
+            MielStock.objects.create(
+                miel=miel,
+                added_quantity=added_quantity,
+                created_at=date if date else None
+            )
+            
+            # Success message
+            operation_text = "sortie" if operation_type == 'Sortie' else "entrée"
+            messages.success(request, f'Mouvement de stock enregistré avec succès : {operation_text} de {quantity_int} unités pour {miel.miel_type.name}.')
+            
+            return redirect('stock_miels_list')
+            
+        except Miel.DoesNotExist:
+            messages.error(request, 'Le miel sélectionné n\'existe pas.')
+        except ValueError as e:
+            if "Invalid quantity" not in str(e) and "Missing required fields" not in str(e):
+                messages.error(request, 'Veuillez vérifier les données saisies.')
+        except Exception as e:
+            messages.error(request, 'Une erreur inattendue s\'est produite. Veuillez réessayer.')
+    
+    # GET request - show form
+    miels = Miel.objects.select_related('miel_type', 'consommable_type').all()
+    
+    miels_data = []
+    for miel in miels:
+        miels_data.append({
+            'id': miel.id,
+            'nom': f"{miel.miel_type.name} - {miel.consommable_type.name}",
+        })
+    
+    return render(request, "commerce/miels/stock_form.html", {
+        "miels": miels_data
+    })
 
 
 def client_vue(request):
@@ -141,7 +237,7 @@ def client_vue(request):
             'email': client_model.email,
             'telephone': client_model.contact,
             'adresse': client_model.adresse,
-            'client_type': client_model.client_type_id.name if client_model.client_type_id else '-'
+            'client_type': client_model.client_type.name if client_model.client_type else '-'
         }
 
         client_types = [
@@ -169,7 +265,7 @@ def client_vue(request):
             'email': request.POST.get('email', client_model.email),
             'contact': request.POST.get('telephone', client_model.contact),
             'adresse': request.POST.get('adresse', client_model.adresse),
-            'client_type': request.POST.get('client_type', client_model.client_type_id.name if client_model.client_type_id else None),
+            'client_type': request.POST.get('client_type', client_model.client_type.name if client_model.client_type else None),
         }
 
         # Check if client_type is valid
@@ -190,7 +286,7 @@ def client_vue(request):
         client_model.email = client['email']
         client_model.contact = client['contact']
         client_model.adresse = client['adresse']
-        client_model.client_type_id = client['client_type']
+        client_model.client_type = client['client_type']
 
         client_model.save()
 
@@ -235,7 +331,7 @@ def client_create(request):
             email=client['email'],
             contact=client['contact'],
             adresse=client['adresse'],
-            client_type_id=client['client_type']
+            client_type=client['client_type']
         )
 
         pass
@@ -345,7 +441,7 @@ def commande_form(request):
         except CommandeStatus.DoesNotExist:
             pass
         
-        return redirect('test_liste_commandes')
+        return redirect('commandes_list')
     
     # GET request - show form
     clients = Client.objects.all().values('id', 'name')

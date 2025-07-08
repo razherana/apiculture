@@ -24,6 +24,7 @@
             justify-content: space-between;
             gap: 1rem;
             width: 100%;
+            padding: 1.5rem;
         }
         .page-header h1 {
             flex-grow: 1; /* Permet au titre de prendre l'espace nécessaire */
@@ -71,11 +72,11 @@
                             <span class="icon"><i class="fas fa-users"></i></span>
                             <span class="title">Clients</span>
                         </a>
-                        <a href="{% url 'test_liste_ventes' %}" class="sidebar-btn sub-item {% if 'ventes' in request.path %}active{% endif %}">
+                        <a href="{% url 'ventes_list' %}" class="sidebar-btn sub-item {% if 'ventes' in request.path %}active{% endif %}">
                             <span class="icon"><i class="fas fa-chart-line"></i></span>
                             <span class="title">Ventes</span>
                         </a>
-                        <a href="{% url 'test_liste_commandes' %}" class="sidebar-btn sub-item {% if 'commandes' in request.path %}active{% endif %}">
+                        <a href="{% url 'commandes_list' %}" class="sidebar-btn sub-item {% if 'commandes' in request.path %}active{% endif %}">
                             <span class="icon"><i class="fas fa-clipboard-list"></i></span>
                             <span class="title">Commandes</span>
                         </a>
