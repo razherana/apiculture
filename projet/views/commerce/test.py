@@ -501,36 +501,103 @@ def commande_form(request):
 
 
 def miels_stats(request):
-    stats = [
-        {
-            "type": "Fleurs",
-            "stock_actuel": 40,
-            "stock_initial": 80,
-            "total_entrees": 200,
-            "total_sorties": 160,
-            "nb_entrees": 5,
-            "nb_sorties": 4,
-            "valeur_stock": 340.0,
-            "prix_unitaire": 8.5,
-            # Historique avec dates complètes
-            "evolution_stock": [80, 95, 120, 110, 60, 40],
-            "evolution_dates": ["2025-01-01", "2025-02-01", "2025-03-01", "2025-04-01", "2025-05-01", "2025-06-01"]
-        },
-        {
-            "type": "Acacia",
-            "stock_actuel": 25,
-            "stock_initial": 60,
-            "total_entrees": 120,
-            "total_sorties": 95,
-            "nb_entrees": 3,
-            "nb_sorties": 3,
-            "valeur_stock": 250.0,
-            "prix_unitaire": 10.0,
-            "evolution_stock": [60, 80, 75, 60, 45, 25],
-            "evolution_dates": ["2025-01-01", "2025-02-01", "2025-03-01", "2025-04-01", "2025-05-01", "2025-06-01"]
-        },
-    ]
-    return render(request, "commerce/miels/stats.html", {"stats": stats})
+    from projet.models.productions import Miel, MielStock, MielPriceHistory
+    from django.db.models import Sum, Count
+    from datetime import datetime, date
+    
+    # Get selected date from request or use today
+    selected_date = request.GET.get('date', date.today().strftime('%Y-%m-%d'))
+    try:
+        filter_date = datetime.strptime(selected_date, '%Y-%m-%d').date()
+    except ValueError:
+        filter_date = date.today()
+        selected_date = filter_date.strftime('%Y-%m-%d')
+    
+    # Get all miels with related data
+    miels_queryset = Miel.objects.select_related(
+        'miel_type', 'consommable_type', 'unite_mesure'
+    ).prefetch_related(
+        'miel_stock', 'miel_price_histories'
+    ).all()
+    
+    stats = []
+    for miel in miels_queryset:
+        # Calculate stock at selected date
+        stock_entries = miel.miel_stock.filter(created_at__date__lte=filter_date)
+        stock_actuel = stock_entries.aggregate(total=Sum('added_quantity'))['total'] or 0
+        
+        # Calculate initial stock (from beginning of year)
+        year_start = date(filter_date.year, 1, 1)
+        initial_stock_entries = miel.miel_stock.filter(created_at__date__lt=year_start)
+        stock_initial = initial_stock_entries.aggregate(total=Sum('added_quantity'))['total'] or 0
+        
+        # Calculate entries and exits for the year up to selected date
+        year_entries = miel.miel_stock.filter(
+            created_at__date__range=[year_start, filter_date],
+            added_quantity__gt=0
+        )
+        year_exits = miel.miel_stock.filter(
+            created_at__date__range=[year_start, filter_date],
+            added_quantity__lt=0
+        )
+        
+        total_entrees = year_entries.aggregate(total=Sum('added_quantity'))['total'] or 0
+        total_sorties = abs(year_exits.aggregate(total=Sum('added_quantity'))['total'] or 0)
+        nb_entrees = year_entries.count()
+        nb_sorties = year_exits.count()
+        
+        # Get current price at selected date
+        latest_price_entry = miel.miel_price_histories.filter(
+            created_at__date__lte=filter_date
+        ).order_by('-created_at').first()
+        prix_unitaire = latest_price_entry.price if latest_price_entry else 0.0
+        
+        # Calculate stock value
+        valeur_stock = stock_actuel * prix_unitaire
+        
+        # Generate evolution data (last 6 months from selected date)
+        evolution_stock = []
+        evolution_dates = []
+        
+        for i in range(5, -1, -1):
+            # Calculate date i months before selected date
+            month = filter_date.month - i
+            year = filter_date.year
+            while month <= 0:
+                month += 12
+                year -= 1
+            
+            try:
+                evolution_date = date(year, month, min(filter_date.day, 28))
+            except ValueError:
+                evolution_date = date(year, month, 28)
+            
+            # Calculate stock at that date
+            historical_entries = miel.miel_stock.filter(created_at__date__lte=evolution_date)
+            historical_stock = historical_entries.aggregate(total=Sum('added_quantity'))['total'] or 0
+            
+            evolution_stock.append(historical_stock)
+            evolution_dates.append(evolution_date.strftime('%Y-%m-%d'))
+        
+        miel_stats = {
+            "type": miel.miel_type.name,
+            "stock_actuel": stock_actuel,
+            "stock_initial": stock_initial,
+            "total_entrees": total_entrees,
+            "total_sorties": total_sorties,
+            "nb_entrees": nb_entrees,
+            "nb_sorties": nb_sorties,
+            "valeur_stock": valeur_stock,
+            "prix_unitaire": prix_unitaire,
+            "evolution_stock": evolution_stock,
+            "evolution_dates": evolution_dates
+        }
+        stats.append(miel_stats)
+    
+    return render(request, "commerce/miels/stats.html", {
+        "stats": stats,
+        "selected_date": selected_date
+    })
 
 
 def ventes_stats(request):

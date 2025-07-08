@@ -4,9 +4,57 @@
 {% block content %}
 <link rel="stylesheet" href="{% static 'commerce/css/list.css' %}">
 <link rel="stylesheet" href="{% static 'commerce/css/stat.css' %}">
+<link rel="stylesheet" href="{% static 'css/beenova.css' %}">
+<link rel="stylesheet" href="{% static 'commerce/css/dark-mode-fix.css' %}">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <div class="liste-content">
     <h2 style="font-size:1.3em;margin-bottom:0.5em;">Statistiques des stocks de miel</h2>
+    
+    <!-- Date Filter -->
+    <div class="card glass mb-4">
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-md);">
+            <div style="display: flex; align-items: center; gap: var(--space-md);">
+                <span class="form-label">Statistiques à la date :</span>
+                <span id="current-date" class="text-honey" style="font-weight: 600; font-size: 1.1em;">{{ selected_date }}</span>
+            </div>
+            <div style="display: flex; gap: var(--space-sm);">
+                <button type="button" class="btn btn-glass" onclick="changeDate(-1)" title="Jour précédent">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <button type="button" class="btn btn-honey" onclick="resetToToday()" title="Aujourd'hui">
+                    <i class="fas fa-calendar-day"></i>
+                    Aujourd'hui
+                </button>
+                <button type="button" class="btn btn-glass" onclick="changeDate(1)" title="Jour suivant">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+                <button type="button" class="btn btn-dark" onclick="openDatePicker()" title="Choisir une date">
+                    <i class="fas fa-calendar-alt"></i>
+                    Choisir
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Hidden date picker -->
+    <div id="date-picker-modal" class="modal" style="display: none;">
+        <div class="modal-content glass" style="max-width: 400px; margin: 15% auto;">
+            <span class="close-modal" onclick="closeDatePicker()">&times;</span>
+            <h4 style="margin-bottom: var(--space-lg);">Choisir une date</h4>
+            <form method="get" id="date-form">
+                <div class="form-group">
+                    <label for="date-input" class="form-label">Date :</label>
+                    <input type="date" id="date-input" name="date" value="{{ selected_date }}" class="form-control">
+                </div>
+                <div style="display: flex; gap: var(--space-md); justify-content: flex-end; margin-top: var(--space-lg);">
+                    <button type="button" class="btn btn-glass" onclick="closeDatePicker()">Annuler</button>
+                    <button type="submit" class="btn btn-honey">Appliquer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
     <div id="main-flex-container">
         <div id="sidecard-list" class="small-card">
             <h4 style="text-align:center;font-size:1em;margin:0 0 0.6em 0;">Types de miel</h4>
@@ -33,7 +81,64 @@
         </div>
     </div>
 </div>
+
 <script>
+// Date navigation functions
+let currentDate = new Date('{{ selected_date }}');
+
+function formatDate(date) {
+    return date.toISOString().split('T')[0];
+}
+
+function updateDateDisplay() {
+    const dateElement = document.getElementById('current-date');
+    const options = { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric',
+        weekday: 'long'
+    };
+    dateElement.textContent = currentDate.toLocaleDateString('fr-FR', options);
+}
+
+function changeDate(days) {
+    currentDate.setDate(currentDate.getDate() + days);
+    updateDateDisplay();
+    navigateToDate();
+}
+
+function resetToToday() {
+    currentDate = new Date();
+    updateDateDisplay();
+    navigateToDate();
+}
+
+function navigateToDate() {
+    const formattedDate = formatDate(currentDate);
+    window.location.href = `?date=${formattedDate}`;
+}
+
+function openDatePicker() {
+    document.getElementById('date-picker-modal').style.display = 'block';
+    document.getElementById('date-input').value = formatDate(currentDate);
+}
+
+function closeDatePicker() {
+    document.getElementById('date-picker-modal').style.display = 'none';
+}
+
+// Initialize date display
+updateDateDisplay();
+
+// Close date picker when clicking outside
+window.addEventListener('click', function(e) {
+    const modal = document.getElementById('date-picker-modal');
+    if (e.target === modal) {
+        closeDatePicker();
+    }
+});
+
+// Stats data and functionality
 const mielsStats = [
     {% for miel in stats %}
     {
@@ -59,10 +164,10 @@ function renderStats(idx){
             <tr><th>Type</th><td>${miel.type}</td></tr>
             <tr><th>Stock initial</th><td>${miel.stock_initial}</td></tr>
             <tr><th>Stock actuel</th><td>${miel.stock_actuel}</td></tr>
-            <tr><th>Prix unitaire (Ar)</th><td>${miel.prix_unitaire}</td></tr>
-            <tr><th>Valeur stock (Ar)</th><td>${miel.valeur_stock}</td></tr>
+            <tr><th>Prix unitaire (€)</th><td>${miel.prix_unitaire.toFixed(2)}</td></tr>
+            <tr><th>Valeur stock (€)</th><td>${miel.valeur_stock.toFixed(2)}</td></tr>
             <tr><th>Total entrées</th><td>${miel.total_entrees}</td></tr>
-            <tr><th>Nombre d’entrées</th><td>${miel.nb_entrees}</td></tr>
+            <tr><th>Nombre d'entrées</th><td>${miel.nb_entrees}</td></tr>
             <tr><th>Total sorties</th><td>${miel.total_sorties}</td></tr>
             <tr><th>Nombre de sorties</th><td>${miel.nb_sorties}</td></tr>
         </table>
@@ -72,13 +177,17 @@ function renderStats(idx){
 let curveChart, pieChart;
 function renderCharts(idx){
     const miel = mielsStats[idx];
+    
     // Courbe évolution stock
     const cc = document.getElementById('curveChart').getContext('2d');
     if(curveChart) curveChart.destroy();
     curveChart = new Chart(cc, {
         type: 'line',
         data: {
-            labels: miel.evolution_dates,
+            labels: miel.evolution_dates.map(date => {
+                const d = new Date(date);
+                return d.toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' });
+            }),
             datasets: [{
                 label: 'Stock (unité)',
                 data: miel.evolution_stock,
@@ -103,35 +212,122 @@ function renderCharts(idx){
             }
         }
     });
+    
     // Camembert entrées/sorties
     const pc = document.getElementById('pieChart').getContext('2d');
     if(pieChart) pieChart.destroy();
-    pieChart = new Chart(pc, {
-        type: 'pie',
-        data: {
-            labels: ['Entrées', 'Sorties'],
-            datasets: [{
-                data: [miel.total_entrees, miel.total_sorties],
-                backgroundColor: ['#62a469', '#d46a6a']
-            }]
-        },
-        options: {plugins:{legend:{position:'bottom', labels: {font: {size:14}}}}}
-    });
+    
+    if (miel.total_entrees > 0 || miel.total_sorties > 0) {
+        pieChart = new Chart(pc, {
+            type: 'pie',
+            data: {
+                labels: ['Entrées', 'Sorties'],
+                datasets: [{
+                    data: [miel.total_entrees, miel.total_sorties],
+                    backgroundColor: ['#62a469', '#d46a6a']
+                }]
+            },
+            options: {plugins:{legend:{position:'bottom', labels: {font: {size:14}}}}}
+        });
+    } else {
+        // Show message if no data
+        const ctx = pc;
+        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+        ctx.font = "16px Arial";
+        ctx.fillStyle = "#666";
+        ctx.textAlign = "center";
+        ctx.fillText("Aucun mouvement de stock", ctx.canvas.width/2, ctx.canvas.height/2);
+    }
 }
 
 window.addEventListener("DOMContentLoaded", function(){
     const mielList = document.querySelectorAll('#sidecard-list li');
     let selected = 0;
+    
     function selectMiel(idx){
         mielList.forEach((li,i) => li.classList.toggle('selected', i === idx));
         renderStats(idx);
         renderCharts(idx);
         selected = idx;
     }
+    
     mielList.forEach((li,i)=>{
         li.addEventListener('click', ()=>selectMiel(i));
     });
-    selectMiel(0);
+    
+    // Initialize with first miel if available
+    if (mielsStats.length > 0) {
+        selectMiel(0);
+    }
 });
 </script>
+
+<style>
+/* Modal styles using BeeNova design system */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: var(--z-modal);
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+}
+
+.modal-content {
+    margin: 5% auto;
+    padding: var(--space-xl);
+    width: 90%;
+    max-width: 1000px;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    animation: fadeUp 0.3s ease-out;
+}
+
+.close-modal {
+    color: var(--text-secondary);
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: color var(--transition-fast);
+}
+
+.close-modal:hover,
+.close-modal:focus {
+    color: var(--honey-primary);
+}
+
+/* Form styling */
+.form-group {
+    margin-bottom: var(--space-lg);
+}
+
+.form-label {
+    display: block;
+    margin-bottom: var(--space-xs);
+    font-weight: 600;
+    color: var(--honey-primary);
+}
+
+.form-control {
+    width: 100%;
+    padding: var(--space-sm) var(--space-md);
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-size: 1rem;
+    transition: all var(--transition-fast);
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--honey-primary);
+    box-shadow: 0 0 0 3px rgba(255, 209, 0, 0.2);
+}
+</style>
 {% endblock %}
