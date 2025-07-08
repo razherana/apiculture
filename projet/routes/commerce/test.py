@@ -9,7 +9,7 @@ urlpatterns = [
     path("stock-miels/add/", stock_miels_form, name="stock_miels_form"),
 
     # Clients
-    path("clients/", list_clients, name="test_liste_clients"),
+    path("clients/", clients_list, name="clients_list"),
     path("clients/view/", client_vue, name="client_vue"),
     path("clients/add/", client_form, name="client_form"),
 

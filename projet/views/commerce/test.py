@@ -14,7 +14,7 @@ def list_miels(request):
     return render(request, "commerce/miels/list.html", {'miels': miels})
 
 
-def list_clients(request):
+def clients_list(request):
     clientModels = Client.objects.prefetch_related("commandes", "ventes").all()
     clients = [
         {
@@ -223,12 +223,12 @@ def client_vue(request):
         client_id = request.GET.get('id', None)
 
         if not client_id:
-            return redirect('test_liste_clients')
+            return redirect('clients_list')
 
         client_model = Client.objects.filter(id=client_id).first()
 
         if not client_model:
-            return redirect('test_liste_clients')
+            return redirect('clients_list')
 
         client = {
             'id': client_model.id,
@@ -251,12 +251,12 @@ def client_vue(request):
         client_id = request.POST.get('id', None)
 
         if not client_id:
-            return redirect('test_liste_clients')
+            return redirect('clients_list')
 
         client_model = Client.objects.filter(id=client_id).first()
 
         if not client_model:
-            return redirect('test_liste_clients')
+            return redirect('clients_list')
 
         client = {
             'id': request.POST.get('id', client_model.id),
@@ -290,7 +290,7 @@ def client_vue(request):
 
         client_model.save()
 
-        return redirect('test_liste_clients')
+        return redirect('clients_list')
 
 
 def client_form(request):
@@ -335,7 +335,7 @@ def client_create(request):
         )
 
         pass
-    return redirect('test_liste_clients')
+    return redirect('clients_list')
 
 
 def vente_vue(request):
