@@ -1,6 +1,6 @@
 
 from django.urls import path
-from projet.views.production.donne import * 
+from projet.views.production.donne import *
 
 urlpatterns = [
     
@@ -13,6 +13,7 @@ urlpatterns = [
     # 2. Matériel et ressources
     path('materiels/', materiel_list, name='materiel_list'),
     path('materiels/ajouter/', materiel_form, name='materiel_form'),
+    path('materiel-types/create/', materiel_type_create, name='materiel_type_create'),
     path('consommables/', stock_consommables, name='stock_consommables'),
     path('maintenance/', maintenance_planning, name='maintenance_planning'),
     path('alertes/', alertes_penurie, name='alertes_penurie'),

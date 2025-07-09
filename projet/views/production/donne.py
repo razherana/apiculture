@@ -1,20 +1,22 @@
 from django.shortcuts import redirect, render
 from django.db.models import Sum
 from django.db.models import Count
-
-from dateutil.relativedelta import relativedelta
+from django.contrib import messages
+from django.http import JsonResponse
+import json
 
 from datetime import datetime, timedelta
 from projet.models.productions import Recolte
 from projet.models.ressources import Ruche , HausseType , RucheHausseHistory , Hausse, HausseCadre , EssaimDetail , EssaimStatusHistory , EssaimStatus , Essaim , EssaimRace , EssaimOrigin,EssaimSanteHistory
 
-from pytz import timezone as pytz_timezone
-from datetime import datetime, timedelta 
-from django.db.models import Count, Avg, Sum
-from datetime import datetime, timedelta
+from pytz import timezone as pytz_timezone 
+from django.db.models import Avg
 from projet.models.productions import Recolte , InterventionType , Intervention
 from projet.models.ressources import EssaimSanteHistory, Ruche , HausseCadre , EssaimDetail
  
+from projet.models.ressources import Materiel , MaterielType , MaterielStatus , Consommable , ConsommableType , ConsommableConsomme ,MaterielStatusHistory
+
+
 from projet.models.ressources import Materiel , MaterielType , MaterielStatus , Consommable , ConsommableType , ConsommableConsomme 
 from projet.models.ventes import VenteDetail
 from projet.models.ressources import Ruche
@@ -23,7 +25,6 @@ from projet.models.productions  import Task
 from django.utils.dateparse import parse_date
 
 
-from django.shortcuts import render
 from projet.models.productions import Recolte
 
 
@@ -61,13 +62,13 @@ def recolte_detail(request, pk):
 
     if r:
         recolte = {
-            'id': r.id,
-            'created_at': r.reated_at.strftime('%Y-%m-%d'),
-            'ruche': {'description': r.ruche__description},
-            'poids_miel': r.poids_miel,
-            'qualite': r.qualite,
-            'taux_humidite': r.taux_humidite,
-            'note': r.note
+            'id': r['id'],
+            'created_at': r['created_at'].strftime('%Y-%m-%d'),
+            'ruche': {'description': r['ruche__description']},
+            'poids_miel': r['poids_miel'],
+            'qualite': r['qualite'],
+            'taux_humidite': r['taux_humidite'],
+            'note': r['note']
         }
     else:
         return redirect('recolte_list')
@@ -76,6 +77,42 @@ def recolte_detail(request, pk):
 
 
 def recolte_form(request):
+    if request.method == 'POST':
+        # Get form data
+        ruche_id = request.POST.get('ruche')
+        poids_miel = request.POST.get('poids_miel')
+        qualite = request.POST.get('qualite')
+        taux_humidite = request.POST.get('taux_humidite')
+        note = request.POST.get('note', '')
+        
+        # Validate required fields
+        if not all([ruche_id, poids_miel, qualite, taux_humidite]):
+            messages.error(request, 'Veuillez remplir tous les champs obligatoires.')
+        else:
+            try:
+                # Get the ruche object
+                ruche = Ruche.objects.get(id=ruche_id)
+                
+                # Create new recolte
+                recolte = Recolte.objects.create(
+                    ruche=ruche,
+                    poids_miel=float(poids_miel),
+                    qualite=int(qualite),
+                    taux_humidite=float(taux_humidite),
+                    note=note
+                )
+                
+                messages.success(request, f'Récolte enregistrée avec succès ! Poids: {poids_miel} kg, Qualité: {qualite}/10, Humidité: {taux_humidite}%')
+                return redirect('recolte_list')
+                
+            except Ruche.DoesNotExist:
+                messages.error(request, 'La ruche sélectionnée n\'existe pas.')
+            except ValueError:
+                messages.error(request, 'Veuillez entrer des valeurs valides pour le poids, la qualité et l\'humidité.')
+            except Exception as e:
+                messages.error(request, f'Erreur lors de l\'enregistrement: {str(e)}')
+    
+    # GET request - show form
     rucheModel = Ruche.objects.all()
     ruches = [
         {'id': ruche.id, 'description': ruche.description}
@@ -118,23 +155,72 @@ def historique_production(request):
 def materiel_list(request):
     materiel = Materiel.objects.all()
     materiels = [
-
-        {   'type': m.materiel_type, 
-            'designation': m.designation,
-            'date_ajout': m.created_at('%Y-%m-%d'), 
-            'statut': m.seuil_alerte ,
-            'duree_vie': m.durre_de_vie_estimee 
+        {
+            'type': m.materiel_type,
+            'date_ajout': m.created_at.strftime('%Y-%m-%d'),
+            'statut': m.materiel_status_histories.last().materiel_status.name if m.materiel_status_histories.exists() else 'N/A',
+            'durre_de_vie_estimee': m.durre_de_vie_estimee
         }
-        for m in  materiel
+        for m in materiel
     ]
-    return render(request, 'production/materiel_list.html', {'materiels': materiels, 'page_title': 'Inventaire du Matériel'})
-
+    print(materiels)  # Debug to check the data
+    return render(request, 'production/materiel_list.html', {
+        'materiels': materiels,
+        'page_title': 'Inventaire du Matériel'
+    })
 
 def materiel_form(request):
+    if request.method == 'POST':
+        materiel_type_id = request.POST.get('materiel_type')
+        materiel_status_id = request.POST.get('materiel_status')
+        durre_de_vie_estimee = request.POST.get('durre_de_vie_estimee')
+
+        if materiel_type_id and materiel_status_id and durre_de_vie_estimee:
+            try:
+                materiel_type = MaterielType.objects.get(id=materiel_type_id)
+                materiel_status = MaterielStatus.objects.get(id=materiel_status_id)
+                durre_de_vie_estimee = int(durre_de_vie_estimee)
+
+                materiel = Materiel.objects.create(
+                    materiel_type=materiel_type,
+                    durre_de_vie_estimee=durre_de_vie_estimee
+                )
+
+                MaterielStatusHistory.objects.create(
+                    materiel=materiel,
+                    materiel_status=materiel_status
+                )
+
+                return redirect('materiel_list')
+            except MaterielType.DoesNotExist:
+                return render(request, 'production/materiel_form.html', {
+                    'types': MaterielType.objects.all(),
+                    'statuts': MaterielStatus.objects.all(),
+                    'page_title': 'Ajouter du Matériel',
+                    'error': 'Type de matériel invalide.'
+                })
+            except MaterielStatus.DoesNotExist:
+                return render(request, 'production/materiel_form.html', {
+                    'types': MaterielType.objects.all(),
+                    'statuts': MaterielStatus.objects.all(),
+                    'page_title': 'Ajouter du Matériel',
+                    'error': 'Statut de matériel invalide.'
+                })
+            except ValueError:
+                return render(request, 'production/materiel_form.html', {
+                    'types': MaterielType.objects.all(),
+                    'statuts': MaterielStatus.objects.all(),
+                    'page_title': 'Ajouter du Matériel',
+                    'error': 'La durée de vie doit être un nombre entier.'
+                })
+
     types = MaterielType.objects.all()
     statuts = MaterielStatus.objects.all()
-    return render(request, 'production/materiel_form.html', {'types': types, 'statuts': statuts, 'page_title': 'Ajouter du Matériel'})
-
+    return render(request, 'production/materiel_form.html', {
+        'types': types,
+        'statuts': statuts,
+        'page_title': 'Ajouter du Matériel'
+    })
 
 def stock_consommables(request):
     consommable_types = ConsommableType.objects.all()
@@ -160,17 +246,16 @@ def stock_consommables(request):
     })
 
 def maintenance_planning(request):
-
-        tasks = Task.objects.select_related('task_type', 'task_priorite', 'ruche', 'localization').prefetch_related('task_status_histories__task_status_type')
-        tasks_data = [
-            {
-                'description': t.description if t.description else t.title, 
-                'date_prevue': t.date_prevue.strftime('%Y-%m-%d'),
-                'date_realisation': t.date_realisation.strftime('%Y-%m-%d') if t.date_realisation else None,
-                'statut': t.task_status_histories.last().task_status_type.name if t.task_status_histories.exists() else 'À faire'
-            } for t in tasks
-        ]
-        return render(request, 'production/stock_consommables.html', {'tasks': tasks_data, 'page_title': 'Stock des Consommables'})
+    tasks = Task.objects.select_related('task_type', 'task_priorite', 'ruche', 'localization').prefetch_related('task_status_histories__task_status_type')
+    tasks_data = [
+        {
+            'description': t.description if t.description else t.title, 
+            'date_prevue': t.date_prevue.strftime('%Y-%m-%d'),
+            'date_realisation': t.date_realisation.strftime('%Y-%m-%d') if t.date_realisation else None,
+            'statut': t.task_status_histories.last().task_status_type.name if t.task_status_histories.exists() else 'À faire'
+        } for t in tasks
+    ]
+    return render(request, 'production/maintenance_planning.html', {'tasks': tasks_data, 'page_title': 'Planning de Maintenance'})
 
 
 def alertes_penurie(request):
@@ -388,3 +473,42 @@ def analyse_rentabilite(request):
     }
 
     return render(request, 'production/analyse_rentabilite.html', context)
+
+
+def materiel_type_create(request):
+    """Create a new materiel type"""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            name = data.get('name', '').strip()
+            designation = data.get('designation', '').strip()
+            seuil_alerte = data.get('seuil_alerte')
+            
+            if not name or not designation or seuil_alerte is None:
+                return JsonResponse({'success': False, 'message': 'Tous les champs sont requis'})
+            
+            # Check if materiel type already exists
+            if MaterielType.objects.filter(name=name).exists():
+                return JsonResponse({'success': False, 'message': 'Ce type de matériel existe déjà'})
+            
+            # Create new materiel type
+            materiel_type = MaterielType.objects.create(
+                name=name,
+                designation=designation,
+                seuil_alerte=int(seuil_alerte)
+            )
+            
+            return JsonResponse({
+                'success': True,
+                'materiel_type': {
+                    'id': materiel_type.id,
+                    'name': materiel_type.name,
+                    'designation': materiel_type.designation,
+                    'seuil_alerte': materiel_type.seuil_alerte
+                }
+            })
+            
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)})
+    
+    return JsonResponse({'success': False, 'message': 'Méthode non autorisée'})

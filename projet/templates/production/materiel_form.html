@@ -3,26 +3,347 @@
 {% block page_header %}Ajouter du Matériel{% endblock %}
 
 {% block content %}
-<div class="card" style="max-width: 700px; margin: auto;">
-    <form method="post">
-        {% csrf_token %}
-        <div class="form-group">
-            <label for="type">Type de matériel</label>
-            <select name="materiel_type" id="type" required>
-                {% for type in types %}<option value="{{ type.id }}">{{ type.name }}</option>{% endfor %}
-            </select>
+<div class="elevage-content">
+    <div class="elevage-card" style="max-width: 700px; margin: auto;">
+        <h2>Ajouter du Matériel</h2>
+        
+        {% if error %}
+        <div class="alert-card high" style="margin-bottom: 1.5rem;">
+            <div class="alert-icon high">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <div class="alert-content">
+                <div class="alert-title">Erreur</div>
+                <div class="alert-message">{{ error }}</div>
+            </div>
         </div>
-        <div class="form-group">
-            <label for="designation">Désignation</label>
-            <input type="text" id="designation" name="designation">
-        </div>
-        <div class="form-group">
-            <label for="statut">Statut</label>
-            <select name="materiel_status" id="statut" required>
-                {% for statut in statuts %}<option value="{{ statut.id }}">{{ statut.name }}</option>{% endfor %}
-            </select>
-        </div>
-        <button type="submit" class="btn">Enregistrer</button>
-    </form>
+        {% endif %}
+        
+        <form class="form-container" method="post">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label class="form-label" for="type">Type de matériel *</label>
+                <div style="display: flex; gap: 0.5rem; align-items: flex-start; flex-direction: column;">
+                    <select class="form-select" name="materiel_type" id="type" required style="flex: 1;">
+                        <option value="">Sélectionnez un type</option>
+                        {% for type in types %}
+                            <option value="{{ type.id }}">{{ type.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <button type="button" class="btn btn-secondary" onclick="openMaterielTypeModal()" title="Créer un nouveau type">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+                <small class="form-help">Type de matériel apicole</small>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label" for="statut">Statut *</label>
+                <select class="form-select" name="materiel_status" id="statut" required>
+                    <option value="">Sélectionnez un statut</option>
+                    {% for statut in statuts %}
+                        <option value="{{ statut.id }}">{{ statut.name }}</option>
+                    {% endfor %}
+                </select>
+                <small class="form-help">État actuel du matériel</small>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label" for="durre_de_vie_estimee">Durée de vie estimée (mois) *</label>
+                <input type="number" class="form-input" id="durre_de_vie_estimee" name="durre_de_vie_estimee" min="0" required>
+                <small class="form-help">Durée de vie prévue en mois</small>
+            </div>
+            
+            <div class="form-row">
+                <div class="btn-group" style="margin-left: auto;">
+                    <a href="{% url 'materiel_list' %}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Annuler
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Enregistrer
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
 </div>
+
+<!-- MaterielType Creation Modal -->
+<div id="materiel-type-modal" class="materiel-type-modal" style="display: none;">
+    <div class="materiel-type-modal-content">
+        <span class="close-modal" onclick="closeMaterielTypeModal()">&times;</span>
+        <h4 style="margin-bottom: 1.5rem; color: var(--honey-primary);">Nouveau type de matériel</h4>
+        
+        <form id="materiel-type-form">
+            {% csrf_token %}
+            <div class="form-group">
+                <label class="form-label" for="new-materiel-type-name">Nom du type *</label>
+                <input type="text" class="form-input" id="new-materiel-type-name" name="name" required 
+                       placeholder="Ex: Ruche, Enfumoir, Combinaison...">
+                <small class="form-help">Nom du type de matériel</small>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label" for="new-materiel-type-designation">Désignation *</label>
+                <input type="text" class="form-input" id="new-materiel-type-designation" name="designation" required 
+                       placeholder="Ex: Équipement de protection, Outil d'intervention...">
+                <small class="form-help">Description ou catégorie du matériel</small>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label" for="new-materiel-type-seuil">Seuil d'alerte *</label>
+                <input type="number" class="form-input" id="new-materiel-type-seuil" name="seuil_alerte" min="0" required 
+                       placeholder="5">
+                <small class="form-help">Quantité minimale avant alerte de stock faible</small>
+            </div>
+            
+            <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem;">
+                <button type="button" class="btn btn-secondary" onclick="closeMaterielTypeModal()">
+                    <i class="fas fa-times"></i> Annuler
+                </button>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Créer
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // MaterielType management
+    function openMaterielTypeModal() {
+        document.getElementById('materiel-type-modal').style.display = 'block';
+        document.getElementById('new-materiel-type-name').focus();
+    }
+
+    function closeMaterielTypeModal() {
+        document.getElementById('materiel-type-modal').style.display = 'none';
+        document.getElementById('materiel-type-form').reset();
+    }
+
+    // Handle materiel type form submission
+    document.getElementById('materiel-type-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        const name = formData.get('name').trim();
+        const designation = formData.get('designation').trim();
+        const seuil_alerte = formData.get('seuil_alerte').trim();
+        
+        if (!name || !designation || !seuil_alerte) {
+            alert('Veuillez remplir tous les champs obligatoires.');
+            return;
+        }
+        
+        // Send AJAX request to create materiel type
+        fetch('/production/materiel-types/create/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify({
+                'name': name,
+                'designation': designation,
+                'seuil_alerte': parseInt(seuil_alerte)
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Add new option to select
+                const typeSelect = document.getElementById('type');
+                const newOption = document.createElement('option');
+                newOption.value = data.materiel_type.id;
+                newOption.textContent = data.materiel_type.name;
+                newOption.selected = true;
+                typeSelect.appendChild(newOption);
+                
+                closeMaterielTypeModal();
+                showNotification(`Type de matériel "${name}" créé avec succès!`, 'success');
+            } else {
+                alert('Erreur lors de la création du type: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Erreur lors de la création du type de matériel');
+        });
+    });
+
+    // Close modal when clicking outside
+    window.addEventListener('click', function(e) {
+        const modal = document.getElementById('materiel-type-modal');
+        
+        if (e.target === modal) {
+            closeMaterielTypeModal();
+        }
+    });
+
+    // Notification system
+    function showNotification(message, type = 'info') {
+        const notification = document.createElement('div');
+        notification.className = `notification notification-${type}`;
+        notification.innerHTML = `
+            <i class="fas fa-${type === 'success' ? 'check-circle' : 'info-circle'}"></i>
+            <span>${message}</span>
+            <button onclick="this.parentElement.remove()" style="background: none; border: none; color: inherit; cursor: pointer; margin-left: auto;">
+                <i class="fas fa-times"></i>
+            </button>
+        `;
+        
+        // Add to page
+        const container = document.querySelector('.elevage-content');
+        container.insertBefore(notification, container.firstChild);
+        
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            if (notification.parentElement) {
+                notification.remove();
+            }
+        }, 5000);
+    }
+</script>
+
+<style>
+.form-help {
+    color: var(--text-secondary) !important;
+    font-size: 0.8rem;
+    margin-top: 0.25rem;
+    display: block;
+    font-style: italic;
+}
+
+/* Modal styles */
+.materiel-type-modal {
+    display: none;
+    position: fixed;
+    z-index: 1001;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+
+.materiel-type-modal-content {
+    background: var(--glass-bg);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    margin: 10% auto;
+    padding: 2rem;
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    width: 90%;
+    max-width: 600px;
+    color: var(--text-primary);
+    animation: fadeUp 0.3s ease-out;
+}
+
+.close-modal {
+    color: var(--text-secondary);
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: color var(--transition-fast);
+}
+
+.close-modal:hover,
+.close-modal:focus {
+    color: var(--honey-primary);
+}
+
+/* Notification styles */
+.notification {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: var(--radius-md);
+    border: 1px solid transparent;
+    animation: slideDown 0.3s ease-out;
+    background: var(--glass-bg);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--glass-border);
+}
+
+.notification-success {
+    background-color: rgba(0, 204, 136, 0.1);
+    border-color: var(--pollen-green);
+    color: var(--pollen-green);
+}
+
+.notification-info {
+    background-color: rgba(0, 136, 255, 0.1);
+    border-color: var(--nectar-blue);
+    color: var(--nectar-blue);
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Enhanced form styling for modal */
+.materiel-type-modal .form-input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    transition: all var(--transition-fast);
+}
+
+.materiel-type-modal .form-input:focus {
+    outline: none;
+    border-color: var(--honey-primary);
+    box-shadow: 0 0 0 3px rgba(255, 209, 0, 0.2);
+}
+
+/* Responsive for mobile */
+@media (max-width: 768px) {
+    .materiel-type-modal-content {
+        margin: 5% auto;
+        width: 95%;
+        padding: 1.5rem;
+    }
+    
+    .form-row {
+        flex-direction: column;
+    }
+    
+    .form-group {
+        min-width: 100%;
+    }
+}
+</style>
 {% endblock %}

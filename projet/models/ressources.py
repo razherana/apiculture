@@ -94,12 +94,35 @@ class EssaimRace(models.Model):
 
 
 class Essaim(models.Model):
+    description = models.CharField(max_length=255, blank=True, null=True)
     essaim_origin = models.ForeignKey(
         EssaimOrigin, on_delete=models.CASCADE, related_name='essaims')
     essaim_race = models.ForeignKey(
         EssaimRace, on_delete=models.CASCADE, related_name='essaims')
     created_at = models.DateTimeField(auto_now_add=True)
-
+    
+    @property
+    def population(self):
+        total_population = {
+            'ouvriers': 0,
+            'faux_bourdons': 0,
+            'reines': 0,
+            'total': 0
+        }
+        
+        population_details = self.essaim_details.all().order_by('-created_at')
+        
+        for detail in population_details:
+            if detail.is_death:
+                total_population['ouvriers'] -= abs(detail.ouvrier_added)
+                total_population['faux_bourdons'] -= abs(detail.faux_bourdon_added)
+                total_population['reines'] -= abs(detail.reine_added)
+            else:
+                total_population['ouvriers'] += detail.ouvrier_added
+                total_population['faux_bourdons'] += detail.faux_bourdon_added
+                total_population['reines'] += detail.reine_added
+        
+        return total_population
     class Meta:
         db_table = 'essaims'
 
