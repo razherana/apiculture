@@ -1,12 +1,20 @@
 from django.shortcuts import redirect, render
 from django.db.models import Sum
 from django.db.models import Count
+
+from dateutil.relativedelta import relativedelta
+
+from datetime import datetime, timedelta
+from projet.models.productions import Recolte
+from projet.models.ressources import Ruche , HausseType , RucheHausseHistory , Hausse, HausseCadre , EssaimDetail , EssaimStatusHistory , EssaimStatus , Essaim , EssaimRace , EssaimOrigin,EssaimSanteHistory
+
 from pytz import timezone as pytz_timezone
 from datetime import datetime, timedelta 
 from django.db.models import Count, Avg, Sum
 from datetime import datetime, timedelta
 from projet.models.productions import Recolte , InterventionType , Intervention
 from projet.models.ressources import EssaimSanteHistory, Ruche , HausseCadre , EssaimDetail
+ 
 from projet.models.ressources import Materiel , MaterielType , MaterielStatus , Consommable , ConsommableType , ConsommableConsomme 
 from projet.models.ventes import VenteDetail
 from projet.models.ressources import Ruche
@@ -17,6 +25,7 @@ from django.utils.dateparse import parse_date
 
 from django.shortcuts import render
 from projet.models.productions import Recolte
+
 
 def recolte_list(request):
     recolteModel = Recolte.objects.select_related("ruche").all()
@@ -33,6 +42,9 @@ def recolte_list(request):
             'taux_humidite': r.taux_humidite
         } for r in recolteModel
     ]
+
+
+    recoltes = Recolte.objects.all()
 
     return render(request, 'production/recolte_list.html', {'recoltes': recoltes, 'page_title': 'Liste des Récoltes'})
     # recoltes = [
