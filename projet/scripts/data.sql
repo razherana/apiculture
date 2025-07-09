@@ -38,3 +38,29 @@ INSERT INTO localization_status (name) VALUES
 ('En Service'),
 ('Hors Service'),
 ('En Réparation');
+
+INSERT INTO mode_payements (name) VALUES
+('Espèces'),
+('Chèque'),
+('Carte Bancaire'),
+('Virement');
+
+INSERT INTO cadre_types (name) VALUES
+('Cadre Dadant'),
+('Cadre Langstroth'),
+('Cadre Warré');
+
+INSERT INTO hausse_types (name, cadre_max_capacity, cadre_type_id) VALUES 
+('Hausses Dadant', 10, 1),
+('Hausses Langstroth', 10, 2),
+('Hausses Warré', 10, 3);
+
+INSERT INTO ruches_types (name, hausse_max_capacity, hausses_type_id) VALUES
+('Ruche Dadant', 2, 1),
+('Ruche Langstroth', 2, 2),
+('Ruche Warré', 2, 3);
+
+INSERT INTO ruches (description, localizations_id, ruche_type_id, created_at) VALUES
+('Ruche Dadant 1', 1, 1, CURRENT_DATE),
+('Ruche Langstroth 1', 1, 2, CURRENT_DATE),
+('Ruche Warré 1', 1, 3, CURRENT_DATE);

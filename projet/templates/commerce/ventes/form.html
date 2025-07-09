@@ -4,53 +4,305 @@
 
 {% block content %}
 <link rel="stylesheet" href="{% static 'commerce/css/form.css' %}">
+<link rel="stylesheet" href="{% static 'commerce/css/dark-mode-fix.css' %}">
+<style>
+    .cart-section {
+        margin-top: 2em;
+        padding: 1em;
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--radius-md);
+        background-color: var(--bg-elevated);
+    }
+    
+    .miel-selector {
+        display: flex;
+        gap: 1em;
+        align-items: center;
+        margin-bottom: 1em;
+        flex-wrap: wrap;
+    }
+    
+    .cart-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75em;
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--radius-sm);
+        margin-bottom: 0.5em;
+        background-color: var(--bg-elevated-hover);
+        transition: all var(--transition-fast);
+    }
+    
+    .cart-item:hover {
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-sm);
+    }
+    
+    .cart-total {
+        font-weight: bold;
+        margin-top: 1em;
+        padding-top: 1em;
+        border-top: 2px solid var(--honey-primary);
+        font-size: 1.2em;
+        color: var(--honey-primary);
+    }
+    
+    .remove-btn {
+        background: var(--danger);
+        color: white;
+        border: none;
+        padding: 0.5em 1em;
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        transition: all var(--transition-fast);
+    }
+    
+    .remove-btn:hover {
+        background: var(--danger-dark);
+        transform: scale(1.05);
+    }
+    
+    .add-to-cart-btn {
+        background: var(--success);
+        color: white;
+        border: none;
+        padding: 0.75em 1.5em;
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        font-weight: 600;
+        transition: all var(--transition-fast);
+    }
+    
+    .add-to-cart-btn:hover {
+        background: var(--success-dark);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+    
+    .price-input {
+        flex: 1;
+        min-width: 100px;
+    }
+</style>
+
 <div class="form-card" id="vente-insert-card">
     <h2>Nouvelle vente</h2>
     <form method="post" id="vente-insert-form" autocomplete="off">
         {% csrf_token %}
         <div class="form-group">
-            <label for="miel">Miel</label>
-            <select id="miel" name="miel" required>
-                {% for miel in miels %}
-                    <option value="{{ miel.nom }}">{{ miel.nom }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <div class="form-group">
-            <label for="client">Client</label>
+            <label for="client">Client *</label>
             <select id="client" name="client" required>
+                <option value="" disabled selected>-- Sélectionner un client --</option>
                 {% for cl in clients %}
-                    <option value="{{ cl.nom }}">{{ cl.nom }}</option>
+                    <option value="{{ cl.id }}">{{ cl.name }}</option>
                 {% endfor %}
             </select>
         </div>
+        
         <div class="form-group">
-            <label for="mode_payement">Mode de paiement</label>
+            <label for="mode_payement">Mode de paiement *</label>
             <select id="mode_payement" name="mode_payement" required>
+                <option value="" disabled selected>-- Sélectionner un mode --</option>
                 {% for mp in modes_payement %}
                     <option value="{{ mp.mode }}">{{ mp.mode }}</option>
                 {% endfor %}
             </select>
         </div>
-        <div class="form-group">
-            <label for="quantite">Quantité (kg)</label>
-            <input type="number" id="quantite" name="quantite" min="0" required>
+        
+        <!-- Shopping Cart Section -->
+        <div class="cart-section">
+            <h3><i class="fas fa-shopping-cart"></i> Ajouter des miels</h3>
+            <div class="miel-selector">
+                <select id="miel-select" style="flex: 2; min-width: 200px;">
+                    <option value="" disabled selected>-- Sélectionner un Miel --</option>
+                    {% for miel in miels %}
+                        <option value="{{ miel.id }}" 
+                                data-prix="{{ miel.prix }}" 
+                                data-nom="{{ miel.nom }}"
+                                data-unite="{{ miel.unite }}"
+                                data-quantite-unite="{{ miel.quantite_unite }}">
+                            {{ miel.nom }} - {{ miel.prix }} Ar ({{ miel.quantite_unite }}{{ miel.unite }})
+                        </option>
+                    {% endfor %}
+                </select>
+                <input type="number" id="quantite-input" placeholder="Quantité" min="1" value="1" style="flex: 1; min-width: 80px;">
+                <input type="text" id="prix-input" placeholder="Prix unitaire" min="0" step="0.01" class="price-input">
+                <button type="button" class="add-to-cart-btn" onclick="addToCart()">
+                    <i class="fas fa-plus"></i> Ajouter
+                </button>
+            </div>
+            
+            <div id="cart-items">
+                <h4><i class="fas fa-list"></i> Panier</h4>
+                <div id="cart-list">
+                    <!-- Cart items will be added here dynamically -->
+                </div>
+                <div class="cart-total">
+                    <i class="fas fa-calculator"></i> Total: <span id="total-price">0.00</span>Ar
+                </div>
+            </div>
         </div>
-        <div class="form-group">
-            <label for="montant">Montant (€)</label>
-            <input type="number" id="montant" name="montant" min="0" step="0.01" required>
-        </div>
-        <div class="form-group">
-            <label for="date">Date</label>
-            <input type="date" id="date" name="date" required>
-        </div>
+        
         <div class="form-group">
             <label for="note">Note</label>
-            <input type="text" id="note" name="note">
+            <textarea id="note" name="note" rows="3" placeholder="Informations supplémentaires sur la vente..."></textarea>
         </div>
+        
         <div style="display: flex; gap: 0.5em; justify-content: flex-end;">
-            <button type="submit" class="action-btn add">Enregistrer</button>
+            <a href="{% url 'ventes_list' %}" class="action-btn view">Annuler</a>
+            <button type="submit" class="action-btn add">
+                <i class="fas fa-save"></i> Enregistrer la vente
+            </button>
         </div>
     </form>
 </div>
+
+<script>
+let cart = [];
+let cartTotal = 0;
+
+function addToCart() {
+    const mielSelect = document.getElementById('miel-select');
+    const quantiteInput = document.getElementById('quantite-input');
+    const prixInput = document.getElementById('prix-input');
+    
+    if (!mielSelect.value || !quantiteInput.value || quantiteInput.value <= 0) {
+        alert('Veuillez sélectionner un miel et une quantité valide');
+        return;
+    }
+    
+    const selectedOption = mielSelect.options[mielSelect.selectedIndex];
+    const mielId = selectedOption.value;
+    const mielNom = selectedOption.dataset.nom;
+    const prixSuggere = parseFloat(selectedOption.dataset.prix);
+    const quantite = parseInt(quantiteInput.value);
+    const unite = selectedOption.dataset.unite;
+    const quantiteUnite = selectedOption.dataset.quantiteUnite;
+    
+    // Use custom price if provided, otherwise use suggested price
+    const prix = prixInput.value ? parseFloat(prixInput.value) : prixSuggere;
+    
+    if (prix <= 0) {
+        alert('Veuillez saisir un prix valide');
+        return;
+    }
+    
+    // Check if item already exists in cart
+    const existingItemIndex = cart.findIndex(item => item.id === mielId && item.prix === prix);
+    if (existingItemIndex !== -1) {
+        cart[existingItemIndex].quantite += quantite;
+    } else {
+        cart.push({
+            id: mielId,
+            nom: mielNom,
+            prix: prix,
+            quantite: quantite,
+            unite: unite,
+            quantiteUnite: quantiteUnite
+        });
+    }
+    
+    updateCartDisplay();
+    
+    // Reset form
+    mielSelect.selectedIndex = 0;
+    quantiteInput.value = 1;
+    prixInput.value = '';
+}
+
+function removeFromCart(index) {
+    cart.splice(index, 1);
+    updateCartDisplay();
+}
+
+function updateCartDisplay() {
+    const cartList = document.getElementById('cart-list');
+    const totalPrice = document.getElementById('total-price');
+    
+    cartList.innerHTML = '';
+    cartTotal = 0;
+    
+    if (cart.length === 0) {
+        cartList.innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: 1rem;"><i class="fas fa-shopping-cart"></i> Panier vide</p>';
+    } else {
+        cart.forEach((item, index) => {
+            const itemTotal = item.prix * item.quantite;
+            cartTotal += itemTotal;
+            
+            const cartItem = document.createElement('div');
+            cartItem.className = 'cart-item';
+            cartItem.innerHTML = `
+                <div>
+                    <strong>${item.nom}</strong><br>
+                    <span style="color: var(--text-secondary);">
+                        ${item.quantite} × ${item.prix.toFixed(2)}Ar = <strong>${itemTotal.toFixed(2)}Ar</strong>
+                    </span>
+                </div>
+                <button type="button" class="remove-btn" onclick="removeFromCart(${index})" title="Supprimer">
+                    <i class="fas fa-trash"></i>
+                </button>
+            `;
+            cartList.appendChild(cartItem);
+        });
+    }
+    
+    totalPrice.textContent = cartTotal.toFixed(2);
+    
+    // Update hidden form fields
+    updateHiddenFields();
+}
+
+function updateHiddenFields() {
+    // Remove existing hidden fields
+    const existingFields = document.querySelectorAll('input[name="cart_items"]');
+    existingFields.forEach(field => field.remove());
+    
+    // Add new hidden fields
+    const form = document.getElementById('vente-insert-form');
+    cart.forEach(item => {
+        const hiddenField = document.createElement('input');
+        hiddenField.type = 'hidden';
+        hiddenField.name = 'cart_items';
+        hiddenField.value = `${item.id}|${item.quantite}|${item.prix}`;
+        form.appendChild(hiddenField);
+    });
+}
+
+// Auto-fill price when miel is selected
+document.getElementById('miel-select').addEventListener('change', function() {
+    const selectedOption = this.options[this.selectedIndex];
+    if (selectedOption.value) {
+        const prixSuggere = selectedOption.dataset.prix;
+        document.getElementById('prix-input').value = prixSuggere;
+    }
+});
+
+// Validate form before submission
+document.getElementById('vente-insert-form').addEventListener('submit', function(e) {
+    if (cart.length === 0) {
+        e.preventDefault();
+        alert('Veuillez ajouter au moins un miel à la vente');
+        return false;
+    }
+    
+    const clientSelect = document.getElementById('client');
+    const modePayementSelect = document.getElementById('mode_payement');
+    
+    if (!clientSelect.value) {
+        e.preventDefault();
+        alert('Veuillez sélectionner un client');
+        return false;
+    }
+    
+    if (!modePayementSelect.value) {
+        e.preventDefault();
+        alert('Veuillez sélectionner un mode de paiement');
+        return false;
+    }
+});
+
+// Initialize empty cart display
+updateCartDisplay();
+</script>
 {% endblock %}

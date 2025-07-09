@@ -8,10 +8,83 @@
 <div class="elevage-content">
     <h2>Journal des soins</h2>
     
+    <!-- Statistics Cards -->
+    <div class="info-cards">
+        <div class="info-card">
+            <div class="info-card-header">
+                <div class="info-card-icon">
+                    <i class="fas fa-medkit"></i>
+                </div>
+                <div class="info-card-title">Total</div>
+            </div>
+            <div class="info-card-value">{{ soins|length }}</div>
+        </div>
+        
+        <div class="info-card">
+            <div class="info-card-header">
+                <div class="info-card-icon">
+                    <i class="fas fa-bug"></i>
+                </div>
+                <div class="info-card-title">Traitements Varroa</div>
+            </div>
+            <div class="info-card-value">
+                {% with varroa_count=0 %}
+                    {% for soin in soins %}
+                        {% if "Varroa" in soin.type or "varroa" in soin.type %}
+                            {% with varroa_count=varroa_count|add:1 %}{% endwith %}
+                        {% endif %}
+                    {% endfor %}
+                    {{ varroa_count }}
+                {% endwith %}
+            </div>
+        </div>
+        
+        <div class="info-card">
+            <div class="info-card-header">
+                <div class="info-card-icon">
+                    <i class="fas fa-utensils"></i>
+                </div>
+                <div class="info-card-title">Nourrissements</div>
+            </div>
+            <div class="info-card-value">
+                {% with nourr_count=0 %}
+                    {% for soin in soins %}
+                        {% if "Sirop" in soin.type or "Candy" in soin.type or "Nourrissement" in soin.type %}
+                            {% with nourr_count=nourr_count|add:1 %}{% endwith %}
+                        {% endif %}
+                    {% endfor %}
+                    {{ nourr_count }}
+                {% endwith %}
+            </div>
+        </div>
+        
+        <div class="info-card">
+            <div class="info-card-header">
+                <div class="info-card-icon">
+                    <i class="fas fa-pills"></i>
+                </div>
+                <div class="info-card-title">Médicaments</div>
+            </div>
+            <div class="info-card-value">
+                {% with med_count=0 %}
+                    {% for soin in soins %}
+                        {% if "Médicament" in soin.type or "Antibiotique" in soin.type %}
+                            {% with med_count=med_count|add:1 %}{% endwith %}
+                        {% endif %}
+                    {% endfor %}
+                    {{ med_count }}
+                {% endwith %}
+            </div>
+        </div>
+    </div>
+    
     <div class="btn-group">
-        <a href="{% url 'soin_add' %}" class="btn btn-primary">
+        <a href="{% url 'soin_add' %}" class="btn btn-primary action-btn">
             <i class="fas fa-plus"></i> Nouveau soin
         </a>
+        <button class="btn btn-secondary" onclick="exportData()">
+            <i class="fas fa-download"></i> Exporter
+        </button>
     </div>
     
     <div class="filters-container">
@@ -29,7 +102,7 @@
             <select class="filter-select" id="ruche-filter">
                 <option value="">Toutes les ruches</option>
                 {% for ruche in ruches %}
-                    <option value="{{ ruche.id }}">{{ ruche.nom }}</option>
+                    <option value="{{ ruche.id }}">{{ ruche.description }}</option>
                 {% endfor %}
             </select>
         </div>
@@ -43,117 +116,239 @@
                 <option value="365">Année en cours</option>
             </select>
         </div>
-        <div class="filter-group">
-            <div class="search-container">
-                <i class="fas fa-search search-icon"></i>
-                <input type="text" class="search-input" id="soin-search" placeholder="Rechercher...">
-            </div>
+        <div class="filter-group" style="position: relative;">
+            <label class="filter-label">Recherche :</label>
+            <input type="text" class="search-input" id="soin-search" placeholder="Rechercher...">
+            <i class="fas fa-search search-icon"></i>
         </div>
     </div>
     
     <div class="elevage-card">
-        <table class="elevage-table">
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Ruche</th>
-                    <th>Type</th>
-                    <th>Produit</th>
-                    <th>Dose</th>
-                    <th>Notes</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for soin in soins %}
-                <tr data-type="{{ soin.type }}" data-ruche="{{ soin.ruche_id }}" data-date="{{ soin.date|date:'Y-m-d' }}">
-                    <td>{{ soin.date }}</td>
-                    <td>
-                        {% for ruche in ruches %}
-                            {% if ruche.id == soin.ruche_id %}
-                                <a href="{% url 'ruche_details' id=soin.ruche_id %}">{{ ruche.nom }}</a>
+        <div class="table-container">
+            <table class="elevage-table" id="soins-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Ruche</th>
+                        <th>Type</th>
+                        <th>Dose/Quantité</th>
+                        <th>Statut</th>
+                        <th>Notes</th>
+                        <th class="actions-column">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for soin in soins %}
+                    <tr data-type="{{ soin.type }}" 
+                        data-ruche="{{ soin.ruche.id|default:'' }}" 
+                        data-date="{{ soin.date|date:'Y-m-d' }}"
+                        class="soin-row">
+                        <td>{{ soin.date|date:"d/m/Y" }}</td>
+                        <td>
+                            {% if soin.ruche %}
+                                <a href="{% url 'ruche_details' soin.ruche.id %}" class="link-hover">
+                                    {{ soin.ruche.description }}
+                                </a>
+                            {% else %}
+                                <span class="text-muted">Non spécifiée</span>
                             {% endif %}
-                        {% endfor %}
-                    </td>
-                    <td>
-                        {% if soin.type == 'Traitement Varroa' %}
-                            <span class="tag tag-danger">{{ soin.type }}</span>
-                        {% elif soin.type == 'Nourrissement' %}
-                            <span class="tag tag-warning">{{ soin.type }}</span>
-                        {% elif soin.type == 'Médicament' %}
-                            <span class="tag tag-info">{{ soin.type }}</span>
-                        {% else %}
-                            <span class="tag">{{ soin.type }}</span>
-                        {% endif %}
-                    </td>
-                    <td>{{ soin.produit }}</td>
-                    <td>{{ soin.dose }}</td>
-                    <td>{{ soin.notes }}</td>
-                    <td>
-                        <a href="{% url 'soin_edit' id=soin.id %}" class="btn btn-secondary">
-                            <i class="fas fa-edit"></i>
-                        </a>
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="7" class="text-center">Aucun soin enregistré</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                        </td>
+                        <td>
+                            {% if "Varroa" in soin.type or "varroa" in soin.type %}
+                                <span class="tag tag-danger">{{ soin.type }}</span>
+                            {% elif "Sirop" in soin.type or "Candy" in soin.type or "Nourrissement" in soin.type %}
+                                <span class="tag tag-warning">{{ soin.type }}</span>
+                            {% elif "Médicament" in soin.type or "Antibiotique" in soin.type %}
+                                <span class="tag tag-info">{{ soin.type }}</span>
+                            {% else %}
+                                <span class="tag tag-secondary">{{ soin.type }}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ soin.dose|default:"Non spécifiée" }}</td>
+                        <td>
+                            {% if soin.date_realisation %}
+                                <span class="tag tag-success">Réalisé</span>
+                            {% else %}
+                                <span class="tag tag-warning">Prévu</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="cell-expand">{{ soin.notes|truncatechars:50|default:"Aucune note" }}</span>
+                        </td>
+                        <td class="actions-column">
+                            <div style="display: flex; gap: 0.25rem;">
+                                <a href="{% url 'soin_details' soin.id %}" class="btn btn-secondary" style="padding: 0.4rem;" title="Voir détails">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{% url 'soin_edit' soin.id %}" class="btn btn-primary" style="padding: 0.4rem;" title="Modifier">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                {% if not soin.date_realisation %}
+                                <button class="btn btn-success" style="padding: 0.4rem;" title="Marquer comme réalisé" onclick="markAsCompleted({{ soin.id }})">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" style="text-align: center; color: var(--text-secondary); padding: 2rem;">
+                            Aucun soin enregistré.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Filtrage des soins
-        const typeFilter = document.getElementById('type-filter');
-        const rucheFilter = document.getElementById('ruche-filter');
-        const periodeFilter = document.getElementById('periode-filter');
-        const searchInput = document.getElementById('soin-search');
-        const soinRows = document.querySelectorAll('.elevage-table tbody tr');
+document.addEventListener('DOMContentLoaded', function() {
+    // Filtrage des soins
+    const typeFilter = document.getElementById('type-filter');
+    const rucheFilter = document.getElementById('ruche-filter');
+    const periodeFilter = document.getElementById('periode-filter');
+    const searchInput = document.getElementById('soin-search');
+    const soinRows = document.querySelectorAll('.soin-row');
+    
+    function filterSoins() {
+        const typeValue = typeFilter.value.toLowerCase();
+        const rucheValue = rucheFilter.value;
+        const periodeValue = parseInt(periodeFilter.value, 10);
+        const searchValue = searchInput.value.toLowerCase();
         
-        function filterSoins() {
-            const typeValue = typeFilter.value;
-            const rucheValue = rucheFilter.value;
-            const periodeValue = parseInt(periodeFilter.value, 10);
-            const searchValue = searchInput.value.toLowerCase();
-            
-            const today = new Date();
-            
-            soinRows.forEach(row => {
-                const type = row.getAttribute('data-type');
-                const ruche = row.getAttribute('data-ruche');
-                const dateStr = row.getAttribute('data-date');
-                const text = row.textContent.toLowerCase();
-                
-                // Vérifier les filtres de type et de ruche
-                const matchesType = !typeValue || type === typeValue;
-                const matchesRuche = !rucheValue || ruche === rucheValue;
-                const matchesSearch = !searchValue || text.includes(searchValue);
-                
-                // Vérifier le filtre de période
-                let matchesPeriode = true;
-                if (periodeValue) {
-                    const date = new Date(dateStr);
-                    const diffTime = Math.abs(today - date);
-                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                    matchesPeriode = diffDays <= periodeValue;
-                }
-                
-                if (matchesType && matchesRuche && matchesPeriode && matchesSearch) {
-                    row.style.display = '';
-                } else {
-                    row.style.display = 'none';
-                }
-            });
-        }
+        const today = new Date();
         
-        typeFilter.addEventListener('change', filterSoins);
-        rucheFilter.addEventListener('change', filterSoins);
-        periodeFilter.addEventListener('change', filterSoins);
-        searchInput.addEventListener('input', filterSoins);
-    });
+        soinRows.forEach(row => {
+            const type = row.getAttribute('data-type')?.toLowerCase() || '';
+            const ruche = row.getAttribute('data-ruche') || '';
+            const dateStr = row.getAttribute('data-date');
+            const text = row.textContent.toLowerCase();
+            
+            // Vérifier les filtres de base
+            const matchesType = !typeValue || type.includes(typeValue);
+            const matchesRuche = !rucheValue || ruche === rucheValue;
+            const matchesSearch = !searchValue || text.includes(searchValue);
+            
+            // Vérifier le filtre de période
+            let matchesPeriode = true;
+            if (periodeValue) {
+                const date = new Date(dateStr);
+                const diffTime = Math.abs(today - date);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                matchesPeriode = diffDays <= periodeValue;
+            }
+            
+            if (matchesType && matchesRuche && matchesPeriode && matchesSearch) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+    
+    // Attacher les événements de filtrage
+    typeFilter.addEventListener('change', filterSoins);
+    rucheFilter.addEventListener('change', filterSoins);
+    periodeFilter.addEventListener('change', filterSoins);
+    searchInput.addEventListener('input', filterSoins);
+});
+
+function exportData() {
+    // Implement export functionality
+    alert('Fonctionnalité d\'export à implémenter');
+}
+
+function markAsCompleted(soinId) {
+    if (confirm('Marquer ce soin comme réalisé ?')) {
+        fetch(`/elevage/interventions/${soinId}/complete/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                'date_realisation': new Date().toISOString().split('T')[0]
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Erreur lors de la mise à jour: ' + (data.error || 'Erreur inconnue'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Erreur lors de la mise à jour');
+        });
+    }
+}
 </script>
+
+<style>
+/* Soin specific styles */
+.soin-row {
+    transition: all var(--transition-medium);
+}
+
+.soin-row:hover {
+    background-color: var(--glass-overlay);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.link-hover {
+    color: var(--honey-primary);
+    text-decoration: none;
+    transition: all var(--transition-fast);
+}
+
+.link-hover:hover {
+    color: var(--honey-dark);
+    text-decoration: underline;
+}
+
+.text-muted {
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+/* Enhanced mobile responsiveness */
+@media (max-width: 768px) {
+    .filters-container {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .filter-group {
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+    
+    .filter-select,
+    .search-input {
+        width: 100%;
+    }
+    
+    .actions-column {
+        min-width: 100px;
+    }
+    
+    .elevage-table th,
+    .elevage-table td {
+        min-width: 80px;
+        font-size: 0.85rem;
+        padding: 0.5rem 0.25rem;
+    }
+    
+    .btn {
+        padding: 0.3rem;
+        font-size: 0.8rem;
+    }
+}
+</style>
 {% endblock %}

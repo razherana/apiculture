@@ -21,6 +21,13 @@ class Miel(models.Model):
     quantite_unite = models.IntegerField()
     miel_type = models.ForeignKey(
         MielType, on_delete=models.CASCADE, related_name='miels')
+    
+    @property
+    def prix_unitaire(self):
+        """Calculate the unit price of the honey."""
+        if self.miel_price_histories.exists():
+            return self.miel_price_histories.latest('created_at').price
+        return 0.0
 
     class Meta:
         db_table = 'miels'
@@ -58,9 +65,9 @@ class Intervention(models.Model):
     title = models.CharField(max_length=255)
     donnees = models.TextField()
     ruche = models.ForeignKey(
-        Ruche, on_delete=models.CASCADE, related_name='intervention')
+        Ruche, on_delete=models.CASCADE, related_name='intervention', null=True)
     localization = models.ForeignKey(
-        Localization, on_delete=models.CASCADE, related_name='intervention')
+        Localization, on_delete=models.CASCADE, related_name='intervention', null=True)
     intervention_type = models.ForeignKey(
         InterventionType, on_delete=models.CASCADE, related_name='intervention')
     details = models.CharField(max_length=255)

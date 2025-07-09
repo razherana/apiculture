@@ -1,19 +1,30 @@
 from django.shortcuts import redirect, render
 from django.db.models import Sum
 from django.db.models import Count
+
 from dateutil.relativedelta import relativedelta
 
 from datetime import datetime, timedelta
 from projet.models.productions import Recolte
 from projet.models.ressources import Ruche , HausseType , RucheHausseHistory , Hausse, HausseCadre , EssaimDetail , EssaimStatusHistory , EssaimStatus , Essaim , EssaimRace , EssaimOrigin,EssaimSanteHistory
+
+from pytz import timezone as pytz_timezone
+from datetime import datetime, timedelta 
+from django.db.models import Count, Avg, Sum
+from datetime import datetime, timedelta
+from projet.models.productions import Recolte , InterventionType , Intervention
+from projet.models.ressources import EssaimSanteHistory, Ruche , HausseCadre , EssaimDetail
+ 
 from projet.models.ressources import Materiel , MaterielType , MaterielStatus , Consommable , ConsommableType , ConsommableConsomme 
-from projet.models.ventes import Vente , VenteDetail
+from projet.models.ventes import VenteDetail
 from projet.models.ressources import Ruche
 from projet.models.ressources import Materiel
 from projet.models.productions  import Task
-from projet.models.productions  import TaskStatusHistory
-from projet.models.productions  import TaskPriorite
-from projet.models.productions  import TaskType
+from django.utils.dateparse import parse_date
+
+
+from django.shortcuts import render
+from projet.models.productions import Recolte
 
 
 def recolte_list(request):
@@ -32,7 +43,9 @@ def recolte_list(request):
         } for r in recolteModel
     ]
 
+
     recoltes = Recolte.objects.all()
+
     return render(request, 'production/recolte_list.html', {'recoltes': recoltes, 'page_title': 'Liste des Récoltes'})
     # recoltes = [
     #     {'id': 1, 'created_at': '2023-07-15', 'ruche': {'description': 'Ruche A1 - Forêt'}, 'poids_miel': 25.5, 'qualite': 8, 'taux_humidite': 17.5},
@@ -161,24 +174,65 @@ def maintenance_planning(request):
 
 
 def alertes_penurie(request):
-    alertes_stock = [
-        {'message': "Cire gaufrée : Stock actuel (80 feuilles) est en dessous du seuil d'alerte (100 feuilles).",
-         'level': 'warning'},
-        {'message': "Acide oxalique : Stock actuel (15g) est très en dessous du seuil d'alerte (50g).",
-         'level': 'danger'},
-    ]
-    alertes_maintenance = [
-        {'message': "Maintenance en retard : Traitement varroa pour la ruche C4 était prévu pour le 10/11/2023.", 'level': 'danger'}
-    ]
-    return render(request, 'production/alertes.html', {'alertes_stock': alertes_stock, 'alertes_maintenance': alertes_maintenance, 'page_title': 'Alertes de Pénurie'})
+    selected_date_str = request.GET.get('date', None)
+    if selected_date_str:
+        selected_date = parse_date(selected_date_str)
+    else:
+        selected_date = datetime.today().date()
 
+    alertes_stock = []
+    
+    consommable_types = ConsommableType.objects.all()
+    
+    for consommable_type in consommable_types:
+        stock_actuel = Consommable.objects.filter(
+            consommable_type=consommable_type,
+            created_at__date__lte=selected_date
+        ).exclude(
+            id__in=ConsommableConsomme.objects.filter(
+                created_at__date__lte=selected_date
+            ).values('consommable_id')
+        ).aggregate(total=Sum('quantite_unite'))['total'] or 0
+        
+        if stock_actuel < consommable_type.seuil_alerte:
+            level = 'danger' if stock_actuel <= consommable_type.seuil_alerte * 0.3 else 'warning'
+            message = (
+                f"{consommable_type.name} : Stock actuel ({stock_actuel} {consommable_type.unite.name}) "
+                f"est en dessous du seuil d'alerte ({consommable_type.seuil_alerte} {consommable_type.unite.name})."
+            )
+            alertes_stock.append({'message': message, 'level': level})
+    
+    alertes_maintenance = []
+    interventions_en_retard = Intervention.objects.filter(
+        date_prevue__lt=selected_date,
+        date_realisation__isnull=True
+    )
+    
+    for intervention in interventions_en_retard:
+        message = (
+            f"Maintenance en retard : {intervention.title} pour la ruche {intervention.ruche.description} "
+            f"était prévue pour le {intervention.date_prevue.strftime('%d/%m/%Y')}."
+        )
+        alertes_maintenance.append({'message': message, 'level': 'danger'})
+    
+    context = {
+        'alertes_stock': alertes_stock,
+        'alertes_maintenance': alertes_maintenance,
+        'page_title': 'Alertes de Pénurie',
+        'selected_date': selected_date.strftime('%Y-%m-%d'),
+        'has_alertes': bool(alertes_stock or alertes_maintenance)
+    }
+    
+    return render(request, 'production/alertes.html', context)
 # 3. Statistiques
 
 
 def dashboard_stats(request):
     total_recolte = Recolte.objects.aggregate(total=Sum('poids_miel'))['total'] or 0
     nombre_ruches = Ruche.objects.count()
-    one_year_ago = datetime.now() - timedelta(days=365)
+    fh = pytz_timezone('Africa/Nairobi')
+    datenow = fh.localize(datetime.now())
+    one_year_ago = datenow - timedelta(days=365)
     total_essaims = EssaimDetail.objects.filter(created_at__gte=one_year_ago).count()
     dead_essaims = EssaimDetail.objects.filter(
         created_at__gte=one_year_ago, is_death=True
@@ -227,7 +281,8 @@ def stats_production_par_ruche(request):
 
 
 def stats_mortalite(request):
-    end_date = datetime.now()
+    fh = pytz_timezone('Africa/Nairobi')
+    end_date = fh.localize(datetime.now())
     start_date = end_date - timedelta(days=30 * 10) 
     
     labels = []
@@ -280,7 +335,9 @@ def stats_mortalite(request):
 def analyse_rentabilite(request):
     # Définir la période (année en cours : 1er janvier 2025 à aujourd'hui)
     start_date = datetime(2025, 1, 1)
-    end_date = datetime.now()
+    fh = pytz_timezone('Africa/Nairobi')
+    datenow = fh.localize(datetime.now())
+    end_date = datenow
 
     # Calcul des revenus des ventes de miel
     revenus_miel = VenteDetail.objects.filter(

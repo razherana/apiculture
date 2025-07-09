@@ -231,7 +231,7 @@ class Ruche(models.Model):
     ruche_type = models.ForeignKey(
         RucheType, on_delete=models.CASCADE, related_name='ruches')
     essaim = models.ForeignKey(
-        Essaim, on_delete=models.CASCADE, related_name='ruches')
+        Essaim, on_delete=models.CASCADE, related_name='ruches', null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

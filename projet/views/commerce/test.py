@@ -1,7 +1,7 @@
 from django.shortcuts import redirect, render
 from django.contrib import messages
 
-from projet.models.ventes import Client, ClientType, Commande, CommandeStatus
+from projet.models.ventes import Client, ClientType, Commande, CommandeStatus, ModePayement
 
 
 def miels_list(request):
@@ -118,14 +118,49 @@ def commandes_list(request):
 
 
 def ventes_list(request):
-    ventes = [
-        {'id': 1, 'date': '2025-06-18', 'client': 'Dupont',
-            'produit': 'Miel de fleurs', 'quantite': 2, 'montant': 17.0},
-        {'id': 2, 'date': '2025-06-17', 'client': 'Martin',
-            'produit': 'Miel d’acacia', 'quantite': 1, 'montant': 10.0},
-    ]
-    return render(request, "commerce/ventes/list.html", {"ventes": ventes})
+    from projet.models.ventes import Vente
+    from django.db.models import Sum
+    
+    # Get all ventes with related data
+    ventes_queryset = Vente.objects.prefetch_related(
+        'vente_details__miel__miel_price_histories',
+        'client',
+        'commande'
+    ).select_related('client').all()
+    
+    ventes_data = []
+    for vente in ventes_queryset:
+        # Calculate total quantity from vente details
+        total_quantity = vente.vente_details.aggregate(total=Sum('quantite'))['total'] or 0
+        
+        # Get first product name for display (or concatenate multiple)
+        product_names = [detail.miel.miel_type.name for detail in vente.vente_details.all()]
+        product_display = ', '.join(product_names) if product_names else 'Aucun produit'
+        
+        # Calculate total amount
+        total_amount = sum(
+            detail.quantite * detail.miel.prix_unitaire 
+            for detail in vente.vente_details.all()
+        )
+        
+        vente_dict = {
+            'id': vente.id,
+            'date': vente.created_at.strftime('%Y-%m-%d'),
+            'client': vente.client.name,
+            'produit': product_display,
+            'quantite': total_quantity,
+            'montant': total_amount,
+            'mode_payement': vente.mode_payement,
+            'note': vente.note,
+            'created_at': vente.created_at.strftime('%Y-%m-%d'),
+            'vente_details': vente.vente_details,
+            'commande': vente.commande
+        }
+        ventes_data.append(vente_dict)
 
+    return render(request, "commerce/ventes/list.html", {
+        "ventes": ventes_data
+    })
 
 def stock_miels_list(request):
     from projet.models.productions import Miel, MielStock, MielPriceHistory
@@ -183,7 +218,6 @@ def stock_miels_list(request):
         "miels": miels_data,
         "selected_date": selected_date
     })
-
 
 def stock_miels_form(request):
     from projet.models.productions import Miel, MielStock, MielPriceHistory
@@ -249,7 +283,6 @@ def stock_miels_form(request):
     return render(request, "commerce/miels/stock_form.html", {
         "miels": miels_data
     })
-
 
 def client_vue(request):
     if request.method == "GET" or (request.POST and not request.POST.get('modify', None)):
@@ -325,7 +358,6 @@ def client_vue(request):
 
         return redirect('clients_list')
 
-
 def client_form(request):
     if request.method == "POST":
         return client_create(request)
@@ -336,7 +368,6 @@ def client_form(request):
         } for client_type in ClientType.objects.all()
     ]
     return render(request, "commerce/clients/form.html", {"client_types": client_types})
-
 
 def client_create(request):
     if request.method == "POST":
@@ -370,111 +401,139 @@ def client_create(request):
         pass
     return redirect('clients_list')
 
-
 def vente_vue(request):
-    vente = {
-        'id': 1,
-        'miel': 'Miel de fleurs',
-        'client': 'Dupont Jean',
-        'mode_payement': 'Carte bancaire',
-        'note': 'Livraison rapide',
-        'date': '2025-06-18',
-        'quantite': 2,
-        'montant': 17.0,
-    }
-    modes_payement = [
-        {'id': 1, 'mode': 'Carte bancaire'},
-        {'id': 2, 'mode': 'Chèque'},
-        {'id': 3, 'mode': 'Espèces'},
-    ]
-    clients = [
-        {'id': 1, 'nom': 'Dupont Jean'},
-        {'id': 2, 'nom': 'Martin Paul'},
-    ]
-    miels = [
-        {'id': 1, 'nom': 'Miel de fleurs'},
-        {'id': 2, 'nom': 'Miel d’acacia'},
-    ]
-    return render(request, "commerce/ventes/vue.html", {
-        "vente": vente,
-        "modes_payement": modes_payement,
-        "clients": clients,
-        "miels": miels
-    })
-
+    if request.method == "GET":
+        vente_id = request.GET.get('id', None)
+        
+        if not vente_id:
+            return redirect('ventes_list')
+        
+        try:
+            from projet.models.ventes import Vente
+            vente_model = Vente.objects.prefetch_related(
+                'vente_details__miel__miel_type',
+                'client'
+            ).select_related('client').get(id=vente_id)
+        except Vente.DoesNotExist:
+            return redirect('ventes_list')
+        
+        # Calculate total from details
+        total_amount = sum(
+            detail.quantite * detail.prix_unitaire 
+            for detail in vente_model.vente_details.all()
+        )
+        
+        # Get first product for main display
+        first_product = vente_model.vente_details.first()
+        product_display = first_product.miel.miel_type.name if first_product else 'Aucun produit'
+        
+        vente = {
+            'id': vente_model.id,
+            'miel': product_display,
+            'client': vente_model.client.name,
+            'mode_payement': vente_model.mode_payement,
+            'note': vente_model.note,
+            'date': vente_model.created_at.strftime('%Y-%m-%d'),
+            'quantite': sum(detail.quantite for detail in vente_model.vente_details.all()),
+            'montant': total_amount,
+        }
+        
+        # Get dropdown options
+        from projet.models.productions import Miel
+        miels = Miel.objects.select_related('miel_type', 'consommable_type').all()
+        clients = Client.objects.all()
+        
+        modes_payement = [
+            {'mode': 'Carte bancaire'},
+            {'mode': 'Chèque'},
+            {'mode': 'Espèces'},
+            {'mode': 'Virement'},
+        ]
+        
+        return render(request, "commerce/ventes/vue.html", {
+            "vente": vente,
+            "vente_model": vente_model,
+            "modes_payement": modes_payement,
+            "clients": clients,
+            "miels": miels
+        })
+    
+    elif request.method == "POST":
+        vente_id = request.POST.get('id', None)
+        
+        if not vente_id:
+            return redirect('ventes_list')
+        
+        try:
+            from projet.models.ventes import Vente
+            vente_model = Vente.objects.get(id=vente_id)
+        except Vente.DoesNotExist:
+            return redirect('ventes_list')
+        
+        # Update vente
+        vente_model.mode_payement = request.POST.get('mode_payement', vente_model.mode_payement)
+        vente_model.note = request.POST.get('note', vente_model.note)
+        
+        # Update client if changed
+        client_id = request.POST.get('client')
+        if client_id:
+            try:
+                client = Client.objects.get(id=client_id)
+                vente_model.client = client
+            except Client.DoesNotExist:
+                pass
+        
+        vente_model.save()
+        
+        return redirect('ventes_list')
 
 def vente_form(request):
-    modes_payement = [
-        {'id': 1, 'mode': 'Carte bancaire'},
-        {'id': 2, 'mode': 'Chèque'},
-        {'id': 3, 'mode': 'Espèces'},
-    ]
-    clients = [
-        {'id': 1, 'nom': 'Dupont Jean'},
-        {'id': 2, 'nom': 'Martin Paul'},
-    ]
-    miels = [
-        {'id': 1, 'nom': 'Miel de fleurs'},
-        {'id': 2, 'nom': 'Miel d’acacia'},
-    ]
-    return render(request, "commerce/ventes/form.html", {
-        "modes_payement": modes_payement,
-        "clients": clients,
-        "miels": miels
-    })
-
-
-def commande_form(request):
     from projet.models.productions import Miel
+    from projet.models.ventes import Vente, VenteDetail
     
     if request.method == "POST":
         # Handle form submission
         client_id = request.POST.get('client')
-        livraison_date = request.POST.get('livraison_date')
+        mode_payement = request.POST.get('mode_payement')
         note = request.POST.get('note', '')
         
         # Get client
         try:
             client = Client.objects.get(id=client_id)
         except Client.DoesNotExist:
-            return redirect('commande_form')
+            return redirect('vente_form')
         
-        # Create commande
-        commande = Commande.objects.create(
+        mode_payement_model = ModePayement.objects.filter(name=mode_payement).first()
+        
+        if not mode_payement_model:
+            messages.error(request, 'Mode de paiement invalide.')
+            return redirect('vente_form')    
+    
+        # Create vente
+        vente = Vente.objects.create(
             client=client,
-            livraison_date=livraison_date,
-            note=note,
-            vente=None  # No vente initially
+            mode_payement=mode_payement_model,
+            note=note
         )
         
         # Process cart items
         cart_items = request.POST.getlist('cart_items')
         for item in cart_items:
             if item:  # Skip empty items
-                miel_id, quantite = item.split('|')
+                print(item)
+                divided = item.split('|')
+                miel_id, quantite = divided[0], divided[1]
                 try:
                     miel = Miel.objects.get(id=miel_id)
-                    from projet.models.ventes import CommandeDetail
-                    CommandeDetail.objects.create(
-                        commande=commande,
+                    VenteDetail.objects.create(
+                        vente=vente,
                         miel=miel,
-                        quantite=int(quantite)
+                        quantite=int(quantite),
                     )
                 except (Miel.DoesNotExist, ValueError):
                     continue
         
-        # Create initial status
-        try:
-            initial_status = CommandeStatus.objects.get(name='Créée')
-            from projet.models.ventes import CommandeStatusHistory
-            CommandeStatusHistory.objects.create(
-                commande=commande,
-                commande_status=initial_status
-            )
-        except CommandeStatus.DoesNotExist:
-            pass
-        
-        return redirect('commandes_list')
+        return redirect('ventes_list')
     
     # GET request - show form
     clients = Client.objects.all().values('id', 'name')
@@ -493,144 +552,18 @@ def commande_form(request):
             'unite': miel.unite_mesure.name,
             'quantite_unite': miel.quantite_unite
         })
+        
+    modes_payements = ModePayement.objects.all()
     
-    return render(request, "commerce/commandes/form.html", {
-        "clients": clients,
-        "miels": miels_data
-    })
-
-
-def miels_stats(request):
-    from projet.models.productions import Miel, MielStock, MielPriceHistory
-    from django.db.models import Sum, Count
-    from datetime import datetime, date
-    
-    # Get selected date from request or use today
-    selected_date = request.GET.get('date', date.today().strftime('%Y-%m-%d'))
-    try:
-        filter_date = datetime.strptime(selected_date, '%Y-%m-%d').date()
-    except ValueError:
-        filter_date = date.today()
-        selected_date = filter_date.strftime('%Y-%m-%d')
-    
-    # Get all miels with related data
-    miels_queryset = Miel.objects.select_related(
-        'miel_type', 'consommable_type', 'unite_mesure'
-    ).prefetch_related(
-        'miel_stock', 'miel_price_histories'
-    ).all()
-    
-    stats = []
-    for miel in miels_queryset:
-        # Calculate stock at selected date
-        stock_entries = miel.miel_stock.filter(created_at__date__lte=filter_date)
-        stock_actuel = stock_entries.aggregate(total=Sum('added_quantity'))['total'] or 0
-        
-        # Calculate initial stock (from beginning of year)
-        year_start = date(filter_date.year, 1, 1)
-        initial_stock_entries = miel.miel_stock.filter(created_at__date__lt=year_start)
-        stock_initial = initial_stock_entries.aggregate(total=Sum('added_quantity'))['total'] or 0
-        
-        # Calculate entries and exits for the year up to selected date
-        year_entries = miel.miel_stock.filter(
-            created_at__date__range=[year_start, filter_date],
-            added_quantity__gt=0
-        )
-        year_exits = miel.miel_stock.filter(
-            created_at__date__range=[year_start, filter_date],
-            added_quantity__lt=0
-        )
-        
-        total_entrees = year_entries.aggregate(total=Sum('added_quantity'))['total'] or 0
-        total_sorties = abs(year_exits.aggregate(total=Sum('added_quantity'))['total'] or 0)
-        nb_entrees = year_entries.count()
-        nb_sorties = year_exits.count()
-        
-        # Get current price at selected date
-        latest_price_entry = miel.miel_price_histories.filter(
-            created_at__date__lte=filter_date
-        ).order_by('-created_at').first()
-        prix_unitaire = latest_price_entry.price if latest_price_entry else 0.0
-        
-        # Calculate stock value
-        valeur_stock = stock_actuel * prix_unitaire
-        
-        # Generate evolution data (last 6 months from selected date)
-        evolution_stock = []
-        evolution_dates = []
-        
-        for i in range(5, -1, -1):
-            # Calculate date i months before selected date
-            month = filter_date.month - i
-            year = filter_date.year
-            while month <= 0:
-                month += 12
-                year -= 1
-            
-            try:
-                evolution_date = date(year, month, min(filter_date.day, 28))
-            except ValueError:
-                evolution_date = date(year, month, 28)
-            
-            # Calculate stock at that date
-            historical_entries = miel.miel_stock.filter(created_at__date__lte=evolution_date)
-            historical_stock = historical_entries.aggregate(total=Sum('added_quantity'))['total'] or 0
-            
-            evolution_stock.append(historical_stock)
-            evolution_dates.append(evolution_date.strftime('%Y-%m-%d'))
-        
-        miel_stats = {
-            "type": miel.miel_type.name,
-            "stock_actuel": stock_actuel,
-            "stock_initial": stock_initial,
-            "total_entrees": total_entrees,
-            "total_sorties": total_sorties,
-            "nb_entrees": nb_entrees,
-            "nb_sorties": nb_sorties,
-            "valeur_stock": valeur_stock,
-            "prix_unitaire": prix_unitaire,
-            "evolution_stock": evolution_stock,
-            "evolution_dates": evolution_dates
-        }
-        stats.append(miel_stats)
-    
-    return render(request, "commerce/miels/stats.html", {
-        "stats": stats,
-        "selected_date": selected_date
-    })
-
-
-def ventes_stats(request):
-    stats = [
-        {
-            "type": "Fleurs",
-            "total_quantite": 25,
-            "total_montant": 220.0,
-            "nb_ventes": 12,
-            "ventes_evolution_dates": ["2025-01-01", "2025-02-01", "2025-03-01", "2025-04-01", "2025-05-01", "2025-06-01"],
-            "ventes_evolution_qte": [2, 5, 7, 4, 3, 4],
-            "ventes_par_mode": {
-                "Carte bancaire": 8,
-                "Chèque": 2,
-                "Espèces": 2
-            }
-        },
-        {
-            "type": "Acacia",
-            "total_quantite": 15,
-            "total_montant": 170.0,
-            "nb_ventes": 7,
-            "ventes_evolution_dates": ["2025-01-01", "2025-02-01", "2025-03-01", "2025-04-01", "2025-05-01", "2025-06-01"],
-            "ventes_evolution_qte": [0, 1, 3, 4, 5, 2],
-            "ventes_par_mode": {
-                "Carte bancaire": 3,
-                "Chèque": 1,
-                "Espèces": 3
-            }
-        }
+    modes_payement = [
+        {'mode': mode.name} for mode in modes_payements
     ]
-    return render(request, "commerce/ventes/stats.html", {"stats": stats})
-
+    
+    return render(request, "commerce/ventes/form.html", {
+        "clients": clients,
+        "miels": miels_data,
+        "modes_payement": modes_payement
+    })
 
 def commandes_stats(request):
     stats_par_type = {
@@ -768,9 +701,155 @@ def miel_form(request):
     miel_types = MielType.objects.all()
     consommable_types = ConsommableType.objects.select_related('unite').all()
     unite_mesures = UniteMesure.objects.all()
+    from projet.models.productions import Miel, MielType, MielPriceHistory
+    from projet.models.ressources import ConsommableType, UniteMesure
+    from django.contrib import messages
+    
+    if request.method == "POST":
+        # Handle form submission
+        miel_type_id = request.POST.get('miel_type')
+        consommable_type_id = request.POST.get('consommable_type')
+        unite_mesure_id = request.POST.get('unite_mesure')
+        quantite_unite = request.POST.get('quantite_unite')
+        prix_initial = request.POST.get('prix_initial')
+        
+        try:
+            # Validate inputs
+            if not all([miel_type_id, consommable_type_id, unite_mesure_id, quantite_unite]):
+                messages.error(request, 'Tous les champs obligatoires doivent être remplis.')
+                raise ValueError("Missing required fields")
+            
+            # Get model instances
+            miel_type = MielType.objects.get(id=miel_type_id)
+            consommable_type = ConsommableType.objects.get(id=consommable_type_id)
+            unite_mesure = UniteMesure.objects.get(id=unite_mesure_id)
+            
+            quantite_unite_int = int(quantite_unite)
+            if quantite_unite_int <= 0:
+                messages.error(request, 'La quantité par unité doit être supérieure à 0.')
+                raise ValueError("Invalid quantity")
+            
+            # Create miel
+            miel = Miel.objects.create(
+                miel_type=miel_type,
+                consommable_type=consommable_type,
+                unite_mesure=unite_mesure,
+                quantite_unite=quantite_unite_int
+            )
+            
+            # Create initial price if provided
+            if prix_initial:
+                try:
+                    prix_float = float(prix_initial)
+                    if prix_float > 0:
+                        MielPriceHistory.objects.create(
+                            miel=miel,
+                            price=prix_float
+                        )
+                except ValueError:
+                    pass  # Ignore invalid price, not required
+            
+            # Success message
+            messages.success(request, f'Miel "{miel_type.name} - {consommable_type.name}" créé avec succès.')
+            
+            return redirect('miels_list')
+            
+        except (MielType.DoesNotExist, ConsommableType.DoesNotExist, UniteMesure.DoesNotExist):
+            messages.error(request, 'Une des sélections n\'est pas valide.')
+        except ValueError as e:
+            if "Invalid quantity" not in str(e) and "Missing required fields" not in str(e):
+                messages.error(request, 'Veuillez vérifier les données saisies.')
+        except Exception as e:
+            messages.error(request, 'Une erreur inattendue s\'est produite. Veuillez réessayer.')
+    
+    # GET request - show form
+    miel_types = MielType.objects.all()
+    consommable_types = ConsommableType.objects.select_related('unite').all()
+    unite_mesures = UniteMesure.objects.all()
     
     return render(request, "commerce/miels/form.html", {
         "miel_types": miel_types,
         "consommable_types": consommable_types,
         "unite_mesures": unite_mesures
     })
+
+def commande_form(request):
+    from projet.models.productions import Miel
+    
+    if request.method == "POST":
+        # Handle form submission
+        client_id = request.POST.get('client')
+        livraison_date = request.POST.get('livraison_date')
+        note = request.POST.get('note', '')
+        
+        # Get client
+        try:
+            client = Client.objects.get(id=client_id)
+        except Client.DoesNotExist:
+            return redirect('commande_form')
+        
+        # Create commande
+        commande = Commande.objects.create(
+            client=client,
+            livraison_date=livraison_date,
+            note=note,
+            vente=None  # No vente initially
+        )
+        
+        # Process cart items
+        cart_items = request.POST.getlist('cart_items')
+        for item in cart_items:
+            if item:  # Skip empty items
+                miel_id, quantite = item.split('|')
+                try:
+                    miel = Miel.objects.get(id=miel_id)
+                    from projet.models.ventes import CommandeDetail
+                    CommandeDetail.objects.create(
+                        commande=commande,
+                        miel=miel,
+                        quantite=int(quantite)
+                    )
+                except (Miel.DoesNotExist, ValueError):
+                    continue
+        
+        # Create initial status
+        try:
+            initial_status = CommandeStatus.objects.get(name='Créée')
+            from projet.models.ventes import CommandeStatusHistory
+            CommandeStatusHistory.objects.create(
+                commande=commande,
+                commande_status=initial_status
+            )
+        except CommandeStatus.DoesNotExist:
+            pass
+        
+        return redirect('commandes_list')
+    
+    # GET request - show form
+    clients = Client.objects.all().values('id', 'name')
+    miels = Miel.objects.select_related('miel_type', 'consommable_type', 'unite_mesure').all()
+    
+    miels_data = []
+    for miel in miels:
+        # Get latest price
+        latest_price = miel.miel_price_histories.order_by('-created_at').first()
+        price = latest_price.price if latest_price else 0.0
+        
+        miels_data.append({
+            'id': miel.id,
+            'nom': f"{miel.miel_type.name} - {miel.consommable_type.name}",
+            'prix': price,
+            'unite': miel.unite_mesure.name,
+            'quantite_unite': miel.quantite_unite
+        })
+    
+    return render(request, "commerce/commandes/form.html", {
+        "clients": clients,
+        "miels": miels_data
+    })
+
+def miel_stats(request):
+    return
+
+def ventes_stats(request):
+    return  
