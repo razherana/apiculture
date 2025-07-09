@@ -2,7 +2,9 @@ from django.shortcuts import redirect, render
 from django.db.models import Sum
 from django.db.models import Count
 from dateutil.relativedelta import relativedelta
-from datetime import datetime, timedelta
+from pytz import timezone as pytz_timezone
+from datetime import datetime, timedelta 
+from django.utils import timezone
 from projet.models.productions import Recolte
 from projet.models.ressources import Ruche , HausseType , RucheHausseHistory , Hausse, HausseCadre , EssaimDetail , EssaimStatusHistory , EssaimStatus , Essaim , EssaimRace , EssaimOrigin
 from projet.models.ressources import Materiel , MaterielType , MaterielStatus , Consommable , ConsommableType , ConsommableConsomme 
@@ -171,7 +173,9 @@ def alertes_penurie(request):
 def dashboard_stats(request):
     total_recolte = Recolte.objects.aggregate(total=Sum('poids_miel'))['total'] or 0
     nombre_ruches = Ruche.objects.count()
-    one_year_ago = datetime.now() - timedelta(days=365)
+    fh = pytz_timezone('Africa/Nairobi')
+    datenow = fh.localize(datetime.now())
+    one_year_ago = datenow - timedelta(days=365)
     total_essaims = EssaimDetail.objects.filter(created_at__gte=one_year_ago).count()
     dead_essaims = EssaimDetail.objects.filter(
         created_at__gte=one_year_ago, is_death=True
@@ -220,7 +224,8 @@ def stats_production_par_ruche(request):
 
 
 def stats_mortalite(request):
-    end_date = datetime.now()
+    fh = pytz_timezone('Africa/Nairobi')
+    end_date = fh.localize(datetime.now())
     start_date = end_date - timedelta(days=30 * 10) 
     
     labels = []
@@ -273,7 +278,9 @@ def stats_mortalite(request):
 def analyse_rentabilite(request):
     # Définir la période (année en cours : 1er janvier 2025 à aujourd'hui)
     start_date = datetime(2025, 1, 1)
-    end_date = datetime.now()
+    fh = pytz_timezone('Africa/Nairobi')
+    datenow = fh.localize(datetime.now())
+    end_date = datenow
 
     # Calcul des revenus des ventes de miel
     revenus_miel = VenteDetail.objects.filter(
