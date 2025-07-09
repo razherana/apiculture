@@ -5,7 +5,7 @@ from django.utils import timezone
 from django.db.models import Sum
 from django.http import JsonResponse
 from projet.models.ressources import (
-    ConsommableType, EssaimDetail, EssaimOrigin, EssaimRace, Ruche, RucheStatus, Localization, 
+    ConsommableType, EssaimDetail, EssaimOrigin, EssaimRace, Ruche, RucheStatus, Localization, RucheStatusHistory, 
     RucheType, Essaim
 )
 from projet.models.productions import Intervention, InterventionType
@@ -587,7 +587,7 @@ def soins_list(request):
     soins = Intervention.objects.select_related(
         'ruche', 'intervention_type'
     ).filter(
-        intervention_type__name__icontains='soin'  # Filter for care-related interventions
+        localization_id=None  # Filter for care-related interventions
     ).order_by('-date_prevue')
     
     # Prepare soins data with additional information
@@ -822,7 +822,9 @@ def interventions_list(request):
     # Get all interventions with related data
     interventions = Intervention.objects.select_related(
         'ruche', 'localization', 'intervention_type'
-    ).order_by('-date_prevue')
+    ).order_by('-date_prevue').filter(
+        ruche_id=None
+    )
     
     # Get filter options
     types_intervention = list(InterventionType.objects.values_list('name', flat=True))
@@ -1050,6 +1052,42 @@ def intervention_type_create(request):
                 'intervention_type': {
                     'id': intervention_type.id,
                     'name': intervention_type.name
+                }
+            })
+            
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    
+    return JsonResponse({'success': False, 'error': 'Méthode non autorisée'})
+
+def localization_create(request):
+    """Create a new localization via AJAX"""
+    if request.method == 'POST':
+        try:
+            import json
+            data = json.loads(request.body)
+            name = data.get('name', '').strip()
+            description = data.get('description', '').strip()
+            
+            if not name:
+                return JsonResponse({'success': False, 'error': 'Le nom est requis'})
+            
+            # Check if localization already exists
+            if Localization.objects.filter(name=name).exists():
+                return JsonResponse({'success': False, 'error': 'Cette localisation existe déjà'})
+            
+            # Create new localization
+            localization = Localization.objects.create(
+                name=name,
+                description=description
+            )
+            
+            return JsonResponse({
+                'success': True,
+                'localization': {
+                    'id': localization.id,
+                    'name': localization.name,
+                    'description': localization.description
                 }
             })
             

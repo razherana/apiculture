@@ -65,9 +65,9 @@ class Intervention(models.Model):
     title = models.CharField(max_length=255)
     donnees = models.TextField()
     ruche = models.ForeignKey(
-        Ruche, on_delete=models.CASCADE, related_name='intervention')
+        Ruche, on_delete=models.CASCADE, related_name='intervention', null=True)
     localization = models.ForeignKey(
-        Localization, on_delete=models.CASCADE, related_name='intervention')
+        Localization, on_delete=models.CASCADE, related_name='intervention', null=True)
     intervention_type = models.ForeignKey(
         InterventionType, on_delete=models.CASCADE, related_name='intervention')
     details = models.CharField(max_length=255)
