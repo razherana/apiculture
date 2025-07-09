@@ -9,7 +9,7 @@
         <div class="form-group">
             <label for="type">Type de matériel</label>
             <select name="materiel_type" id="type" required>
-                {% for type in types %}<option value="{{ type }}">{{ type }}</option>{% endfor %}
+                {% for type in types %}<option value="{{ type.id }}">{{ type.name }}</option>{% endfor %}
             </select>
         </div>
         <div class="form-group">
@@ -19,7 +19,7 @@
         <div class="form-group">
             <label for="statut">Statut</label>
             <select name="materiel_status" id="statut" required>
-                {% for statut in statuts %}<option value="{{ statut }}">{{ statut }}</option>{% endfor %}
+                {% for statut in statuts %}<option value="{{ statut.id }}">{{ statut.name }}</option>{% endfor %}
             </select>
         </div>
         <button type="submit" class="btn">Enregistrer</button>
