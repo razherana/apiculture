@@ -3,9 +3,12 @@ from datetime import datetime, timedelta
 import random
 import json
 
+from django.utils import timezone
+from django.db.models import Sum
+
 # Import models for integration
-from projet.models.ressources import EssaimDetail, Ruche, Essaim, EssaimOrigin, EssaimRace, Localization
-from projet.models.productions import Intervention, Task
+from projet.models.ressources import EssaimDetail, Ruche, Essaim, EssaimOrigin, EssaimRace, Localization, RucheStatus, RucheType
+from projet.models.productions import Intervention, InterventionType, Task
 
 # Données de test
 ruches_data = [
@@ -135,7 +138,7 @@ def ruches_list(request):
         # Calculate production (sum of recoltes up to selected date)
         total_production = ruche.recoltes.filter(
             created_at__date__lte=selected_date
-        ).aggregate(total=models.Sum('poids_miel'))['total'] or 0
+        ).aggregate(total=Sum('poids_miel'))['total'] or 0
         
         # Count hausses at the selected date
         nb_hausses = ruche.ruche_hausse_histories.filter(
@@ -293,10 +296,9 @@ def amenagements_list(request):
         amenagement = {
             'id': essaim.id,
             'type': 'Essaim',  # Default type, you might want to add a type field to Essaim model
-            'date': essaim.created_at.strftime('%Y-%m-%d') if essaim.created_at else '',
+            'date': essaim.created_at,
             'origine': essaim.essaim_origin.name if essaim.essaim_origin else 'Origine inconnue',
             'race': essaim.essaim_race.name if essaim.essaim_race else 'Race inconnue',
-            'force': 7,  # Default value, you might want to add this to EssaimDetail
             'ruche_destination': ruche.description if ruche else 'Non assigné',
             'ruche_id': ruche.id if ruche else None,
             'notes': f'Essaim de race {essaim.essaim_race.name}' if essaim.essaim_race else 'Aucune note'
@@ -320,7 +322,7 @@ def amenagement_add(request):
             race_name = request.POST.get('race')
             ruche_id = request.POST.get('ruche_destination')
             notes = request.POST.get('notes', '')
-            force = int(request.POST.get('force', 7))
+            date = request.POST.get('date')
             
             # Récupérer ou créer l'origine et la race
             origine, created = EssaimOrigin.objects.get_or_create(name=origine_name)
@@ -329,18 +331,11 @@ def amenagement_add(request):
             # Créer le nouvel essaim
             essaim = Essaim.objects.create(
                 essaim_origin=origine,
-                essaim_race=race
+                essaim_race=race,
+                created_at=date,
             )
             
-            # Créer les détails de l'essaim avec la force
-            EssaimDetail.objects.create(
-                essaim=essaim,
-                note=notes,
-                is_death=False,
-                ouvrier_added=force * 1000,  # Estimation approximative
-                faux_bourdon_added=force * 100,
-                reine_added=1
-            )
+            
             
             # Si une ruche est spécifiée, l'associer
             if ruche_id:
@@ -391,32 +386,21 @@ def amenagement_edit(request, id=None):
             race_name = request.POST.get('race')
             ruche_id = request.POST.get('ruche_destination')
             notes = request.POST.get('notes', '')
-            force = int(request.POST.get('force', 7))
+            date = request.POST.get('date')
             
             # Mettre à jour l'origine et la race
             origine, created = EssaimOrigin.objects.get_or_create(name=origine_name)
             race, created = EssaimRace.objects.get_or_create(name=race_name)
             
+            
+            
             essaim.essaim_origin = origine
             essaim.essaim_race = race
+            essaim.created_at = date
             essaim.save()
             
             # Mettre à jour ou créer les détails
-            detail, created = EssaimDetail.objects.get_or_create(
-                essaim=essaim,
-                defaults={
-                    'note': notes,
-                    'is_death': False,
-                    'ouvrier_added': force * 1000,
-                    'faux_bourdon_added': force * 100,
-                    'reine_added': 1
-                }
-            )
-            if not created:
-                detail.note = notes
-                detail.ouvrier_added = force * 1000
-                detail.faux_bourdon_added = force * 100
-                detail.save()
+            
             
             # Mettre à jour l'association avec la ruche
             if ruche_id:
@@ -460,9 +444,8 @@ def amenagement_edit(request, id=None):
             'id': essaim.id,
             'type': 'Essaim',
             'date': essaim.created_at.strftime('%Y-%m-%d') if essaim.created_at else '',
-            'origine': essaim.essaim_origin.name if essaim.essaim_origin else '',
-            'race': essaim.essaim_race.name if essaim.essaim_race else '',
-            'force': detail.ouvrier_added // 1000 if detail else 7,  # Estimate from worker count
+            'origine': origins,
+            'race': races,
             'ruche_destination': ruche.id if ruche else '',
             'notes': detail.note if detail else ''
         }
@@ -471,8 +454,8 @@ def amenagement_edit(request, id=None):
         'amenagement': amenagement,
         'essaim': essaim,
         'types': ['Essaim', 'Division', 'Essaim sauvage', 'Achat'],
-        'races': [race.name for race in races],
-        'origines': [origin.name for origin in origins],
+        'races': races,
+        'origines': origins,
         'ruches': ruches,
         'race_objects': races,
         'origin_objects': origins

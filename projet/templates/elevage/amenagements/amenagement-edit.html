@@ -32,7 +32,7 @@
                 <div class="form-group">
                     <label class="form-label" for="date">Date *</label>
                     <input type="date" class="form-input" id="date" name="date" 
-                           value="{% if amenagement %}{{ amenagement.date }}{% else %}{{ form_data.date|default:'' }}{% endif %}" 
+                           value="{% if amenagement %}{{ amenagement.date }}{% else %}{{ form_data.date|default:'2025-10-01' }}{% endif %}" 
                            required>
                     <small class="form-help">Date de création de l'aménagement</small>
                 </div>
@@ -69,19 +69,6 @@
             </div>
             
             <div class="form-row">
-                <div class="form-group">
-                    <label class="form-label" for="force">Force de la colonie (1-10) *</label>
-                    <div style="display: flex; align-items: center; gap: 1rem;">
-                        <input type="range" class="form-input" id="force" name="force" 
-                               value="{% if amenagement %}{{ amenagement.force }}{% else %}{{ form_data.force|default:5 }}{% endif %}" 
-                               min="1" max="10" style="flex: 1;" required>
-                        <output id="forceValue" style="min-width: 30px; font-weight: 600; color: var(--honey-primary);">
-                            {% if amenagement %}{{ amenagement.force }}{% else %}{{ form_data.force|default:5 }}{% endif %}
-                        </output>
-                    </div>
-                    <small class="form-help">Estimation de la force de la colonie (1=faible, 10=très forte)</small>
-                </div>
-                
                 <div class="form-group">
                     <label class="form-label" for="ruche_destination">Ruche de destination *</label>
                     <select class="form-select" id="ruche_destination" name="ruche_destination" required>
