@@ -134,15 +134,17 @@
                         <th>Dose/Quantité</th>
                         <th>Statut</th>
                         <th>Notes</th>
+                        <th class="prix-col" style="display:none;">Prix (€)</th>
                         <th class="actions-column">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for soin in soins %}
-                    <tr data-type="{{ soin.type }}" 
-                        data-ruche="{{ soin.ruche.id|default:'' }}" 
+                    <tr class="soin-row"
+                        data-type="{{ soin.type }}"
+                        data-ruche="{{ soin.ruche.id|default:'' }}"
                         data-date="{{ soin.date|date:'Y-m-d' }}"
-                        class="soin-row">
+                        data-prix="{{ soin.prix_service|default_if_none:'' }}">
                         <td>{{ soin.date|date:"d/m/Y" }}</td>
                         <td>
                             {% if soin.ruche %}
@@ -175,6 +177,13 @@
                         <td>
                             <span class="cell-expand">{{ soin.notes|truncatechars:50|default:"Aucune note" }}</span>
                         </td>
+                        <td class="prix-col" style="display:none;">
+                            {% if soin.prix_service %}
+                                {{ soin.prix_service|floatformat:2 }} €
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
                         <td class="actions-column">
                             <div style="display: flex; gap: 0.25rem;">
                                 <a href="{% url 'soin_details' soin.id %}" class="btn btn-secondary" style="padding: 0.4rem;" title="Voir détails">
@@ -193,7 +202,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="7" style="text-align: center; color: var(--text-secondary); padding: 2rem;">
+                        <td colspan="8" style="text-align: center; color: var(--text-secondary); padding: 2rem;">
                             Aucun soin enregistré.
                         </td>
                     </tr>
@@ -212,6 +221,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const periodeFilter = document.getElementById('periode-filter');
     const searchInput = document.getElementById('soin-search');
     const soinRows = document.querySelectorAll('.soin-row');
+    const prixCols = document.querySelectorAll('.prix-col');
     
     function filterSoins() {
         const typeValue = typeFilter.value.toLowerCase();
@@ -254,6 +264,24 @@ document.addEventListener('DOMContentLoaded', function() {
     rucheFilter.addEventListener('change', filterSoins);
     periodeFilter.addEventListener('change', filterSoins);
     searchInput.addEventListener('input', filterSoins);
+    
+    // Affichage dynamique de la colonne prix
+    const table = document.getElementById('soins-table');
+    const prixCols = document.querySelectorAll('.prix-col');
+    soinRows.forEach(function(row) {
+        row.addEventListener('mouseenter', function() {
+            // Affiche la colonne prix pour cette ligne et l'entête
+            const cells = row.querySelectorAll('.prix-col');
+            cells.forEach(cell => cell.style.display = '');
+            document.querySelectorAll('th.prix-col').forEach(th => th.style.display = '');
+        });
+        row.addEventListener('mouseleave', function() {
+            // Cache la colonne prix pour cette ligne et l'entête
+            const cells = row.querySelectorAll('.prix-col');
+            cells.forEach(cell => cell.style.display = 'none');
+            document.querySelectorAll('th.prix-col').forEach(th => th.style.display = 'none');
+        });
+    });
 });
 
 function exportData() {
@@ -270,37 +298,24 @@ function markAsCompleted(soinId) {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                'date_realisation': new Date().toISOString().split('T')[0]
-            })
+                'date_realisation': new Date().toISOString().slice(0, 10),
+            }),
         })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
+        .then(response => {
+            if (response.ok) {
                 location.reload();
             } else {
-                alert('Erreur lors de la mise à jour: ' + (data.error || 'Erreur inconnue'));
+                alert('Erreur lors de la mise à jour du soin.');
             }
         })
         .catch(error => {
-            console.error('Error:', error);
-            alert('Erreur lors de la mise à jour');
+            console.error('Erreur:', error);
+            alert('Erreur lors de la mise à jour du soin.');
         });
     }
 }
 </script>
-
 <style>
-/* Soin specific styles */
-.soin-row {
-    transition: all var(--transition-medium);
-}
-
-.soin-row:hover {
-    background-color: var(--glass-overlay);
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
-}
-
 .link-hover {
     color: var(--honey-primary);
     text-decoration: none;
@@ -315,6 +330,52 @@ function markAsCompleted(soinId) {
 .text-muted {
     color: var(--text-secondary);
     font-style: italic;
+}
+
+.prix-col {
+    transition: background 0.2s, color 0.2s;
+    background: var(--glass-bg);
+    color: var(--honey-primary);
+    font-weight: 600;
+    text-align: center;
+    min-width: 90px;
+    max-width: 120px;
+}
+.soin-row:hover .prix-col,
+.soin-row:focus .prix-col {
+    background: var(--honey-primary);
+    color: var(--hive-black);
+}
+
+/* Tooltip prix */
+#prix-tooltip {
+    position: absolute;
+    display: none;
+    background: var(--glass-bg);
+    border: 1.5px solid var(--honey-primary);
+    padding: 0.7rem 1.2rem;
+    border-radius: 12px;
+    color: var(--honey-primary);
+    font-weight: 600;
+    box-shadow: 0 4px 24px 0 rgba(255,209,0,0.08), 0 1.5px 6px 0 rgba(0,0,0,0.10);
+    pointer-events: none;
+    z-index: 1000;
+    font-size: 1.05rem;
+    transition: opacity 0.15s;
+    opacity: 0.98;
+    min-width: 170px;
+    max-width: 260px;
+    text-align: left;
+    line-height: 1.4;
+    /* Placement au-dessus de la ligne */
+    transform: translateY(-8px);
+}
+.prix-tooltip-active {
+    animation: fadeInPrixTooltip 0.18s;
+}
+@keyframes fadeInPrixTooltip {
+    from { opacity: 0; transform: translateY(10px);}
+    to { opacity: 0.98; transform: translateY(-8px);}
 }
 
 /* Enhanced mobile responsiveness */

@@ -73,6 +73,7 @@ class Intervention(models.Model):
     details = models.CharField(max_length=255)
     date_prevue = models.DateField()
     date_realisation = models.DateField()
+    prix_service = models.FloatField(default=0)  # Ajout du prix du service
 
     class Meta:
         db_table = 'intervention'

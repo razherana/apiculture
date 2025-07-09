@@ -609,6 +609,7 @@ def soins_list(request):
             'ruche': soin.ruche,
             'date_prevue': soin.date_prevue,
             'date_realisation': soin.date_realisation,
+            'prix_service': getattr(soin, 'prix_service', None),  # Ajout du prix
         }
         soins_data.append(soin_data)
     
@@ -637,14 +638,15 @@ def soin_add(request):
         dose = request.POST.get('dose', '')
         notes = request.POST.get('notes', '')
         date_realisation = request.POST.get('date_realisation')
+        prix_service = request.POST.get('prix_service', 0)  # Nouveau champ
         try:
-            # Create new care treatment using Intervention model
             soin = Intervention(
                 title=f"Soin - {InterventionType.objects.get(id=intervention_type_id).name}",
                 details=notes,
-                donnees=dose,  # Store dose in donnees field
+                donnees=dose,
                 date_prevue=date_prevue,
-                date_realisation=date_realisation if date_realisation else None
+                date_realisation=date_realisation if date_realisation else None,
+                prix_service=prix_service or 0  # Ajout du prix
             )
             
             # Set foreign keys
@@ -894,15 +896,15 @@ def intervention_add(request):
         donnees = request.POST.get('donnees', '')
         date_prevue = request.POST.get('date_prevue')
         date_realisation = request.POST.get('date_realisation', None)
-        
+        prix_service = request.POST.get('prix_service', 0)  # Nouveau champ
         try:
-            # Create new intervention
             intervention = Intervention(
                 title=title,
                 details=details,
                 donnees=donnees,
                 date_prevue=date_prevue,
-                date_realisation=date_realisation if date_realisation else None
+                date_realisation=date_realisation if date_realisation else None,
+                prix_service=prix_service or 0  # Ajout du prix
             )
             
             # Set optional foreign keys

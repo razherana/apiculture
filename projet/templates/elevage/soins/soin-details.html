@@ -8,7 +8,8 @@
     <div class="detail-header">
         <div class="detail-info">
             <h2 class="detail-title">Soin du {{ soin.date_prevue|date:"d/m/Y" }}</h2>
-            <p class="detail-subtitle">{{ soin.intervention_type.name }} - {{ soin.date_prevue|date:"H:i" }}</p>
+            <p class="detail-subtitle">{{ soin.intervention_type.name }}</p>
+            <!-- Correction: on ne met plus |date:"H:i" sur une date -->
             
             <div class="detail-stats">
                 <div class="detail-stat">
@@ -43,6 +44,16 @@
                         {% endif %}
                     </div>
                     <div class="detail-stat-label">Statut</div>
+                </div>
+                <div class="detail-stat">
+                    <div class="detail-stat-value">
+                        {% if soin.prix_service %}
+                            {{ soin.prix_service|floatformat:2 }} €
+                        {% else %}
+                            -
+                        {% endif %}
+                    </div>
+                    <div class="detail-stat-label">Prix du service</div>
                 </div>
             </div>
             
@@ -124,6 +135,16 @@
                                 <span class="tag tag-success">Réalisé le {{ soin.date_realisation|date:"d/m/Y" }}</span>
                             {% else %}
                                 <span class="tag tag-warning">En attente de réalisation</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Prix du service</th>
+                        <td>
+                            {% if soin.prix_service %}
+                                {{ soin.prix_service|floatformat:2 }} €
+                            {% else %}
+                                Non renseigné
                             {% endif %}
                         </td>
                     </tr>
