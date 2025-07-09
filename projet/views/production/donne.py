@@ -1,7 +1,6 @@
 from django.shortcuts import redirect, render
 from django.db.models import Sum
 from django.db.models import Count
-from dateutil.relativedelta import relativedelta
 from pytz import timezone as pytz_timezone
 from datetime import datetime, timedelta 
 from django.utils import timezone
