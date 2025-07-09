@@ -4,73 +4,162 @@
 {% block title %}{% if ruche %}Modifier{% else %}Nouvelle{% endif %} ruche{% endblock %}
 {% block page_title %}{% if ruche %}Modifier{% else %}Nouvelle{% endif %} ruche{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'elevage/css/elevage.css' %}">
+<link rel="stylesheet" href="{% static 'elevage/css/dark-mode-fix.css' %}">
+{% endblock %}
+
 {% block content %}
 <div class="elevage-content">
     <div class="elevage-card">
         <h2>{% if ruche %}Modifier la ruche{% else %}Nouvelle ruche{% endif %}</h2>
+        
+        {% if error_message %}
+        <div class="alert-card high" style="margin-bottom: 1.5rem;">
+            <div class="alert-icon high">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <div class="alert-content">
+                <div class="alert-title">Erreur</div>
+                <div class="alert-message">{{ error_message }}</div>
+            </div>
+        </div>
+        {% endif %}
         
         <form class="form-container" method="post">
             {% csrf_token %}
             
             <div class="form-row">
                 <div class="form-group">
-                    <label class="form-label" for="nom">Nom de la ruche *</label>
-                    <input type="text" class="form-input" id="nom" name="nom" value="{{ ruche.nom }}" required>
+                    <label class="form-label" for="description">Description *</label>
+                    <input type="text" class="form-input" id="description" name="description" 
+                           value="{% if ruche %}{{ ruche.description }}{% else %}{{ form_data.description|default:'' }}{% endif %}" 
+                           placeholder="Ex: Ruche Lavande, Ruche du Verger..."
+                           required>
+                    <small class="form-help">Nom ou description distinctive de la ruche</small>
                 </div>
                 
                 <div class="form-group">
-                    <label class="form-label" for="type">Type de ruche *</label>
-                    <select class="form-select" id="type" name="type" required>
-                        <option value="" disabled {% if not ruche %}selected{% endif %}>Sélectionnez un type</option>
-                        {% for type in types_ruche %}
-                            <option value="{{ type }}" {% if ruche.type == type %}selected{% endif %}>{{ type }}</option>
+                    <label class="form-label" for="ruche_type">Type de ruche *</label>
+                    <select class="form-select" id="ruche_type" name="ruche_type" required>
+                        <option value="" disabled {% if not ruche and not form_data.ruche_type %}selected{% endif %}>Sélectionnez un type</option>
+                        {% for type in ruche_types %}
+                            <option value="{{ type.id }}" 
+                                    {% if ruche.ruche_type.id == type.id or form_data.ruche_type == type.id|stringformat:"s" %}selected{% endif %}>
+                                {{ type.name }}
+                            </option>
                         {% endfor %}
                     </select>
+                    <small class="form-help">Type de construction de la ruche</small>
                 </div>
             </div>
             
             <div class="form-row">
                 <div class="form-group">
-                    <label class="form-label" for="localisation">Localisation *</label>
-                    <select class="form-select" id="localisation" name="localisation" required>
-                        <option value="" disabled {% if not ruche %}selected{% endif %}>Sélectionnez une localisation</option>
-                        {% for loc in localisations %}
-                            <option value="{{ loc }}" {% if ruche.localisation == loc %}selected{% endif %}>{{ loc }}</option>
+                    <label class="form-label" for="localization">Localisation *</label>
+                    <select class="form-select" id="localization" name="localization" required>
+                        <option value="" disabled {% if not ruche and not form_data.localization %}selected{% endif %}>Sélectionnez une localisation</option>
+                        {% for localisation in localisations %}
+                            <option value="{{ localisation.id }}" 
+                                    {% if ruche.localizations.id == localisation.id or form_data.localization == localisation.id|stringformat:"s" %}selected{% endif %}>
+                                {{ localisation.name }} - {{ localisation.description }}
+                            </option>
                         {% endfor %}
                     </select>
+                    <small class="form-help">Emplacement géographique de la ruche</small>
                 </div>
                 
                 <div class="form-group">
-                    <label class="form-label" for="date_installation">Date d'installation *</label>
-                    <input type="date" class="form-input" id="date_installation" name="date_installation" value="{{ ruche.date_installation|date:'Y-m-d' }}" required>
+                    <label class="form-label" for="essaim">Essaim assigné</label>
+                    <select class="form-select" id="essaim" name="essaim">
+                        <option value="">Aucun essaim assigné</option>
+                        {% for essaim in essaims %}
+                            <option value="{{ essaim.id }}" 
+                                    {% if ruche.essaim.id == essaim.id or form_data.essaim == essaim.id|stringformat:"s" %}selected{% endif %}>
+                                Essaim #{{ essaim.id }} - {{ essaim.essaim_race.name }} ({{ essaim.essaim_origin.name }})
+                            </option>
+                        {% endfor %}
+                    </select>
+                    <small class="form-help">Essaim qui habite actuellement cette ruche (optionnel)</small>
                 </div>
             </div>
             
+            <!-- Informations supplémentaires pour édition -->
+            {% if ruche %}
             <div class="form-row">
-                <div class="form-group">
-                    <label class="form-label" for="nb_hausses">Nombre de hausses</label>
-                    <input type="number" class="form-input" id="nb_hausses" name="nb_hausses" value="{{ ruche.nb_hausses|default:0 }}" min="0" max="10">
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label" for="force">Force de la colonie (1-10)</label>
-                    <input type="range" class="form-input" id="force" name="force" value="{{ ruche.force|default:5 }}" min="1" max="10" oninput="forceValue.value = force.value">
-                    <output id="forceValue">{{ ruche.force|default:5 }}</output>
+                <div class="info-cards">
+                    <div class="info-card">
+                        <div class="info-card-header">
+                            <div class="info-card-icon">
+                                <i class="fas fa-info-circle"></i>
+                            </div>
+                            <div class="info-card-title">Informations de la ruche</div>
+                        </div>
+                        <div style="margin-top: 0.5rem; color: var(--text-secondary);">
+                            <p><strong>ID Ruche:</strong> #{{ ruche.id }}</p>
+                            <p><strong>Date de création:</strong> {{ ruche.created_at|date:"d/m/Y à H:i" }}</p>
+                            <p><strong>Type actuel:</strong> {{ ruche.ruche_type.name }}</p>
+                        </div>
+                    </div>
+                    
+                    {% if ruche.essaim %}
+                    <div class="info-card">
+                        <div class="info-card-header">
+                            <div class="info-card-icon">
+                                <i class="fas fa-bug"></i>
+                            </div>
+                            <div class="info-card-title">Essaim actuel</div>
+                        </div>
+                        <div style="margin-top: 0.5rem; color: var(--text-secondary);">
+                            <p><strong>Race:</strong> {{ ruche.essaim.essaim_race.name }}</p>
+                            <p><strong>Origine:</strong> {{ ruche.essaim.essaim_origin.name }}</p>
+                            <p><strong>Date d'installation:</strong> {{ ruche.essaim.created_at|date:"d/m/Y" }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="info-card">
+                        <div class="info-card-header">
+                            <div class="info-card-icon">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <div class="info-card-title">Statistiques</div>
+                        </div>
+                        <div style="margin-top: 0.5rem; color: var(--text-secondary);">
+                            <p><strong>Interventions:</strong> {{ ruche.intervention.count }}</p>
+                            <p><strong>Récoltes:</strong> {{ ruche.recoltes.count }}</p>
+                            <p><strong>Hausses:</strong> {{ ruche.ruche_hausse_histories.count }}</p>
+                        </div>
+                    </div>
                 </div>
             </div>
+            {% endif %}
             
+            <!-- Actions spéciales pour nouvelle ruche -->
+            {% if not ruche %}
             <div class="form-row">
-                <div class="form-group">
-                    <label class="form-label" for="description">Description</label>
-                    <textarea class="form-textarea" id="description" name="description" rows="4">{{ ruche.description }}</textarea>
+                <div class="info-section" style="background: rgba(0, 204, 136, 0.1); border-color: var(--pollen-green);">
+                    <h4 style="color: var(--pollen-green); margin-bottom: 1rem;">
+                        <i class="fas fa-plus-circle"></i> Création d'une nouvelle ruche
+                    </h4>
+                    <p style="margin-bottom: 0.5rem;">En créant cette ruche, les actions suivantes seront effectuées automatiquement :</p>
+                    <ul style="padding-left: 1.5rem; line-height: 1.6;">
+                        <li>Attribution d'un statut initial "Active"</li>
+                        <li>Enregistrement dans l'historique des statuts</li>
+                        <li>Association avec l'essaim sélectionné (si choisi)</li>
+                        <li>Disponibilité pour les interventions et récoltes</li>
+                    </ul>
                 </div>
             </div>
+            {% endif %}
             
             <div class="form-row">
                 <div class="btn-group" style="margin-left: auto;">
-                    <a href="{% url 'ruches_list' %}" class="btn btn-secondary">Annuler</a>
+                    <a href="{% url 'ruches_list' %}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Annuler
+                    </a>
                     <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save"></i> {% if ruche %}Enregistrer{% else %}Créer{% endif %}
+                        <i class="fas fa-save"></i> {% if ruche %}Enregistrer les modifications{% else %}Créer la ruche{% endif %}
                     </button>
                 </div>
             </div>
@@ -80,13 +169,138 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Mise à jour de la valeur affichée pour le slider de force
-        const forceSlider = document.getElementById('force');
-        const forceOutput = document.getElementById('forceValue');
+        // Validation en temps réel
+        const form = document.querySelector('form');
+        const requiredFields = form.querySelectorAll('[required]');
         
-        forceSlider.addEventListener('input', function() {
-            forceOutput.textContent = this.value;
+        // Validation des champs requis
+        requiredFields.forEach(field => {
+            field.addEventListener('blur', function() {
+                if (!this.value.trim()) {
+                    this.style.borderColor = 'var(--queen-red)';
+                    this.style.boxShadow = '0 0 0 2px rgba(255, 51, 102, 0.2)';
+                } else {
+                    this.style.borderColor = 'var(--pollen-green)';
+                    this.style.boxShadow = '0 0 0 2px rgba(0, 204, 136, 0.2)';
+                }
+            });
+        });
+        
+        // Prévisualisation de la sélection d'essaim
+        const essaimSelect = document.getElementById('essaim');
+        essaimSelect.addEventListener('change', function() {
+            if (this.value) {
+                const selectedOption = this.options[this.selectedIndex];
+                console.log('Essaim sélectionné:', selectedOption.text);
+            }
+        });
+        
+        // Validation du formulaire avant soumission
+        form.addEventListener('submit', function(e) {
+            let isValid = true;
+            let firstInvalidField = null;
+            
+            requiredFields.forEach(field => {
+                if (!field.value.trim()) {
+                    field.style.borderColor = 'var(--queen-red)';
+                    field.style.boxShadow = '0 0 0 2px rgba(255, 51, 102, 0.3)';
+                    isValid = false;
+                    if (!firstInvalidField) {
+                        firstInvalidField = field;
+                    }
+                }
+            });
+            
+            if (!isValid) {
+                e.preventDefault();
+                alert('Veuillez remplir tous les champs obligatoires.');
+                if (firstInvalidField) {
+                    firstInvalidField.focus();
+                }
+                return false;
+            }
+        });
+        
+        // Animation pour les cartes d'information
+        const infoCards = document.querySelectorAll('.info-card');
+        infoCards.forEach((card, index) => {
+            card.style.animationDelay = `${index * 0.1}s`;
+            card.classList.add('animate-fade-in');
         });
     });
 </script>
+
+<style>
+.form-help {
+    color: var(--text-secondary) !important;
+    font-size: 0.8rem;
+    margin-top: 0.25rem;
+    display: block;
+    font-style: italic;
+}
+
+.form-group {
+    position: relative;
+}
+
+.info-section {
+    background: var(--glass-bg);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    border: 1px solid var(--glass-border);
+}
+
+.info-section h4 {
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+}
+
+/* Animation pour les cartes */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.6s ease-out forwards;
+}
+
+/* Amélioration des champs requis */
+.form-input:required:invalid,
+.form-select:required:invalid {
+    border-color: rgba(255, 51, 102, 0.5);
+}
+
+.form-input:required:valid,
+.form-select:required:valid {
+    border-color: rgba(0, 204, 136, 0.5);
+}
+
+/* Responsive pour mobile */
+@media (max-width: 768px) {
+    .info-cards {
+        flex-direction: column;
+    }
+    
+    .info-card {
+        min-width: 100%;
+    }
+    
+    .form-row {
+        flex-direction: column;
+    }
+    
+    .form-group {
+        min-width: 100%;
+    }
+}
+</style>
 {% endblock %}

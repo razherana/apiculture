@@ -12,7 +12,7 @@ from projet.models.ressources import (
 from projet.models.productions import Intervention, InterventionType
 
 # Données de test
-ruches_data = [
+ruches_data = [                      
     {"id": 1, "nom": "Ruche Lavande", "type": "Dadant", "statut": "Active", "localisation": "Champ Sud", "date_installation": "2021-05-12", "force": 8, "production": 25.5, "nb_hausses": 2},
     {"id": 2, "nom": "Ruche Tournesol", "type": "Langstroth", "statut": "Active", "localisation": "Verger Est", "date_installation": "2022-03-18", "force": 9, "production": 32.1, "nb_hausses": 3},
     {"id": 3, "nom": "Ruche Acacia", "type": "Warré", "statut": "Faible", "localisation": "Colline Nord", "date_installation": "2020-07-24", "force": 3, "production": 8.7, "nb_hausses": 1},
@@ -214,68 +214,134 @@ def ruche_details(request, id):
 def ruche_delete(request):
     return
 
+def ruche_add(request):
+    """Créer une nouvelle ruche"""
+    if request.method == 'POST':
+        try:
+            # Récupérer les données du formulaire
+            description = request.POST.get('description')
+            ruche_type_id = request.POST.get('ruche_type')
+            localization_id = request.POST.get('localization')
+            essaim_id = request.POST.get('essaim')
+            
+            # Validation des champs requis
+            if not description:
+                raise ValueError("La description est requise")
+            if not ruche_type_id:
+                raise ValueError("Le type de ruche est requis")
+            if not localization_id:
+                raise ValueError("La localisation est requise")
+            
+            # Créer la nouvelle ruche
+            ruche = Ruche.objects.create(
+                description=description,
+                ruche_type_id=ruche_type_id,
+                localizations_id=localization_id,
+                essaim=Essaim.objects.get(id=essaim_id) if essaim_id else None,
+                created_at=timezone.now()
+            )
+            
+            # Créer un statut initial pour la ruche
+            try:
+                status_actif = RucheStatus.objects.get_or_create(name='Active')[0]
+                RucheStatusHistory.objects.create(
+                    ruche=ruche,
+                    ruche_status=status_actif
+                )
+            except Exception as status_error:
+                print(f"Erreur lors de la création du statut: {status_error}")
+            
+            # Rediriger vers la liste des ruches
+            return redirect('ruches_list')
+            
+        except Exception as e:
+            # En cas d'erreur, afficher le formulaire avec un message d'erreur
+            context = {
+                'error_message': f'Erreur lors de la création: {str(e)}',
+                'form_data': request.POST
+            }
+    else:
+        context = {}
+    
+    # Récupérer les données pour les formulaires
+    ruche_types = RucheType.objects.all()
+    localisations = Localization.objects.all()
+    essaims = Essaim.objects.filter(ruches__isnull=True)  # Essaims non assignés
+    
+    context.update({
+        'ruche': None,  # Nouvelle ruche
+        'ruche_types': ruche_types,
+        'localisations': localisations,
+        'essaims': essaims,
+        'is_add_mode': True
+    })
+    
+    return render(request, 'elevage/ruches/ruche-edit.html', context)
+
 def ruche_edit(request, id=None):
-    # Pour l'édition, on récupère la ruche existante
+    """Modifier une ruche existante"""
+    if request.method == 'POST':
+        try:
+            ruche = Ruche.objects.get(id=id)
+            
+            # Récupérer les données du formulaire
+            description = request.POST.get('description')
+            ruche_type_id = request.POST.get('ruche_type')
+            localization_id = request.POST.get('localization')
+            essaim_id = request.POST.get('essaim')
+            
+            # Validation des champs requis
+            if not description:
+                raise ValueError("La description est requise")
+            if not ruche_type_id:
+                raise ValueError("Le type de ruche est requis")
+            if not localization_id:
+                raise ValueError("La localisation est requise")
+            
+            # Mettre à jour la ruche
+            ruche.description = description
+            ruche.ruche_type_id = ruche_type_id
+            ruche.localizations_id = localization_id
+            ruche.essaim = Essaim.objects.get(id=essaim_id) if essaim_id else None
+            ruche.created_at = timezone.now()  # Mettre à jour la date de création
+            ruche.save()
+            
+            return redirect('ruches_list')
+            
+        except Ruche.DoesNotExist:
+            return render(request, 'elevage/404.html', {'message': 'Ruche non trouvée'})
+        except Exception as e:
+            context = {
+                'error_message': f'Erreur lors de la modification: {str(e)}',
+                'form_data': request.POST
+            }
+    
+    # Get actual data from models
     ruche = None
     if id:
-        ruche = next((r for r in ruches_data if r['id'] == id), None)
-        if not ruche:
+        try:
+            ruche = Ruche.objects.select_related('ruche_type', 'localizations', 'essaim').get(id=id)
+        except Ruche.DoesNotExist:
             return render(request, 'elevage/404.html', {'message': 'Ruche non trouvée'})
     
-    return render(request, 'elevage/ruches/ruche-edit.html', {
+    # Récupérer les données pour les formulaires
+    ruche_types = RucheType.objects.all()
+    localisations = Localization.objects.all()
+    essaims = Essaim.objects.filter(ruches__isnull=True)  # Essaims non assignés
+    
+    # Si on édite une ruche avec un essaim, l'ajouter à la liste
+    if ruche and ruche.essaim:
+        essaims = essaims | Essaim.objects.filter(id=ruche.essaim.id)
+    
+    context = {
         'ruche': ruche,
-        'types_ruche': ['Dadant', 'Langstroth', 'Warré', 'Voirnot'],
-        'localisations': ['Champ Sud', 'Verger Est', 'Colline Nord', 'Forêt Ouest']
-    })
-
-# Vues pour les reines
-def reines_list(request):
-    return render(request, 'elevage/reines/reines-list.html', {
-        'reines': reines_data,
-        'races': ['Buckfast', 'Carnica', 'Italienne', 'Noire', 'Caucasienne'],
-        'statuts': ['Active', 'Vieillissante', 'Remplacée', 'Morte'],
-        'origines': ['Élevage local', 'Importée Slovénie', 'Essaim sauvage', 'Élevage régional', 'Apiculteur voisin']
-    })
-
-def reine_details(request, id):
-    # Trouver la reine correspondante
-    reine = next((r for r in reines_data if r['id'] == id), None)
-    if not reine:
-        return render(request, 'elevage/404.html', {'message': 'Reine non trouvée'})
+        'ruche_types': ruche_types,
+        'localisations': localisations,
+        'essaims': essaims,
+        'is_add_mode': False
+    }
     
-    # Trouver la ruche associée
-    ruche = next((r for r in ruches_data if r['id'] == reine['ruche_id']), None)
-    
-    # Générer données de ponte pour graphique
-    dates = [(datetime.now() - timedelta(days=30*i)).strftime('%Y-%m') for i in range(12)]
-    dates.reverse()
-    
-    ponte_scores = [round(random.uniform(max(3, reine['qualite_ponte'] - 2), min(10, reine['qualite_ponte'] + 2))) for _ in range(12)]
-    
-    return render(request, 'elevage/reines/reine-details.html', {
-        'reine': reine,
-        'ruche': ruche,
-        'donnees_ponte': {
-            'dates': dates,
-            'ponte': ponte_scores
-        }
-    })
-
-def reine_edit(request, id=None):
-    # Pour l'édition, on récupère la reine existante
-    reine = None
-    if id:
-        reine = next((r for r in reines_data if r['id'] == id), None)
-        if not reine:
-            return render(request, 'elevage/404.html', {'message': 'Reine non trouvée'})
-    
-    return render(request, 'elevage/reines/reine-edit.html', {
-        'reine': reine,
-        'ruches': ruches_data,
-        'races': ['Buckfast', 'Carnica', 'Italienne', 'Noire', 'Caucasienne'],
-        'origines': ['Élevage local', 'Importée Slovénie', 'Essaim sauvage', 'Élevage régional', 'Apiculteur voisin'],
-        'couleurs_marquage': ['Blanc', 'Jaune', 'Rouge', 'Vert', 'Bleu']
-    })
+    return render(request, 'elevage/ruches/ruche-edit.html', context)
 
 # Vues pour les aménagements
 def amenagements_list(request):

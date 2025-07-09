@@ -5,15 +5,15 @@ urlpatterns = [
     # Ruches
     path('ruches/', ruches_list, name='ruches_list'),
     path('ruches/details/<int:id>/', ruche_details, name='ruche_details'),
-    path('ruches/add/', ruche_edit, name='ruche_add'),
+    path('ruches/add/', ruche_add, name='ruche_add'),
     path('ruches/edit/<int:id>/', ruche_edit, name='ruche_edit'),
     path('ruches/delete/', ruche_delete, name='ruche_delete'),
     
-    # Reines
-    path('reines/liste/', reines_list, name='reines_list'),
-    path('reines/details/<int:id>/', reine_details, name='reine_details'),
-    path('reines/edit/', reine_edit, name='reine_add'),
-    path('reines/edit/<int:id>/', reine_edit, name='reine_edit'),
+    # # Reines
+    # path('reines/liste/', reines_list, name='reines_list'),
+    # path('reines/details/<int:id>/', reine_details, name='reine_details'),
+    # path('reines/edit/', reine_edit, name='reine_add'),
+    # path('reines/edit/<int:id>/', reine_edit, name='reine_edit'),
     
     # Aménagements
     path('amenagements/liste/', amenagements_list, name='amenagements_list'),
