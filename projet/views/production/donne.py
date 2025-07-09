@@ -6,13 +6,14 @@ from datetime import datetime, timedelta
 from django.utils import timezone
 from django.db.models import Count, Avg, Sum
 from datetime import datetime, timedelta
-from projet.models.productions import Recolte
+from projet.models.productions import Recolte , InterventionType , Intervention
 from projet.models.ressources import EssaimSanteHistory, Ruche , HausseCadre , EssaimDetail
 from projet.models.ressources import Materiel , MaterielType , MaterielStatus , Consommable , ConsommableType , ConsommableConsomme 
 from projet.models.ventes import VenteDetail
 from projet.models.ressources import Ruche
 from projet.models.ressources import Materiel
 from projet.models.productions  import Task
+from django.utils.dateparse import parse_date
 
 
 from django.shortcuts import render
@@ -162,17 +163,56 @@ def maintenance_planning(request):
 
 
 def alertes_penurie(request):
-    alertes_stock = [
-        {'message': "Cire gaufrée : Stock actuel (80 feuilles) est en dessous du seuil d'alerte (100 feuilles).",
-         'level': 'warning'},
-        {'message': "Acide oxalique : Stock actuel (15g) est très en dessous du seuil d'alerte (50g).",
-         'level': 'danger'},
-    ]
-    alertes_maintenance = [
-        {'message': "Maintenance en retard : Traitement varroa pour la ruche C4 était prévu pour le 10/11/2023.", 'level': 'danger'}
-    ]
-    return render(request, 'production/alertes.html', {'alertes_stock': alertes_stock, 'alertes_maintenance': alertes_maintenance, 'page_title': 'Alertes de Pénurie'})
+    selected_date_str = request.GET.get('date', None)
+    if selected_date_str:
+        selected_date = parse_date(selected_date_str)
+    else:
+        selected_date = datetime.today().date()
 
+    alertes_stock = []
+    
+    consommable_types = ConsommableType.objects.all()
+    
+    for consommable_type in consommable_types:
+        stock_actuel = Consommable.objects.filter(
+            consommable_type=consommable_type,
+            created_at__date__lte=selected_date
+        ).exclude(
+            id__in=ConsommableConsomme.objects.filter(
+                created_at__date__lte=selected_date
+            ).values('consommable_id')
+        ).aggregate(total=Sum('quantite_unite'))['total'] or 0
+        
+        if stock_actuel < consommable_type.seuil_alerte:
+            level = 'danger' if stock_actuel <= consommable_type.seuil_alerte * 0.3 else 'warning'
+            message = (
+                f"{consommable_type.name} : Stock actuel ({stock_actuel} {consommable_type.unite.name}) "
+                f"est en dessous du seuil d'alerte ({consommable_type.seuil_alerte} {consommable_type.unite.name})."
+            )
+            alertes_stock.append({'message': message, 'level': level})
+    
+    alertes_maintenance = []
+    interventions_en_retard = Intervention.objects.filter(
+        date_prevue__lt=selected_date,
+        date_realisation__isnull=True
+    )
+    
+    for intervention in interventions_en_retard:
+        message = (
+            f"Maintenance en retard : {intervention.title} pour la ruche {intervention.ruche.description} "
+            f"était prévue pour le {intervention.date_prevue.strftime('%d/%m/%Y')}."
+        )
+        alertes_maintenance.append({'message': message, 'level': 'danger'})
+    
+    context = {
+        'alertes_stock': alertes_stock,
+        'alertes_maintenance': alertes_maintenance,
+        'page_title': 'Alertes de Pénurie',
+        'selected_date': selected_date.strftime('%Y-%m-%d'),
+        'has_alertes': bool(alertes_stock or alertes_maintenance)
+    }
+    
+    return render(request, 'production/alertes.html', context)
 # 3. Statistiques
 
 
