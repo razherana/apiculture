@@ -3,10 +3,11 @@ from projet.views.elevage.test import *
 
 urlpatterns = [
     # Ruches
-    path('ruches/liste/', ruches_list, name='ruches_list'),
+    path('ruches/', ruches_list, name='ruches_list'),
     path('ruches/details/<int:id>/', ruche_details, name='ruche_details'),
-    path('ruches/edit/', ruche_edit, name='ruche_add'),
+    path('ruches/add/', ruche_edit, name='ruche_add'),
     path('ruches/edit/<int:id>/', ruche_edit, name='ruche_edit'),
+    path('ruches/delete/', ruche_delete, name='ruche_delete'),
     
     # Reines
     path('reines/liste/', reines_list, name='reines_list'),
@@ -26,6 +27,14 @@ urlpatterns = [
     path('soins/liste/', soins_list, name='soins_list'),
     path('soins/edit/', soin_edit, name='soin_add'),
     path('soins/edit/<int:id>/', soin_edit, name='soin_edit'),
+    
+    # Interventions
+    path('interventions/liste/', interventions_list, name='interventions_list'),
+    path('interventions/add/', intervention_add, name='intervention_add'),
+    path('interventions/edit/<int:id>/', intervention_edit, name='intervention_edit'),
+    path('interventions/details/<int:id>/', intervention_details, name='intervention_details'),
+    path('interventions/<int:id>/complete/', intervention_complete, name='intervention_complete'),
+    path('intervention-types/create/', intervention_type_create, name='intervention_type_create'),
     
     # Alertes
     path('alertes/liste/', alertes_list, name='alertes_list'),

@@ -1,0 +1,229 @@
+{% extends "base_elevage.html" %}
+{% load static %}
+
+{% block title %}Détails intervention - {{ intervention.title }}{% endblock %}
+
+{% block content %}
+<div class="elevage-content">
+    <div class="detail-header">
+        <div class="detail-info">
+            <h2 class="detail-title">{{ intervention.title }}</h2>
+            <p class="detail-subtitle">{{ intervention.intervention_type.name }} - {{ intervention.date_prevue|date:"d/m/Y" }}</p>
+            
+            <div class="detail-stats">
+                <div class="detail-stat">
+                    <div class="detail-stat-value">
+                        {% if intervention.ruche %}
+                            {{ intervention.ruche.description }}
+                        {% else %}
+                            Intervention générale
+                        {% endif %}
+                    </div>
+                    <div class="detail-stat-label">Ruche</div>
+                </div>
+                
+                <div class="detail-stat">
+                    <div class="detail-stat-value">
+                        {% if intervention.localization %}
+                            {{ intervention.localization.name }}
+                        {% else %}
+                            Non spécifiée
+                        {% endif %}
+                    </div>
+                    <div class="detail-stat-label">Localisation</div>
+                </div>
+                
+                <div class="detail-stat">
+                    <div class="detail-stat-value">
+                        {% if statut_class == 'success' %}
+                            <span class="tag tag-success">{{ statut }}</span>
+                        {% elif statut_class == 'danger' %}
+                            <span class="tag tag-danger">{{ statut }}</span>
+                        {% elif statut_class == 'warning' %}
+                            <span class="tag tag-warning">{{ statut }}</span>
+                        {% else %}
+                            <span class="tag tag-info">{{ statut }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="detail-stat-label">Statut</div>
+                </div>
+                
+                <div class="detail-stat">
+                    <div class="detail-stat-value">
+                        {% if intervention.date_realisation %}
+                            {{ intervention.date_realisation|date:"d/m/Y" }}
+                        {% else %}
+                            Non réalisée
+                        {% endif %}
+                    </div>
+                    <div class="detail-stat-label">Date réalisation</div>
+                </div>
+            </div>
+            
+            <div class="btn-group">
+                <a href="{% url 'intervention_edit' intervention.id %}" class="btn btn-primary">
+                    <i class="fas fa-edit"></i> Modifier
+                </a>
+                
+                {% if statut != "Réalisée" %}
+                    <button class="btn btn-success" onclick="markAsCompleted({{ intervention.id }})">
+                        <i class="fas fa-check"></i> Marquer comme réalisée
+                    </button>
+                {% endif %}
+                
+                <a href="{% url 'interventions_list' %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Retour à la liste
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="elevage-card">
+        <h3>Détails de l'intervention</h3>
+        <div class="intervention-details">
+            <div class="detail-section">
+                <h4>Description</h4>
+                <p>{{ intervention.details|linebreaks }}</p>
+            </div>
+            
+            {% if intervention.donnees %}
+            <div class="detail-section">
+                <h4>Données techniques</h4>
+                <p>{{ intervention.donnees|linebreaks }}</p>
+            </div>
+            {% endif %}
+            
+            <div class="detail-section">
+                <h4>Informations</h4>
+                <table class="elevage-table">
+                    <tr>
+                        <th>Type d'intervention</th>
+                        <td>{{ intervention.intervention_type.name }}</td>
+                    </tr>
+                    <tr>
+                        <th>Date prévue</th>
+                        <td>{{ intervention.date_prevue|date:"l d F Y" }}</td>
+                    </tr>
+                    {% if intervention.date_realisation %}
+                    <tr>
+                        <th>Date de réalisation</th>
+                        <td>{{ intervention.date_realisation|date:"l d F Y" }}</td>
+                    </tr>
+                    {% endif %}
+                    <tr>
+                        <th>Ruche concernée</th>
+                        <td>
+                            {% if intervention.ruche %}
+                                <a href="{% url 'ruche_details' intervention.ruche.id %}" class="link-hover">
+                                    {{ intervention.ruche.description }}
+                                </a>
+                            {% else %}
+                                Intervention générale sur la localisation
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Localisation</th>
+                        <td>
+                            {% if intervention.localization %}
+                                {{ intervention.localization.name }}
+                            {% else %}
+                                Non spécifiée
+                            {% endif %}
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function markAsCompleted(interventionId) {
+    if (confirm('Marquer cette intervention comme réalisée aujourd\'hui ?')) {
+        fetch(`/elevage/interventions/${interventionId}/complete/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                'date_realisation': new Date().toISOString().split('T')[0]
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Erreur lors de la mise à jour: ' + (data.error || 'Erreur inconnue'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Erreur lors de la mise à jour');
+        });
+    }
+}
+</script>
+
+<style>
+.intervention-details {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.detail-section h4 {
+    color: var(--honey-primary);
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--glass-border);
+}
+
+.detail-section p {
+    line-height: 1.6;
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+}
+
+.link-hover {
+    color: var(--honey-primary);
+    text-decoration: none;
+    transition: all var(--transition-fast);
+}
+
+.link-hover:hover {
+    color: var(--honey-dark);
+    text-decoration: underline;
+}
+
+/* Status-based styling */
+.detail-header[data-status="En retard"] {
+    border-left: 4px solid var(--queen-red);
+    padding-left: 1rem;
+}
+
+.detail-header[data-status="Aujourd'hui"] {
+    border-left: 4px solid var(--honey-primary);
+    padding-left: 1rem;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+    .detail-stats {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+    }
+    
+    .btn-group {
+        flex-direction: column;
+    }
+    
+    .btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+</style>
+{% endblock %}

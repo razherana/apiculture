@@ -1041,3 +1041,131 @@
         min-height: 80px;
     }
 }
+
+/* Additional styles for ruches list enhancements */
+.progress-bar {
+    width: 60px;
+    height: 8px;
+    background: var(--glass-bg);
+    border-radius: 4px;
+    overflow: hidden;
+    display: inline-block;
+}
+
+.progress-fill {
+    height: 100%;
+    transition: width 0.3s ease;
+    border-radius: 4px;
+}
+
+.progress-fill.high {
+    background: var(--pollen-green);
+}
+
+.progress-fill.medium {
+    background: var(--honey-primary);
+}
+
+.progress-fill.low {
+    background: var(--queen-red);
+}
+
+/* Enhanced status icons */
+.status-icon {
+    width: 20px;
+    height: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 0.8rem;
+}
+
+.status-icon.success {
+    background: rgba(0, 204, 136, 0.2);
+    color: var(--pollen-green);
+}
+
+.status-icon.danger {
+    background: rgba(255, 51, 102, 0.2);
+    color: var(--queen-red);
+}
+
+/* Date navigation enhancements */
+.date-navigation {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.date-display {
+    font-weight: 600;
+    color: var(--honey-primary);
+    min-width: 200px;
+    text-align: center;
+}
+
+/* Responsive improvements for date picker */
+@media (max-width: 768px) {
+    .date-navigation {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+    }
+    
+    .date-navigation > div:first-child {
+        order: 2;
+    }
+    
+    .date-navigation > div:last-child {
+        order: 1;
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    
+    .date-modal-content {
+        margin: 10% auto;
+        width: 95%;
+        padding: 1.5rem;
+    }
+}
+
+/* Enhanced table sorting indicators */
+.elevage-table th.sortable {
+    cursor: pointer;
+    position: relative;
+    user-select: none;
+}
+
+.elevage-table th.sortable:hover {
+    background-color: var(--glass-overlay);
+}
+
+.elevage-table th.sortable::after {
+    content: '\f0dc';
+    font-family: 'Font Awesome 5 Free';
+    font-weight: 900;
+    position: absolute;
+    right: 8px;
+    opacity: 0.3;
+    transition: opacity var(--transition-fast);
+}
+
+.elevage-table th.sortable:hover::after {
+    opacity: 0.7;
+}
+
+.elevage-table th.sorted-asc::after {
+    content: '\f0de';
+    opacity: 1;
+    color: var(--honey-primary);
+}
+
+.elevage-table th.sorted-desc::after {
+    content: '\f0dd';
+    opacity: 1;
+    color: var(--honey-primary);
+}

@@ -1,4 +1,5 @@
 from django.db import models
+
 from django.core.validators import MinValueValidator, MaxValueValidator
 
 from projet.models.ressources import UniteMesure, ConsommableType, Ruche, Localization
