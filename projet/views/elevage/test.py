@@ -2,6 +2,12 @@ from django.shortcuts import render
 from datetime import datetime, timedelta
 import random
 import json
+from django.utils import timezone
+from django.db import models
+from projet.models.ressources import (
+    Ruche, RucheStatus, RucheStatusHistory, Localization, 
+    RucheType, Essaim, EssaimStatus, EssaimStatusHistory
+)
 
 # Données de test
 ruches_data = [
@@ -79,12 +85,75 @@ def get_alertes_context(request):
 
 # Vues pour les ruches
 def ruches_list(request):
+    # Get the selected date from request, default to today
+    selected_date_str = request.GET.get('date', timezone.now().date().strftime('%Y-%m-%d'))
+    try:
+        selected_date = datetime.strptime(selected_date_str, '%Y-%m-%d').date()
+    except ValueError:
+        selected_date = timezone.now().date()
+    
+    # Get all ruches with their latest status at the selected date
+    ruches = []
+    for ruche in Ruche.objects.select_related('ruche_type', 'localizations', 'essaim').all():
+        # Get the latest status history before or on the selected date
+        latest_status_history = ruche.ruche_status_histories.filter(
+            created_at__date__lte=selected_date
+        ).order_by('-created_at').first()
+        
+        # Get essaim status at the selected date
+        essaim_status_history = None
+        if ruche.essaim:
+            essaim_status_history = ruche.essaim.essaim_status_histories.filter(
+                created_at__date__lte=selected_date
+            ).order_by('-created_at').first()
+        
+        # Get latest health data
+        latest_health = None
+        if ruche.essaim:
+            latest_health = ruche.essaim.essaim_sante_histories.filter(
+                created_at__date__lte=selected_date
+            ).order_by('-created_at').first()
+        
+        # Calculate production (sum of recoltes up to selected date)
+        total_production = ruche.recoltes.filter(
+            created_at__date__lte=selected_date
+        ).aggregate(total=models.Sum('poids_miel'))['total'] or 0
+        
+        # Count hausses at the selected date
+        nb_hausses = ruche.ruche_hausse_histories.filter(
+            created_at__date__lte=selected_date,
+            is_removed=False
+        ).count()
+        
+        ruche_data = {
+            'id': ruche.id,
+            'description': ruche.description,
+            'type': ruche.ruche_type.name if ruche.ruche_type else 'Non défini',
+            'localisation': ruche.localizations.name if ruche.localizations else 'Non définie',
+            'date_creation': ruche.created_at.date(),
+            'statut': latest_status_history.ruche_status.name if latest_status_history else 'Inconnu',
+            'essaim_statut': essaim_status_history.essaim_status.name if essaim_status_history else 'Inconnu',
+            'force': latest_health.force_colonie if latest_health else 0,
+            'production': float(total_production),
+            'nb_hausses': nb_hausses,
+            'reine_presente': latest_health.reine_present if latest_health else False,
+            'couvain_present': latest_health.couvain_present if latest_health else False,
+        }
+        ruches.append(ruche_data)
+    
+    # Get available filter options
+    types_ruche = list(RucheType.objects.values_list('name', flat=True))
+    statuts_ruche = list(RucheStatus.objects.values_list('name', flat=True))
+    localisations = list(Localization.objects.values_list('name', flat=True))
+    
     context = {
-        'ruches': ruches_data,
-        'types_ruche': ['Dadant', 'Langstroth', 'Warré', 'Voirnot'],
-        'statuts_ruche': ['Active', 'Faible', 'Orpheline', 'Malade', 'Inactive'],
-        'localisations': ['Champ Sud', 'Verger Est', 'Colline Nord', 'Forêt Ouest']
+        'ruches': ruches,
+        'types_ruche': types_ruche,
+        'statuts_ruche': statuts_ruche,
+        'localisations': localisations,
+        'selected_date': selected_date.strftime('%Y-%m-%d'),
     }
+    
     # Ajouter les alertes au contexte
     context.update(get_alertes_context(request))
     return render(request, 'elevage/ruches/ruches-list.html', context)
@@ -119,6 +188,9 @@ def ruche_details(request, id):
             'sante': sante_scores
         }
     })
+    
+def ruche_delete(request):
+    return
 
 def ruche_edit(request, id=None):
     # Pour l'édition, on récupère la ruche existante

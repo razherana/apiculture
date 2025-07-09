@@ -24,26 +24,19 @@
                     <div class="detail-stat-label">Force</div>
                 </div>
                 <div class="detail-stat">
+                    <div class="detail-stat-value status-clickable" onclick="showStatusHistory({{ ruche.id }})">
+                        {{ ruche.statut }}
+                        <i class="fas fa-history" style="font-size: 0.8em; margin-left: 5px;"></i>
+                    </div>
+                    <div class="detail-stat-label">Statut</div>
+                </div>
+                <div class="detail-stat">
                     <div class="detail-stat-value">{{ ruche.nb_hausses }}</div>
                     <div class="detail-stat-label">Hausses</div>
                 </div>
                 <div class="detail-stat">
                     <div class="detail-stat-value">{{ ruche.production }} kg</div>
                     <div class="detail-stat-label">Production</div>
-                </div>
-                <div class="detail-stat">
-                    <div class="detail-stat-value">
-                        {% if ruche.statut == 'Active' %}
-                            <span class="text-success">{{ ruche.statut }}</span>
-                        {% elif ruche.statut == 'Faible' or ruche.statut == 'Orpheline' %}
-                            <span class="text-warning">{{ ruche.statut }}</span>
-                        {% elif ruche.statut == 'Malade' or ruche.statut == 'Inactive' %}
-                            <span class="text-danger">{{ ruche.statut }}</span>
-                        {% else %}
-                            {{ ruche.statut }}
-                        {% endif %}
-                    </div>
-                    <div class="detail-stat-label">Statut</div>
                 </div>
             </div>
             
@@ -191,6 +184,30 @@
     </div>
 </div>
 
+<!-- Status History Modal -->
+<div id="statusModal" class="modal" style="display: none;">
+    <div class="modal-content glass">
+        <span class="close-modal" onclick="closeStatusModal()">&times;</span>
+        <h3>Historique des statuts - <span id="modal-ruche-name">{{ ruche.nom }}</span></h3>
+        
+        <div class="table-container">
+            <table class="elevage-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Statut</th>
+                        <th>Modifié par</th>
+                        <th>Notes</th>
+                    </tr>
+                </thead>
+                <tbody id="status-history-body">
+                    <!-- Will be populated via JavaScript -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Gestion des onglets
@@ -273,10 +290,103 @@
             e.preventDefault();
             if (confirm('Êtes-vous sûr de vouloir supprimer cette ruche ? Cette action est irréversible.')) {
                 // Rediriger vers la page de suppression ou envoyer une requête AJAX
-                // window.location.href = "{% url 'ruche_delete' id=ruche.id %}";
+                window.location.href = "{% url 'ruche_delete' id=ruche.id %}";
                 alert('Fonctionnalité de suppression à implémenter');
             }
         });
     });
+    
+    function showStatusHistory(rucheId) {
+        // In a real implementation, this would fetch data via AJAX
+        // For now, we'll simulate the data
+        const statusHistory = [
+            {
+                date: '{{ ruche.ruche_obj.created_at|date:"Y-m-d H:i" }}',
+                status: '{{ ruche.statut }}',
+                modifie_par: 'Système',
+                notes: 'Statut initial'
+            }
+            // Add more status history entries from the model
+        ];
+        
+        const statusBody = document.getElementById('status-history-body');
+        statusBody.innerHTML = '';
+        
+        statusHistory.forEach(entry => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${entry.date}</td>
+                <td><span class="tag tag-info">${entry.status}</span></td>
+                <td>${entry.modifie_par}</td>
+                <td>${entry.notes}</td>
+            `;
+            statusBody.appendChild(row);
+        });
+        
+        document.getElementById('statusModal').style.display = 'block';
+    }
+
+    function closeStatusModal() {
+        document.getElementById('statusModal').style.display = 'none';
+    }
+
+    // Close modal when clicking outside
+    window.addEventListener('click', function(e) {
+        const modal = document.getElementById('statusModal');
+        if (e.target === modal) {
+            closeStatusModal();
+        }
+    });
 </script>
+
+<style>
+.status-clickable {
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    padding: 0.25rem;
+    border-radius: var(--radius-sm);
+}
+
+.status-clickable:hover {
+    background-color: var(--honey-primary);
+    color: var(--hive-black);
+    transform: translateY(-1px);
+}
+
+/* Modal styles */
+.modal {
+    position: fixed;
+    z-index: var(--z-modal);
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+}
+
+.modal-content {
+    margin: 5% auto;
+    padding: var(--space-xl);
+    width: 90%;
+    max-width: 800px;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    animation: fadeUp 0.3s ease-out;
+}
+
+.close-modal {
+    color: var(--text-secondary);
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: color var(--transition-fast);
+}
+
+.close-modal:hover {
+    color: var(--honey-primary);
+}
+</style>
 {% endblock %}
