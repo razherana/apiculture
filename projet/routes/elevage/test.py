@@ -17,7 +17,7 @@ urlpatterns = [
     
     # Aménagements
     path('amenagements/liste/', amenagements_list, name='amenagements_list'),
-    path('amenagements/edit/', amenagement_edit, name='amenagement_add'),
+    path('amenagements/add/', amenagement_add, name='amenagement_add'),
     path('amenagements/edit/<int:id>/', amenagement_edit, name='amenagement_edit'),
     
     # Dashboard

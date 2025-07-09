@@ -4,28 +4,37 @@
 {% block title %}{% if amenagement %}Modifier{% else %}Nouvel{% endif %} aménagement{% endblock %}
 {% block page_title %}{% if amenagement %}Modifier{% else %}Nouvel{% endif %} aménagement{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'elevage/css/elevage.css' %}">
+<link rel="stylesheet" href="{% static 'elevage/css/dark-mode-fix.css' %}">
+{% endblock %}
+
 {% block content %}
 <div class="elevage-content">
     <div class="elevage-card">
         <h2>{% if amenagement %}Modifier l'aménagement{% else %}Nouvel aménagement{% endif %}</h2>
+        {% if error_message %}
+        <div class="alert-card high" style="margin-bottom: 1.5rem;">
+            <div class="alert-icon high">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <div class="alert-content">
+                <div class="alert-title">Erreur</div>
+                <div class="alert-message">{{ error_message }}</div>
+            </div>
+        </div>
+        {% endif %}
         
         <form class="form-container" method="post">
             {% csrf_token %}
             
             <div class="form-row">
                 <div class="form-group">
-                    <label class="form-label" for="type">Type d'aménagement *</label>
-                    <select class="form-select" id="type" name="type" required>
-                        <option value="" disabled {% if not amenagement %}selected{% endif %}>Sélectionnez un type</option>
-                        {% for type in types %}
-                            <option value="{{ type }}" {% if amenagement.type == type %}selected{% endif %}>{{ type }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                
-                <div class="form-group">
                     <label class="form-label" for="date">Date *</label>
-                    <input type="date" class="form-input" id="date" name="date" value="{{ amenagement.date|date:'Y-m-d' }}" required>
+                    <input type="date" class="form-input" id="date" name="date" 
+                           value="{% if amenagement %}{{ amenagement.date }}{% else %}{{ form_data.date|default:'' }}{% endif %}" 
+                           required>
+                    <small class="form-help">Date de création de l'aménagement</small>
                 </div>
             </div>
             
@@ -33,54 +42,98 @@
                 <div class="form-group">
                     <label class="form-label" for="origine">Origine *</label>
                     <select class="form-select" id="origine" name="origine" required>
-                        <option value="" disabled {% if not amenagement %}selected{% endif %}>Sélectionnez une origine</option>
+                        <option value="" disabled {% if not amenagement and not form_data.origine %}selected{% endif %}>Sélectionnez une origine</option>
                         {% for origine in origines %}
-                            <option value="{{ origine }}" {% if amenagement.origine == origine %}selected{% endif %}>{{ origine }}</option>
+                            <option value="{{ origine.id }}" 
+                                    {% if amenagement.origine == origine.name or form_data.origine == origine.id %}selected{% endif %}>
+                                {{ origine.name }}
+                            </option>
                         {% endfor %}
                     </select>
+                    <small class="form-help">Origine de l'essaim ou de la colonie</small>
                 </div>
                 
                 <div class="form-group">
                     <label class="form-label" for="race">Race d'abeille *</label>
                     <select class="form-select" id="race" name="race" required>
-                        <option value="" disabled {% if not amenagement %}selected{% endif %}>Sélectionnez une race</option>
+                        <option value="" disabled {% if not amenagement and not form_data.race %}selected{% endif %}>Sélectionnez une race</option>
                         {% for race in races %}
-                            <option value="{{ race }}" {% if amenagement.race == race %}selected{% endif %}>{{ race }}</option>
+                            <option value="{{ race.id }}" 
+                                    {% if amenagement.race == race.name or form_data.race == race.id %}selected{% endif %}>
+                                {{ race.name }}
+                            </option>
                         {% endfor %}
                     </select>
+                    <small class="form-help">Race génétique des abeilles</small>
                 </div>
             </div>
             
             <div class="form-row">
                 <div class="form-group">
                     <label class="form-label" for="force">Force de la colonie (1-10) *</label>
-                    <input type="range" class="form-input" id="force" name="force" value="{{ amenagement.force|default:5 }}" min="1" max="10" oninput="forceValue.value = force.value" required>
-                    <output id="forceValue">{{ amenagement.force|default:5 }}</output>
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <input type="range" class="form-input" id="force" name="force" 
+                               value="{% if amenagement %}{{ amenagement.force }}{% else %}{{ form_data.force|default:5 }}{% endif %}" 
+                               min="1" max="10" style="flex: 1;" required>
+                        <output id="forceValue" style="min-width: 30px; font-weight: 600; color: var(--honey-primary);">
+                            {% if amenagement %}{{ amenagement.force }}{% else %}{{ form_data.force|default:5 }}{% endif %}
+                        </output>
+                    </div>
+                    <small class="form-help">Estimation de la force de la colonie (1=faible, 10=très forte)</small>
                 </div>
                 
                 <div class="form-group">
                     <label class="form-label" for="ruche_destination">Ruche de destination *</label>
                     <select class="form-select" id="ruche_destination" name="ruche_destination" required>
-                        <option value="" disabled {% if not amenagement %}selected{% endif %}>Sélectionnez une ruche</option>
+                        <option value="" disabled {% if not amenagement and not form_data.ruche_destination %}selected{% endif %}>Sélectionnez une ruche</option>
                         {% for ruche in ruches %}
-                            <option value="{{ ruche }}" {% if amenagement.ruche_destination == ruche %}selected{% endif %}>{{ ruche }}</option>
+                            <option value="{{ ruche.id }}" 
+                                    {% if amenagement.ruche_destination == ruche.id|stringformat:"s" or form_data.ruche_destination == ruche.id|stringformat:"s" %}selected{% endif %}>
+                                {{ ruche.description }} - {{ ruche.localizations.name }}
+                            </option>
                         {% endfor %}
                     </select>
+                    <small class="form-help">Ruche où sera installé l'essaim</small>
                 </div>
             </div>
             
             <div class="form-row">
                 <div class="form-group">
-                    <label class="form-label" for="notes">Notes</label>
-                    <textarea class="form-textarea" id="notes" name="notes" rows="4">{{ amenagement.notes }}</textarea>
+                    <label class="form-label" for="notes">Notes et observations</label>
+                    <textarea class="form-textarea" id="notes" name="notes" rows="4" 
+                              placeholder="Observations sur l'essaim, comportement, particularités...">{% if amenagement %}{{ amenagement.notes }}{% else %}{{ form_data.notes|default:'' }}{% endif %}</textarea>
+                    <small class="form-help">Informations complémentaires sur l'aménagement</small>
                 </div>
             </div>
             
+            <!-- Informations supplémentaires pour édition -->
+            {% if amenagement %}
+            <div class="form-row">
+                <div class="info-card" style="width: 100%;">
+                    <div class="info-card-header">
+                        <div class="info-card-icon">
+                            <i class="fas fa-info-circle"></i>
+                        </div>
+                        <div class="info-card-title">Informations de l'essaim</div>
+                    </div>
+                    <div style="margin-top: 0.5rem; color: var(--text-secondary);">
+                        <p><strong>ID Essaim:</strong> #{{ essaim.id }}</p>
+                        <p><strong>Date de création:</strong> {{ essaim.created_at|date:"d/m/Y à H:i" }}</p>
+                        {% if essaim.essaim_details.first %}
+                        <p><strong>Population estimée:</strong> {{ essaim.essaim_details.first.ouvrier_added|floatformat:0 }} ouvrières</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
             <div class="form-row">
                 <div class="btn-group" style="margin-left: auto;">
-                    <a href="{% url 'amenagements_list' %}" class="btn btn-secondary">Annuler</a>
+                    <a href="{% url 'amenagements_list' %}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Annuler
+                    </a>
                     <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save"></i> {% if amenagement %}Enregistrer{% else %}Créer{% endif %}
+                        <i class="fas fa-save"></i> {% if amenagement %}Enregistrer les modifications{% else %}Créer l'aménagement{% endif %}
                     </button>
                 </div>
             </div>
@@ -103,38 +156,118 @@
         const origineSelect = document.getElementById('origine');
         
         typeSelect.addEventListener('change', function() {
-            // Si c'est une division, présélectionner les ruches du rucher comme origine
-            if (this.value === 'Division') {
-                // Effacer les options actuelles
-                origineSelect.innerHTML = '';
-                
-                // Ajouter les ruches comme options
+            const selectedType = this.value;
+            
+            // Sauvegarder la valeur actuelle
+            const currentOrigine = origineSelect.value;
+            
+            // Effacer les options actuelles
+            origineSelect.innerHTML = '';
+            
+            // Option placeholder
+            const placeholder = document.createElement('option');
+            placeholder.value = "";
+            placeholder.textContent = "Sélectionnez une origine";
+            placeholder.disabled = true;
+            placeholder.selected = !currentOrigine;
+            origineSelect.appendChild(placeholder);
+            
+            if (selectedType === 'Division') {
+                // Pour les divisions, proposer les ruches existantes comme origines
                 {% for ruche in ruches %}
                     const option = document.createElement('option');
-                    option.value = "{{ ruche }}";
-                    option.textContent = "{{ ruche }}";
+                    option.value = "{{ ruche.description }}";
+                    option.textContent = "{{ ruche.description }} ({{ ruche.localizations.name }})";
+                    if (option.value === currentOrigine) option.selected = true;
                     origineSelect.appendChild(option);
                 {% endfor %}
             } else {
-                // Restaurer les options d'origine par défaut
-                origineSelect.innerHTML = '';
-                
-                // Option placeholder
-                const placeholder = document.createElement('option');
-                placeholder.value = "";
-                placeholder.textContent = "Sélectionnez une origine";
-                placeholder.disabled = true;
-                origineSelect.appendChild(placeholder);
-                
-                // Ajouter les origines standards
+                // Pour les autres types, utiliser les origines standards
                 {% for origine in origines %}
                     const option = document.createElement('option');
                     option.value = "{{ origine }}";
                     option.textContent = "{{ origine }}";
+                    if (option.value === currentOrigine) option.selected = true;
                     origineSelect.appendChild(option);
                 {% endfor %}
             }
         });
+        
+        // Validation du formulaire
+        const form = document.querySelector('form');
+        form.addEventListener('submit', function(e) {
+            const force = parseInt(forceSlider.value);
+            if (force < 1 || force > 10) {
+                e.preventDefault();
+                alert('La force de la colonie doit être comprise entre 1 et 10.');
+                return false;
+            }
+        });
+        
+        // Amélioration de l'UX avec des tooltips
+        const helpTexts = document.querySelectorAll('.form-help');
+        helpTexts.forEach(help => {
+            help.style.fontSize = '0.8rem';
+            help.style.fontStyle = 'italic';
+            help.style.marginTop = '0.25rem';
+        });
     });
 </script>
+
+<style>
+.form-help {
+    color: var(--text-secondary) !important;
+    font-size: 0.8rem;
+    margin-top: 0.25rem;
+    display: block;
+}
+
+.form-group {
+    position: relative;
+}
+
+/* Style pour le slider de force */
+input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 6px;
+    border-radius: 3px;
+    background: var(--glass-bg);
+    outline: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--honey-primary);
+    cursor: pointer;
+    box-shadow: 0 0 10px rgba(255, 209, 0, 0.3);
+}
+
+input[type="range"]::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--honey-primary);
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 0 10px rgba(255, 209, 0, 0.3);
+}
+
+/* Animation pour les champs requis */
+.form-input:required:invalid,
+.form-select:required:invalid {
+    border-color: var(--queen-red);
+    box-shadow: 0 0 0 2px rgba(255, 51, 102, 0.1);
+}
+
+.form-input:required:valid,
+.form-select:required:valid {
+    border-color: var(--pollen-green);
+    box-shadow: 0 0 0 2px rgba(0, 204, 136, 0.1);
+}
+</style>
 {% endblock %}
