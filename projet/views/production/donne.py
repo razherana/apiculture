@@ -1,18 +1,13 @@
 from django.shortcuts import redirect, render
-from django.db.models import Sum
-from django.db.models import Count
-from dateutil.relativedelta import relativedelta
+from django.db.models import Count, Avg, Sum
 from datetime import datetime, timedelta
 from projet.models.productions import Recolte
-from projet.models.ressources import Ruche , HausseType , RucheHausseHistory , Hausse, HausseCadre , EssaimDetail , EssaimStatusHistory , EssaimStatus , Essaim , EssaimRace , EssaimOrigin
+from projet.models.ressources import EssaimSanteHistory, Ruche , HausseCadre , EssaimDetail
 from projet.models.ressources import Materiel , MaterielType , MaterielStatus , Consommable , ConsommableType , ConsommableConsomme 
-from projet.models.ventes import Vente , VenteDetail
+from projet.models.ventes import VenteDetail
 from projet.models.ressources import Ruche
 from projet.models.ressources import Materiel
 from projet.models.productions  import Task
-from projet.models.productions  import TaskStatusHistory
-from projet.models.productions  import TaskPriorite
-from projet.models.productions  import TaskType
 
 
 from django.shortcuts import render
