@@ -28,6 +28,14 @@ urlpatterns = [
     path('soins/edit/', soin_edit, name='soin_add'),
     path('soins/edit/<int:id>/', soin_edit, name='soin_edit'),
     
+    # Interventions
+    path('interventions/liste/', interventions_list, name='interventions_list'),
+    path('interventions/add/', intervention_add, name='intervention_add'),
+    path('interventions/edit/<int:id>/', intervention_edit, name='intervention_edit'),
+    path('interventions/details/<int:id>/', intervention_details, name='intervention_details'),
+    path('interventions/<int:id>/complete/', intervention_complete, name='intervention_complete'),
+    path('intervention-types/create/', intervention_type_create, name='intervention_type_create'),
+    
     # Alertes
     path('alertes/liste/', alertes_list, name='alertes_list'),
     

@@ -1,13 +1,15 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from datetime import datetime, timedelta
 import random
 import json
 from django.utils import timezone
 from django.db import models
+from django.http import JsonResponse
 from projet.models.ressources import (
     Ruche, RucheStatus, RucheStatusHistory, Localization, 
     RucheType, Essaim, EssaimStatus, EssaimStatusHistory
 )
+from projet.models.productions import Intervention, InterventionType
 
 # Données de test
 ruches_data = [
@@ -403,3 +405,243 @@ def calendrier(request):
         'ruches': ruches_data,
         'types_evenement': ['inspection', 'treatment', 'task', 'urgent', 'harvest']
     })
+
+def interventions_list(request):
+    # Get all interventions with related data
+    interventions = Intervention.objects.select_related(
+        'ruche', 'localization', 'intervention_type'
+    ).order_by('-date_prevue')
+    
+    # Get filter options
+    types_intervention = list(InterventionType.objects.values_list('name', flat=True))
+    ruches = list(Ruche.objects.values('id', 'description'))
+    localisations = list(Localization.objects.values('id', 'name'))
+    
+    # Prepare intervention data with status calculation
+    interventions_data = []
+    for intervention in interventions:
+        # Determine status based on dates
+        from datetime import date
+        today = date.today()
+        
+        if intervention.date_realisation:
+            statut = 'Réalisée'
+            statut_class = 'success'
+        elif intervention.date_prevue < today:
+            statut = 'En retard'
+            statut_class = 'danger'
+        elif intervention.date_prevue == today:
+            statut = 'Aujourd\'hui'
+            statut_class = 'warning'
+        else:
+            statut = 'Planifiée'
+            statut_class = 'info'
+        
+        intervention_data = {
+            'id': intervention.id,
+            'title': intervention.title,
+            'date_prevue': intervention.date_prevue,
+            'date_realisation': intervention.date_realisation,
+            'ruche': intervention.ruche,
+            'localization': intervention.localization,
+            'intervention_type': intervention.intervention_type,
+            'details': intervention.details,
+            'donnees': intervention.donnees,
+            'statut': statut,
+            'statut_class': statut_class,
+        }
+        interventions_data.append(intervention_data)
+    
+    context = {
+        'interventions': interventions_data,
+        'types_intervention': types_intervention,
+        'ruches': ruches,
+        'localisations': localisations,
+    }
+    
+    # Ajouter les alertes au contexte
+    context.update(get_alertes_context(request))
+    return render(request, 'elevage/interventions/interventions-list.html', context)
+
+def intervention_add(request):
+    if request.method == 'POST':
+        # Handle form submission
+        title = request.POST.get('title')
+        intervention_type_id = request.POST.get('intervention_type')
+        ruche_id = request.POST.get('ruche')
+        localization_id = request.POST.get('localization')
+        details = request.POST.get('details')
+        donnees = request.POST.get('donnees', '')
+        date_prevue = request.POST.get('date_prevue')
+        date_realisation = request.POST.get('date_realisation', None)
+        
+        try:
+            # Create new intervention
+            intervention = Intervention(
+                title=title,
+                details=details,
+                donnees=donnees,
+                date_prevue=date_prevue,
+                date_realisation=date_realisation if date_realisation else None
+            )
+            
+            # Set optional foreign keys
+            if intervention_type_id:
+                intervention.intervention_type = InterventionType.objects.get(id=intervention_type_id)
+            if ruche_id:
+                intervention.ruche = Ruche.objects.get(id=ruche_id)
+            if localization_id:
+                intervention.localization = Localization.objects.get(id=localization_id)
+            
+            intervention.save()
+            
+            # Redirect to list view with success message
+            return redirect('interventions_list')
+        except Exception as e:
+            # Handle errors
+            error_message = f"Erreur lors de la création: {str(e)}"
+            return render(request, 'elevage/interventions/intervention-edit.html', {
+                'error': error_message,
+                'types_intervention': InterventionType.objects.all(),
+                'ruches': Ruche.objects.all(),
+                'localisations': Localization.objects.all(),
+            })
+    
+    # GET request - show form
+    return render(request, 'elevage/interventions/intervention-edit.html', {
+        'types_intervention': InterventionType.objects.all(),
+        'ruches': Ruche.objects.all(),
+        'localisations': Localization.objects.all(),
+    })
+
+def intervention_edit(request, id):
+    try:
+        intervention = Intervention.objects.get(id=id)
+    except Intervention.DoesNotExist:
+        return render(request, 'elevage/404.html', {'message': 'Intervention non trouvée'})
+    
+    if request.method == 'POST':
+        # Handle form submission
+        intervention.title = request.POST.get('title')
+        intervention.details = request.POST.get('details')
+        intervention.donnees = request.POST.get('donnees', '')
+        intervention.date_prevue = request.POST.get('date_prevue')
+        
+        date_realisation = request.POST.get('date_realisation')
+        intervention.date_realisation = date_realisation if date_realisation else None
+        
+        # Update foreign keys
+        intervention_type_id = request.POST.get('intervention_type')
+        if intervention_type_id:
+            intervention.intervention_type = InterventionType.objects.get(id=intervention_type_id)
+        
+        ruche_id = request.POST.get('ruche')
+        if ruche_id:
+            intervention.ruche = Ruche.objects.get(id=ruche_id)
+        else:
+            intervention.ruche = None
+            
+        localization_id = request.POST.get('localization')
+        if localization_id:
+            intervention.localization = Localization.objects.get(id=localization_id)
+        else:
+            intervention.localization = None
+        
+        try:
+            intervention.save()
+            return redirect('interventions_list')
+        except Exception as e:
+            error_message = f"Erreur lors de la modification: {str(e)}"
+            return render(request, 'elevage/interventions/intervention-edit.html', {
+                'intervention': intervention,
+                'error': error_message,
+                'types_intervention': InterventionType.objects.all(),
+                'ruches': Ruche.objects.all(),
+                'localisations': Localization.objects.all(),
+            })
+    
+    # GET request - show form with existing data
+    return render(request, 'elevage/interventions/intervention-edit.html', {
+        'intervention': intervention,
+        'types_intervention': InterventionType.objects.all(),
+        'ruches': Ruche.objects.all(),
+        'localisations': Localization.objects.all(),
+    })
+
+def intervention_details(request, id):
+    try:
+        intervention = Intervention.objects.select_related(
+            'ruche', 'localization', 'intervention_type'
+        ).get(id=id)
+    except Intervention.DoesNotExist:
+        return render(request, 'elevage/404.html', {'message': 'Intervention non trouvée'})
+    
+    # Calculate status
+    from datetime import date
+    today = date.today()
+    
+    if intervention.date_realisation:
+        statut = 'Réalisée'
+        statut_class = 'success'
+    elif intervention.date_prevue < today:
+        statut = 'En retard'
+        statut_class = 'danger'
+    elif intervention.date_prevue == today:
+        statut = 'Aujourd\'hui'
+        statut_class = 'warning'
+    else:
+        statut = 'Planifiée'
+        statut_class = 'info'
+    
+    return render(request, 'elevage/interventions/intervention-details.html', {
+        'intervention': intervention,
+        'statut': statut,
+        'statut_class': statut_class,
+    })
+
+def intervention_complete(request, id):
+    """Mark intervention as completed via AJAX"""
+    if request.method == 'POST':
+        try:
+            intervention = Intervention.objects.get(id=id)
+            from datetime import date
+            intervention.date_realisation = date.today()
+            intervention.save()
+            return JsonResponse({'success': True})
+        except Intervention.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Intervention non trouvée'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    
+    return JsonResponse({'success': False, 'error': 'Méthode non autorisée'})
+
+def intervention_type_create(request):
+    """Create a new intervention type via AJAX"""
+    if request.method == 'POST':
+        try:
+            import json
+            data = json.loads(request.body)
+            name = data.get('name', '').strip()
+            
+            if not name:
+                return JsonResponse({'success': False, 'error': 'Le nom est requis'})
+            
+            # Check if intervention type already exists
+            if InterventionType.objects.filter(name=name).exists():
+                return JsonResponse({'success': False, 'error': 'Ce type d\'intervention existe déjà'})
+            
+            # Create new intervention type
+            intervention_type = InterventionType.objects.create(name=name)
+            
+            return JsonResponse({
+                'success': True,
+                'intervention_type': {
+                    'id': intervention_type.id,
+                    'name': intervention_type.name
+                }
+            })
+            
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    
+    return JsonResponse({'success': False, 'error': 'Méthode non autorisée'})

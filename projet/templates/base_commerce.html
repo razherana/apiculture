@@ -134,6 +134,10 @@
                                     <span class="icon"><i class="fas fa-flask-vial"></i></span>
                                     <span class="title">Journal des soins</span>
                                 </a>
+                                <a href="{% url 'interventions_list' %}" class="sidebar-btn sub-sub-item {% if request.resolver_match.url_name == 'soins_list' %}active{% endif %}">
+                                    <span class="icon"><i class="fas fa-flask-vial"></i></span>
+                                    <span class="title">Journal des interventions</span>
+                                </a>
                                 <a href="{% url 'taches_list' %}" class="sidebar-btn sub-sub-item {% if 'taches' in request.resolver_match.url_name %}active{% endif %}">
                                     <span class="icon"><i class="fas fa-clipboard-check"></i></span>
                                     <span class="title">Tâches</span>
