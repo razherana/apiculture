@@ -128,22 +128,22 @@ def historique_production(request):
     POIDS_PAR_CADRE = 2.0
     
     for ruche in ruches:
-        total_cadres = HausseCadre.objects.filter(
-            hausse__ruche_hausse_histories__ruche=ruche,
-            hausse__ruche_hausse_histories__is_removed=False
-        ).aggregate(total=Sum('added_cadre'))['total'] or 0
-        
-        total_poids = total_cadres * POIDS_PAR_CADRE
-        
-        qualite_moyenne = EssaimSanteHistory.objects.filter(
-            essaim=ruche.essaim
-        ).aggregate(avg_qualite=Avg('force_colonie'))['avg_qualite'] or 0
-        
-        historique.append({
-            'ruche_description': ruche.description,
-            'total_poids': round(total_poids, 2),
-            'qualite_moyenne': round(qualite_moyenne, 1) if qualite_moyenne else 0
-        })
+        if Recolte.objects.filter(ruche=ruche).exists():
+            total_cadres = HausseCadre.objects.filter(
+                hausse__ruche_hausse_histories__ruche=ruche,
+                hausse__ruche_hausse_histories__is_removed=False
+            ).aggregate(total=Sum('added_cadre'))['total'] or 0
+
+            total_poids = Recolte.objects.filter(ruche=ruche).aggregate(total=Sum('poids_miel'))['total'] or 0
+
+            qualite_moyenne = Recolte.objects.filter(ruche=ruche).aggregate(moyenne=Avg('qualite'))['moyenne']
+            historique.append({
+                'ruche_description': ruche.description,
+                'total_poids': round(total_poids, 2),
+                'qualite_moyenne': round(qualite_moyenne, 1) if qualite_moyenne else 0,
+                'date' : Recolte.objects.filter(ruche=ruche).order_by('-created_at').first().created_at,
+                
+            })
     
     return render(request, 'production/historique_production.html', {
         'historique': historique,

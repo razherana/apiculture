@@ -14,14 +14,16 @@
                     <th>Description de la ruche</th>
                     <th>Poids total récolté (kg)</th>
                     <th>Qualité moyenne</th>
+                    <th>Date</th>
                 </tr>
             </thead>
             <tbody>
                 {% for item in historique %}
                 <tr>
-                    <td>{{ item.ruche__description }}</td>
+                    <td>{{ item.ruche_description }}</td>
                     <td>{{ item.total_poids|floatformat:2 }}</td>
                     <td>{{ item.qualite_moyenne|floatformat:1 }} / 10</td>
+                    <td>{{ item.date }}</td>   
                 </tr>
                 {% empty %}
                 <tr>
