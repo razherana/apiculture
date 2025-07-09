@@ -115,6 +115,10 @@
                                     <span class="icon"><i class="fas fa-archive"></i></span>
                                     <span class="title">Ruches</span>
                                 </a>
+                                <a href="{% url 'essaims_list' %}" class="sidebar-btn sub-sub-item {% if request.resolver_match.url_name == 'essaims_list' or 'essaim' in request.resolver_match.url_name %}active{% endif %}">
+                                    <span class="icon"><i class="fas fa-bug"></i></span>
+                                    <span class="title">Essaims</span>
+                                </a>
                                 <a href="{% url 'amenagements_list' %}" class="sidebar-btn sub-sub-item {% if request.resolver_match.url_name == 'amenagements_list' %}active{% endif %}">
                                     <span class="icon"><i class="fas fa-house-chimney"></i></span>
                                     <span class="title">Aménagements</span>

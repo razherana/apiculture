@@ -1,0 +1,165 @@
+{% extends "base_commerce.html" %}
+{% load static %}
+
+{% block title %}Tuer population - Essaim #{{ essaim.id }}{% endblock %}
+
+{% block content %}
+<div class="elevage-content">
+    <div class="elevage-card">
+        <h2>Déclarer la mort d'une population - Essaim #{{ essaim.id }}</h2>
+        
+        <!-- Warning -->
+        <div class="alert-card high" style="margin-bottom: 1.5rem;">
+            <div class="alert-icon high">
+                <i class="fas fa-skull"></i>
+            </div>
+            <div class="alert-content">
+                <div class="alert-title">Attention</div>
+                <div class="alert-message">Cette action va déclarer une partie ou la totalité de la population comme morte. Cette action est irréversible.</div>
+            </div>
+        </div>
+        
+        <!-- Current population info -->
+        <div class="info-section">
+            <h4>Population actuelle</h4>
+            <div class="info-cards">
+                <div class="info-card">
+                    <div class="info-card-title">Ouvrières</div>
+                    <div class="info-card-value">{{ current_population.ouvriers }}</div>
+                </div>
+                <div class="info-card">
+                    <div class="info-card-title">Faux-bourdons</div>
+                    <div class="info-card-value">{{ current_population.faux_bourdons }}</div>
+                </div>
+                <div class="info-card">
+                    <div class="info-card-title">Reines</div>
+                    <div class="info-card-value">{{ current_population.reines }}</div>
+                </div>
+            </div>
+        </div>
+        
+        {% if error_message %}
+        <div class="alert-card high" style="margin-bottom: 1.5rem;">
+            <div class="alert-icon high">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <div class="alert-content">
+                <div class="alert-title">Erreur</div>
+                <div class="alert-message">{{ error_message }}</div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <form class="form-container" method="post">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label class="form-label">
+                    <input type="checkbox" id="kill_all" name="kill_all" style="margin-right: 0.5rem;">
+                    Déclarer tout l'essaim comme mort
+                </label>
+                <small class="form-help">Si coché, tout l'essaim sera marqué comme mort</small>
+            </div>
+            
+            <div id="partial-death" class="form-section">
+                <h4>Population à déclarer morte</h4>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="ouvrier">Ouvrières mortes</label>
+                        <input type="number" class="form-input" id="ouvrier" name="ouvrier" 
+                               value="{{ form_data.ouvrier|default:0 }}" min="0">
+                        <small class="form-help">Nombre d'ouvrières mortes</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="faux_bourdon">Faux-bourdons morts</label>
+                        <input type="number" class="form-input" id="faux_bourdon" name="faux_bourdon" 
+                               value="{{ form_data.faux_bourdon|default:0 }}" min="0">
+                        <small class="form-help">Nombre de faux-bourdons morts</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="reine">Reines mortes</label>
+                        <input type="number" class="form-input" id="reine" name="reine" 
+                               value="{{ form_data.reine|default:0 }}" min="0">
+                        <small class="form-help">Nombre de reines mortes</small>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label" for="note">Notes *</label>
+                <textarea class="form-input" id="note" name="note" rows="4" 
+                          placeholder="Cause de la mort, observations..." required>{{ form_data.note|default:'' }}</textarea>
+                <small class="form-help">Cause de la mort et observations (obligatoire)</small>
+            </div>
+            
+            <div class="form-row">
+                <div class="btn-group" style="margin-left: auto;">
+                    <a href="{% url 'essaim_details' essaim.id %}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Annuler
+                    </a>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-skull"></i> Confirmer
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const killAllCheckbox = document.getElementById('kill_all');
+    const partialDeathSection = document.getElementById('partial-death');
+    const inputs = partialDeathSection.querySelectorAll('input[type="number"]');
+    
+    killAllCheckbox.addEventListener('change', function() {
+        if (this.checked) {
+            partialDeathSection.style.display = 'none';
+            inputs.forEach(input => input.value = 0);
+        } else {
+            partialDeathSection.style.display = 'block';
+        }
+    });
+});
+</script>
+
+<style>
+.info-section {
+    margin: 1.5rem 0;
+    padding: 1.5rem;
+    background: rgba(255, 209, 0, 0.05);
+    border-radius: var(--radius-md);
+    border: 1px solid rgba(255, 209, 0, 0.2);
+}
+
+.info-section h4 {
+    color: var(--honey-primary);
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+
+.form-section {
+    margin: 2rem 0;
+    padding: 1.5rem;
+    background: rgba(255, 51, 102, 0.05);
+    border-radius: var(--radius-md);
+    border: 1px solid rgba(255, 51, 102, 0.2);
+}
+
+.form-section h4 {
+    color: var(--queen-red);
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+
+:root:not(.light-mode) .info-section {
+    background: rgba(255, 209, 0, 0.1);
+}
+
+:root:not(.light-mode) .form-section {
+    background: rgba(255, 51, 102, 0.1);
+}
+</style>
+{% endblock %}

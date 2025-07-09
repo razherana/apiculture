@@ -1,0 +1,264 @@
+{% extends "base_commerce.html" %}
+{% load static %}
+
+{% block title %}Détails Essaim #{{ essaim.id }}{% endblock %}
+
+{% block content %}
+<div class="elevage-content">
+    <!-- Header with essential info -->
+    <div class="detail-header">
+        <div class="detail-info">
+            <h2 class="detail-title">Essaim #{{ essaim.id }}</h2>
+            <p class="detail-subtitle">{{ essaim.race }} - {{ essaim.origine }}</p>
+            
+            <div class="detail-stats">
+                <div class="detail-stat">
+                    <div class="detail-stat-value">{{ essaim.race }}</div>
+                    <div class="detail-stat-label">Race</div>
+                </div>
+                <div class="detail-stat">
+                    <div class="detail-stat-value">{{ essaim.origine }}</div>
+                    <div class="detail-stat-label">Origine</div>
+                </div>
+                <div class="detail-stat">
+                    <div class="detail-stat-value">
+                        {% if essaim.ruche %}
+                            <a href="{% url 'ruche_details' essaim.ruche.id %}" class="tag tag-success">
+                                {{ essaim.ruche.description }}
+                            </a>
+                        {% else %}
+                            <span class="tag tag-warning">Non assigné</span>
+                        {% endif %}
+                    </div>
+                    <div class="detail-stat-label">Ruche actuelle</div>
+                </div>
+                <div class="detail-stat">
+                    <div class="detail-stat-value">
+                        {% if essaim.is_dead %}
+                            <span class="tag tag-danger">Mort</span>
+                        {% elif essaim.ruche %}
+                            <span class="tag tag-success">Actif</span>
+                        {% else %}
+                            <span class="tag tag-warning">Libre</span>
+                        {% endif %}
+                    </div>
+                    <div class="detail-stat-label">Statut</div>
+                </div>
+            </div>
+            
+            <div class="btn-group">
+                <a href="{% url 'essaim_edit' essaim.id %}" class="btn btn-primary">
+                    <i class="fas fa-edit"></i> Modifier
+                </a>
+                {% if not essaim.is_dead %}
+                    <a href="{% url 'essaim_population_add' essaim.id %}" class="btn btn-success">
+                        <i class="fas fa-plus"></i> Ajouter population
+                    </a>
+                    <a href="{% url 'essaim_population_kill' essaim.id %}" class="btn btn-danger">
+                        <i class="fas fa-skull"></i> Tuer population
+                    </a>
+                    {% if not essaim.ruche %}
+                        <a href="{% url 'essaim_assign_ruche' essaim.id %}" class="btn btn-info">
+                            <i class="fas fa-home"></i> Assigner à une ruche
+                        </a>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Population History -->
+    <div class="elevage-card">
+        <h3>Historique des populations</h3>
+        
+        {% if essaim_details %}
+            <div class="table-container">
+                <table class="elevage-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Ouvrières</th>
+                            <th>Faux-bourdons</th>
+                            <th>Reines</th>
+                            <th>Statut</th>
+                            <th>Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for detail in essaim_details %}
+                        <tr class="{% if detail.is_death %}detail-death{% endif %}">
+                            <td>{{ detail.created_at|date:"d/m/Y H:i" }}</td>
+                            <td>
+                                {% if detail.ouvrier_added > 0 %}
+                                    <span class="text-success">+{{ detail.ouvrier_added }}</span>
+                                {% elif detail.ouvrier_added < 0 %}
+                                    <span class="text-danger">{{ detail.ouvrier_added }}</span>
+                                {% else %}
+                                    {{ detail.ouvrier_added }}
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if detail.faux_bourdon_added > 0 %}
+                                    <span class="text-success">+{{ detail.faux_bourdon_added }}</span>
+                                {% elif detail.faux_bourdon_added < 0 %}
+                                    <span class="text-danger">{{ detail.faux_bourdon_added }}</span>
+                                {% else %}
+                                    {{ detail.faux_bourdon_added }}
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if detail.reine_added > 0 %}
+                                    <span class="text-success">+{{ detail.reine_added }}</span>
+                                {% elif detail.reine_added < 0 %}
+                                    <span class="text-danger">{{ detail.reine_added }}</span>
+                                {% else %}
+                                    {{ detail.reine_added }}
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if detail.is_death %}
+                                    <span class="tag tag-danger">
+                                        <i class="fas fa-skull"></i> Mort
+                                    </span>
+                                {% else %}
+                                    <span class="tag tag-success">
+                                        <i class="fas fa-heart"></i> Vivant
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td>{{ detail.note|truncatechars:50 }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+                <i class="fas fa-history" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                <p>Aucun historique de population disponible</p>
+            </div>
+        {% endif %}
+    </div>
+    
+    <!-- Current Population Summary -->
+    <div class="elevage-card">
+        <h3>Population actuelle</h3>
+        <div class="info-cards">
+            <div class="info-card">
+                <div class="info-card-header">
+                    <div class="info-card-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="info-card-title">Ouvrières</div>
+                </div>
+                <div class="info-card-value">{{ current_population.ouvriers }}</div>
+            </div>
+            
+            <div class="info-card">
+                <div class="info-card-header">
+                    <div class="info-card-icon">
+                        <i class="fas fa-male"></i>
+                    </div>
+                    <div class="info-card-title">Faux-bourdons</div>
+                </div>
+                <div class="info-card-value">{{ current_population.faux_bourdons }}</div>
+            </div>
+            
+            <div class="info-card">
+                <div class="info-card-header">
+                    <div class="info-card-icon">
+                        <i class="fas fa-crown"></i>
+                    </div>
+                    <div class="info-card-title">Reines</div>
+                </div>
+                <div class="info-card-value">{{ current_population.reines }}</div>
+            </div>
+            
+            <div class="info-card">
+                <div class="info-card-header">
+                    <div class="info-card-icon">
+                        <i class="fas fa-calculator"></i>
+                    </div>
+                    <div class="info-card-title">Total</div>
+                </div>
+                <div class="info-card-value">{{ current_population.total }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.detail-death {
+    background-color: rgba(255, 51, 102, 0.1) !important;
+    border-left: 3px solid var(--queen-red);
+}
+
+:root:not(.light-mode) .detail-death {
+    background-color: rgba(255, 51, 102, 0.2) !important;
+}
+
+.text-success {
+    color: var(--pollen-green);
+    font-weight: 600;
+}
+
+.text-danger {
+    color: var(--queen-red);
+    font-weight: 600;
+}
+
+.detail-header {
+    background: linear-gradient(135deg, rgba(255, 209, 0, 0.1) 0%, rgba(255, 209, 0, 0.05) 100%);
+    border-radius: var(--radius-lg);
+    padding: 2rem;
+    margin-bottom: 2rem;
+    border: 1px solid rgba(255, 209, 0, 0.2);
+}
+
+.detail-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.detail-subtitle {
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+    margin-bottom: 1.5rem;
+}
+
+.detail-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.detail-stat {
+    text-align: center;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: var(--radius-md);
+    border: 1px solid rgba(255, 209, 0, 0.1);
+}
+
+.detail-stat-value {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.detail-stat-label {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+:root:not(.light-mode) .detail-stat {
+    background: rgba(0, 0, 0, 0.2);
+}
+</style>
+{% endblock %}

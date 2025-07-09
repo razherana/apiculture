@@ -1101,3 +1101,354 @@ def localization_create(request):
             return JsonResponse({'success': False, 'error': str(e)})
     
     return JsonResponse({'success': False, 'error': 'Méthode non autorisée'})
+
+
+# Vues pour les essaims
+def essaims_list(request):
+    """Liste des essaims avec filtrage par date"""
+    # Get the selected date from request, default to today
+    selected_date_str = request.GET.get('date', timezone.now().date().strftime('%Y-%m-%d'))
+    try:
+        selected_date = datetime.strptime(selected_date_str, '%Y-%m-%d').date()
+    except ValueError:
+        selected_date = timezone.now().date()
+    
+    # Get all essaims with their current ruche at the selected date
+    essaims = []
+    for essaim in Essaim.objects.select_related('essaim_race', 'essaim_origin').all():
+        # Get ruche assignment at the selected date (through reverse relationship)
+        current_ruche = essaim.ruches.filter(
+            created_at__date__lte=selected_date
+        ).order_by('-created_at').first()
+        
+        # Get latest status at the selected date
+        latest_status = essaim.essaim_status_histories.filter(
+            created_at__date__lte=selected_date
+        ).order_by('-created_at').first()
+        
+        # Get latest health data
+        latest_health = essaim.essaim_sante_histories.filter(
+            created_at__date__lte=selected_date
+        ).order_by('-created_at').first()
+        
+        # Calculate current population (ouvrier + faux_bourdon + reine)
+        population_changes = EssaimDetail.objects.filter(
+            essaim=essaim,
+            created_at__date__lte=selected_date
+        ).order_by('created_at')
+        
+        current_ouvrier = 0
+        current_faux_bourdon = 0
+        current_reine = 0
+        
+        for change in population_changes:
+            if change.is_death:
+                current_ouvrier -= change.ouvrier_added
+                current_faux_bourdon -= change.faux_bourdon_added
+                current_reine -= change.reine_added
+            else:
+                current_ouvrier += change.ouvrier_added
+                current_faux_bourdon += change.faux_bourdon_added
+                current_reine += change.reine_added
+        
+        total_population = max(0, current_ouvrier) + max(0, current_faux_bourdon) + max(0, current_reine)
+        
+        essaim_data = {
+            'id': essaim.id,
+            'description': essaim.description or f'Essaim #{essaim.id}',
+            'race': essaim.essaim_race.name if essaim.essaim_race else 'Non définie',
+            'origin': essaim.essaim_origin.name if essaim.essaim_origin else 'Non définie',
+            'current_ruche': current_ruche.description if current_ruche else 'Non assigné',
+            'current_ruche_id': current_ruche.id if current_ruche else None,
+            'status': latest_status.essaim_status.name if latest_status else 'Inconnu',
+            'population': total_population,
+            'force': latest_health.force_colonie if latest_health else 0,
+            'created_at': essaim.created_at.date(),
+        }
+        essaims.append(essaim_data)
+    
+    # Get available filter options
+    races = list(EssaimRace.objects.values_list('name', flat=True))
+    origins = list(EssaimOrigin.objects.values_list('name', flat=True))
+    
+    context = {
+        'essaims': essaims,
+        'races': races,
+        'origins': origins,
+        'selected_date': selected_date.strftime('%Y-%m-%d'),
+    }
+    
+    # Ajouter les alertes au contexte
+    context.update(get_alertes_context(request))
+    return render(request, 'elevage/essaims/essaims-list.html', context)
+
+
+def essaim_details(request, id):
+    """Détails d'un essaim avec historique des populations"""
+    essaim = Essaim.objects.select_related('essaim_race', 'essaim_origin').filter(id=id).first()
+    if not essaim:
+        return render(request, 'elevage/404.html', {'message': 'Essaim non trouvé'})
+    
+    # Get population history
+    population_history = EssaimDetail.objects.filter(essaim=essaim).order_by('-created_at')
+    
+    # Calculate running population totals
+    running_ouvrier = 0
+    running_faux_bourdon = 0
+    running_reine = 0
+    
+    for detail in reversed(population_history):
+        if detail.is_death:
+            running_ouvrier -= detail.ouvrier_added
+            running_faux_bourdon -= detail.faux_bourdon_added
+            running_reine -= detail.reine_added
+        else:
+            running_ouvrier += detail.ouvrier_added
+            running_faux_bourdon += detail.faux_bourdon_added
+            running_reine += detail.reine_added
+    
+    # Get current ruche assignment
+    current_ruche = essaim.ruches.order_by('-created_at').first()
+    
+    # Get status history
+    status_history = essaim.essaim_status_histories.select_related('essaim_status').order_by('-created_at')
+    
+    # Get health history
+    health_history = essaim.essaim_sante_histories.order_by('-created_at')
+    
+    # Get available ruches for assignment
+    available_ruches = Ruche.objects.filter(
+        essaim__isnull=True  # Only ruches without essaim
+    ).select_related('ruche_type', 'localizations')
+    
+    # Add current ruche to available ruches if it exists
+    if current_ruche:
+        available_ruches = available_ruches.union(
+            Ruche.objects.filter(id=current_ruche.id)
+        )
+    
+    context = {
+        'essaim': essaim,
+        'population_history': population_history,
+        'current_ouvrier': max(0, running_ouvrier),
+        'current_faux_bourdon': max(0, running_faux_bourdon),
+        'current_reine': max(0, running_reine),
+        'current_population': max(0, running_ouvrier) + max(0, running_faux_bourdon) + max(0, running_reine),
+        'current_ruche': current_ruche,
+        'status_history': status_history,
+        'health_history': health_history,
+        'available_ruches': available_ruches,
+    }
+    
+    # Ajouter les alertes au contexte
+    context.update(get_alertes_context(request))
+    return render(request, 'elevage/essaims/essaim-details.html', context)
+
+
+def essaim_add(request):
+    """Ajouter un nouvel essaim"""
+    if request.method == 'POST':
+        description = request.POST.get('description')
+        race_id = request.POST.get('race')
+        origin_id = request.POST.get('origin')
+        initial_ouvrier = request.POST.get('initial_ouvrier', 0)
+        initial_faux_bourdon = request.POST.get('initial_faux_bourdon', 0)
+        initial_reine = request.POST.get('initial_reine', 0)
+        
+        try:
+            # Create essaim
+            essaim = Essaim.objects.create(
+                description=description,
+                essaim_race_id=race_id if race_id else None,
+                essaim_origin_id=origin_id if origin_id else None,
+            )
+            
+            # Add initial population if provided
+            if (initial_ouvrier and int(initial_ouvrier) > 0) or \
+               (initial_faux_bourdon and int(initial_faux_bourdon) > 0) or \
+               (initial_reine and int(initial_reine) > 0):
+                
+                EssaimDetail.objects.create(
+                    essaim=essaim,
+                    ouvrier_added=int(initial_ouvrier) if initial_ouvrier else 0,
+                    faux_bourdon_added=int(initial_faux_bourdon) if initial_faux_bourdon else 0,
+                    reine_added=int(initial_reine) if initial_reine else 0,
+                    is_death=False,
+                    note="Population initiale"
+                )
+            
+            return redirect('essaim_details', id=essaim.id)
+            
+        except Exception as e:
+            # Handle error
+            pass
+    
+    # GET request - show form
+    races = EssaimRace.objects.all()
+    origins = EssaimOrigin.objects.all()
+    
+    context = {
+        'races': races,
+        'origins': origins,
+    }
+    
+    # Ajouter les alertes au contexte
+    context.update(get_alertes_context(request))
+    return render(request, 'elevage/essaims/essaim-edit.html', context)
+
+
+def essaim_edit(request, id):
+    """Éditer un essaim existant"""
+    essaim = Essaim.objects.filter(id=id).first()
+    if not essaim:
+        return render(request, 'elevage/404.html', {'message': 'Essaim non trouvé'})
+    
+    if request.method == 'POST':
+        description = request.POST.get('description')
+        race_id = request.POST.get('race')
+        origin_id = request.POST.get('origin')
+        
+        try:
+            # Update essaim
+            essaim.essaim_race_id = race_id if race_id else None
+            essaim.essaim_origin_id = origin_id if origin_id else None
+            essaim.description = description
+            essaim.save()
+            
+            return redirect('essaim_details', id=essaim.id)
+            
+        except Exception as e:
+            # Handle error
+            pass
+    
+    # GET request - show form
+    races = EssaimRace.objects.all()
+    origins = EssaimOrigin.objects.all()
+    
+    context = {
+        'essaim': essaim,
+        'races': races,
+        'origins': origins,
+    }
+    
+    # Ajouter les alertes au contexte
+    context.update(get_alertes_context(request))
+    return render(request, 'elevage/essaims/essaim-edit.html', context)
+
+
+def essaim_population_add(request, id):
+    """Ajouter/retirer de la population d'un essaim"""
+    essaim = Essaim.objects.filter(id=id).first()
+    if not essaim:
+        return render(request, 'elevage/404.html', {'message': 'Essaim non trouvé'})
+    
+    if request.method == 'POST':
+        ouvrier = request.POST.get('ouvrier', 0)
+        faux_bourdon = request.POST.get('faux_bourdon', 0)
+        reine = request.POST.get('reine', 0)
+        note = request.POST.get('note', '')
+        action = request.POST.get('action')  # 'add' or 'remove'
+        
+        try:
+            ouvrier_value = int(ouvrier) if ouvrier else 0
+            faux_bourdon_value = int(faux_bourdon) if faux_bourdon else 0
+            reine_value = int(reine) if reine else 0
+            
+            # For removal, we don't need to make values negative as is_death=False handles it
+            EssaimDetail.objects.create(
+                essaim=essaim,
+                ouvrier_added=ouvrier_value,
+                faux_bourdon_added=faux_bourdon_value,
+                reine_added=reine_value,
+                is_death=(action == 'remove'),
+                note=note
+            )
+            
+            return redirect('essaim_details', id=essaim.id)
+            
+        except Exception as e:
+            # Handle error
+            pass
+    
+    # GET request - show form
+    context = {
+        'essaim': essaim,
+    }
+    
+    # Ajouter les alertes au contexte
+    context.update(get_alertes_context(request))
+    return render(request, 'elevage/essaims/population-add.html', context)
+
+
+def essaim_population_kill(request, id):
+    """Enregistrer la mort d'une partie de la population"""
+    essaim = Essaim.objects.filter(id=id).first()
+    if not essaim:
+        return render(request, 'elevage/404.html', {'message': 'Essaim non trouvé'})
+    
+    if request.method == 'POST':
+        ouvrier = request.POST.get('ouvrier', 0)
+        faux_bourdon = request.POST.get('faux_bourdon', 0)
+        reine = request.POST.get('reine', 0)
+        note = request.POST.get('note', '')
+        
+        try:
+            ouvrier_value = int(ouvrier) if ouvrier else 0
+            faux_bourdon_value = int(faux_bourdon) if faux_bourdon else 0
+            reine_value = int(reine) if reine else 0
+            
+            EssaimDetail.objects.create(
+                essaim=essaim,
+                ouvrier_added=ouvrier_value,
+                faux_bourdon_added=faux_bourdon_value,
+                reine_added=reine_value,
+                is_death=True,
+                note=note
+            )
+            
+            return redirect('essaim_details', id=essaim.id)
+            
+        except Exception as e:
+            # Handle error
+            pass
+    
+    # GET request - show form
+    context = {
+        'essaim': essaim,
+    }
+    
+    # Ajouter les alertes au contexte
+    context.update(get_alertes_context(request))
+    return render(request, 'elevage/essaims/population-kill.html', context)
+
+
+def essaim_assign_ruche(request, id):
+    """Assigner un essaim à une ruche"""
+    essaim = Essaim.objects.filter(id=id).first()
+    if not essaim:
+        return render(request, 'elevage/404.html', {'message': 'Essaim non trouvé'})
+    
+    if request.method == 'POST':
+        ruche_id = request.POST.get('ruche_id')
+        
+        try:
+            # Remove current assignment by setting current ruche's essaim to None
+            current_ruche = essaim.ruches.first()
+            if current_ruche:
+                current_ruche.essaim = None
+                current_ruche.save()
+            
+            # Add new assignment if ruche_id provided
+            if ruche_id:
+                ruche = Ruche.objects.get(id=ruche_id)
+                ruche.essaim = essaim
+                ruche.save()
+            
+            return redirect('essaim_details', id=essaim.id)
+            
+        except Exception as e:
+            # Handle error
+            pass
+    
+    # GET request - redirect to details
+    return redirect('essaim_details', id=essaim.id)

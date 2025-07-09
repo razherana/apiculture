@@ -1,0 +1,113 @@
+{% extends "base_commerce.html" %}
+{% load static %}
+
+{% block title %}Ajouter population - Essaim #{{ essaim.id }}{% endblock %}
+
+{% block content %}
+<div class="elevage-content">
+    <div class="elevage-card">
+        <h2>Ajouter population à l'essaim #{{ essaim.id }}</h2>
+        
+        <!-- Current population info -->
+        <div class="info-section">
+            <h4>Population actuelle</h4>
+            <div class="info-cards">
+                <div class="info-card">
+                    <div class="info-card-title">Ouvrières</div>
+                    <div class="info-card-value">{{ current_population.ouvriers }}</div>
+                </div>
+                <div class="info-card">
+                    <div class="info-card-title">Faux-bourdons</div>
+                    <div class="info-card-value">{{ current_population.faux_bourdons }}</div>
+                </div>
+                <div class="info-card">
+                    <div class="info-card-title">Reines</div>
+                    <div class="info-card-value">{{ current_population.reines }}</div>
+                </div>
+            </div>
+        </div>
+        
+        {% if error_message %}
+        <div class="alert-card high" style="margin-bottom: 1.5rem;">
+            <div class="alert-icon high">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <div class="alert-content">
+                <div class="alert-title">Erreur</div>
+                <div class="alert-message">{{ error_message }}</div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <form class="form-container" method="post">
+            {% csrf_token %}
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" for="ouvrier">Ouvrières à ajouter</label>
+                    <input type="number" class="form-input" id="ouvrier" name="ouvrier" 
+                           value="{{ form_data.ouvrier|default:0 }}" min="0">
+                    <small class="form-help">Nombre d'ouvrières à ajouter</small>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="faux_bourdon">Faux-bourdons à ajouter</label>
+                    <input type="number" class="form-input" id="faux_bourdon" name="faux_bourdon" 
+                           value="{{ form_data.faux_bourdon|default:0 }}" min="0">
+                    <small class="form-help">Nombre de faux-bourdons à ajouter</small>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="reine">Reines à ajouter</label>
+                    <input type="number" class="form-input" id="reine" name="reine" 
+                           value="{{ form_data.reine|default:0 }}" min="0">
+                    <small class="form-help">Nombre de reines à ajouter</small>
+                </div>
+                    <label class="form-label" for="reines">Reines à ajouter</label>
+                    <input type="number" class="form-input" id="reines" name="reines" 
+                           value="{{ form_data.reines|default:0 }}" min="0">
+                    <small class="form-help">Nombre de reines à ajouter (peut être négatif pour retirer)</small>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label" for="notes">Notes</label>
+                <textarea class="form-input" id="notes" name="notes" rows="4" 
+                          placeholder="Notes sur l'ajout de population...">{{ form_data.notes|default:'' }}</textarea>
+                <small class="form-help">Raison de l'ajout ou observations</small>
+            </div>
+            
+            <div class="form-row">
+                <div class="btn-group" style="margin-left: auto;">
+                    <a href="{% url 'essaim_details' essaim.id %}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Annuler
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Ajouter
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.info-section {
+    margin: 1.5rem 0;
+    padding: 1.5rem;
+    background: rgba(255, 209, 0, 0.05);
+    border-radius: var(--radius-md);
+    border: 1px solid rgba(255, 209, 0, 0.2);
+}
+
+.info-section h4 {
+    color: var(--honey-primary);
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+
+:root:not(.light-mode) .info-section {
+    background: rgba(255, 209, 0, 0.1);
+}
+</style>
+{% endblock %}
