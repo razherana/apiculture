@@ -7,12 +7,13 @@ from datetime import datetime, timedelta
 from projet.models.productions import Recolte
 from projet.models.ressources import Ruche , HausseType , RucheHausseHistory , Hausse, HausseCadre , EssaimDetail , EssaimStatusHistory , EssaimStatus , Essaim , EssaimRace , EssaimOrigin,EssaimSanteHistory
 
-from pytz import timezone as pytz_timezone
-from datetime import datetime, timedelta 
-from django.db.models import Count, Avg, Sum
-from datetime import datetime, timedelta
+from pytz import timezone as pytz_timezone 
+from django.db.models import Avg
 from projet.models.productions import Recolte , InterventionType , Intervention
 from projet.models.ressources import EssaimSanteHistory, Ruche , HausseCadre , EssaimDetail
+ 
+from projet.models.ressources import Materiel , MaterielType , MaterielStatus , Consommable , ConsommableType , ConsommableConsomme ,MaterielStatusHistory
+
 
 from projet.models.ressources import Materiel , MaterielType , MaterielStatus , Consommable , ConsommableType , ConsommableConsomme 
 from projet.models.ventes import VenteDetail
@@ -22,7 +23,6 @@ from projet.models.productions  import Task
 from django.utils.dateparse import parse_date
 
 
-from django.shortcuts import render
 from projet.models.productions import Recolte
 
 
@@ -153,22 +153,72 @@ def historique_production(request):
 def materiel_list(request):
     materiel = Materiel.objects.all()
     materiels = [
-        {   'type': m.materiel_type, 
-            'designation': m.materiel_type.designation,
-            'date_ajout': m.created_at.strftime('%Y-%m-%d'), 
-            'statut': m.materiel_type.seuil_alerte,
-            'duree_vie': m.durre_de_vie_estimee 
+        {
+            'type': m.materiel_type,
+            'date_ajout': m.created_at.strftime('%Y-%m-%d'),
+            'statut': m.materiel_status_histories.last().materiel_status.name if m.materiel_status_histories.exists() else 'N/A',
+            'durre_de_vie_estimee': m.durre_de_vie_estimee
         }
         for m in materiel
     ]
-    return render(request, 'production/materiel_list.html', {'materiels': materiels, 'page_title': 'Inventaire du Matériel'})
-
+    print(materiels)  # Debug to check the data
+    return render(request, 'production/materiel_list.html', {
+        'materiels': materiels,
+        'page_title': 'Inventaire du Matériel'
+    })
 
 def materiel_form(request):
+    if request.method == 'POST':
+        materiel_type_id = request.POST.get('materiel_type')
+        materiel_status_id = request.POST.get('materiel_status')
+        durre_de_vie_estimee = request.POST.get('durre_de_vie_estimee')
+
+        if materiel_type_id and materiel_status_id and durre_de_vie_estimee:
+            try:
+                materiel_type = MaterielType.objects.get(id=materiel_type_id)
+                materiel_status = MaterielStatus.objects.get(id=materiel_status_id)
+                durre_de_vie_estimee = int(durre_de_vie_estimee)
+
+                materiel = Materiel.objects.create(
+                    materiel_type=materiel_type,
+                    durre_de_vie_estimee=durre_de_vie_estimee
+                )
+
+                MaterielStatusHistory.objects.create(
+                    materiel=materiel,
+                    materiel_status=materiel_status
+                )
+
+                return redirect('materiel_list')
+            except MaterielType.DoesNotExist:
+                return render(request, 'production/materiel_form.html', {
+                    'types': MaterielType.objects.all(),
+                    'statuts': MaterielStatus.objects.all(),
+                    'page_title': 'Ajouter du Matériel',
+                    'error': 'Type de matériel invalide.'
+                })
+            except MaterielStatus.DoesNotExist:
+                return render(request, 'production/materiel_form.html', {
+                    'types': MaterielType.objects.all(),
+                    'statuts': MaterielStatus.objects.all(),
+                    'page_title': 'Ajouter du Matériel',
+                    'error': 'Statut de matériel invalide.'
+                })
+            except ValueError:
+                return render(request, 'production/materiel_form.html', {
+                    'types': MaterielType.objects.all(),
+                    'statuts': MaterielStatus.objects.all(),
+                    'page_title': 'Ajouter du Matériel',
+                    'error': 'La durée de vie doit être un nombre entier.'
+                })
+
     types = MaterielType.objects.all()
     statuts = MaterielStatus.objects.all()
-    return render(request, 'production/materiel_form.html', {'types': types, 'statuts': statuts, 'page_title': 'Ajouter du Matériel'})
-
+    return render(request, 'production/materiel_form.html', {
+        'types': types,
+        'statuts': statuts,
+        'page_title': 'Ajouter du Matériel'
+    })
 
 def stock_consommables(request):
     consommable_types = ConsommableType.objects.all()
