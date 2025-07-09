@@ -8,7 +8,7 @@ from projet.models.ressources import (
     ConsommableType, EssaimDetail, EssaimOrigin, EssaimRace, Ruche, RucheStatus, Localization, RucheStatusHistory, 
     RucheType, Essaim
 )
-from projet.models.productions import Intervention, InterventionType
+from projet.models.productions import Intervention, InterventionType, Recolte
 
 # Données de test
 ruches_data = [                      
@@ -180,36 +180,42 @@ def ruches_list(request):
     return render(request, 'elevage/ruches/ruches-list.html', context)
 
 def ruche_details(request, id):
-    # Trouver la ruche correspondante
-    ruche = next((r for r in ruches_data if r['id'] == id), None)
+    from projet.models.ressources import Ruche, Essaim, EssaimSanteHistory
+    from projet.models.productions import Recolte, Intervention
+    from django.db.models import Sum
+    from datetime import datetime, timedelta
+
+    ruche = Ruche.objects.select_related('ruche_type', 'localizations', 'essaim').filter(id=id).first()
     if not ruche:
-        # Gérer le cas où la ruche n'existe pas
         return render(request, 'elevage/404.html', {'message': 'Ruche non trouvée'})
-    
-    # Trouver la reine associée à cette ruche
-    reine = next((r for r in reines_data if r['ruche_id'] == id), None)
-    
-    # Trouver les soins associés à cette ruche
-    soins_ruche = [s for s in soins_data if s['ruche_id'] == id]
-    
-    # Générer des données de production pour les graphiques
-    dates = [(datetime.now() - timedelta(days=30*i)).strftime('%Y-%m') for i in range(12)]
-    dates.reverse()
-    
-    production_miel = [round(random.uniform(0, ruche['production'] * 1.5), 1) for _ in range(12)]
-    sante_scores = [round(random.uniform(max(3, ruche['force'] - 2), min(10, ruche['force'] + 2))) for _ in range(12)]
-    
+
+    # Reine associée (si modèle existant, ici on simule avec InterventionType "Reine" ou à adapter)
+    reine = None
+  
+
+    recolte = Recolte.objects.filter(ruche=ruche).order_by('-created_at').all()
+    soins = Intervention.objects.filter(ruche=ruche).all()
+    # Pour compatibilité avec le template (attributs attendus)
+    ruche_data = {
+        'id': ruche.id,
+        'nom': getattr(ruche, 'description', ''),
+        'type': ruche.ruche_type.name if ruche.ruche_type else '',
+        'statut': ruche.ruche_status_histories.order_by('-created_at').first().ruche_status.name if hasattr(ruche, 'ruche_status_histories') and ruche.ruche_status_histories.exists() else '',
+        'localisation': ruche.localizations.name if ruche.localizations else '',
+        'date_installation': ruche.created_at.date() if ruche.created_at else '',
+        'production': sum(recolte.poids_miel for recolte in ruche.recoltes.all()) if hasattr(ruche, 'recoltes') else 0,
+        'nb_hausses': ruche.ruche_hausse_histories.filter(is_removed=False).count() if hasattr(ruche, 'ruche_hausse_histories') else 0,
+    }
+
+    # Reine pour compatibilité template
+   
+
     return render(request, 'elevage/ruches/ruche-details.html', {
-        'ruche': ruche,
-        'reine': reine,
-        'soins': soins_ruche,
-        'donnees_production': {
-            'dates': dates,
-            'production': production_miel,
-            'sante': sante_scores
-        }
+        'ruche': ruche_data,
+        'soins': soins,
+        'recolte': recolte,
     })
-    
+
 def ruche_delete(request):
     return
 
@@ -351,7 +357,7 @@ def amenagements_list(request):
     # Get unique values for filters from database
     origins = EssaimOrigin.objects.all()
     races = EssaimRace.objects.all()
-    
+    ruche_assigned = Ruche.objects.filter(essaim__isnull=False).all()
     # Create amenagements data from essaims and related ruches
     amenagements_data = []
     
@@ -376,7 +382,8 @@ def amenagements_list(request):
         'types': ['Essaim', 'Division', 'Essaim sauvage', 'Achat'],  # Static for now
         'races': [race.name for race in races],
         'origines': [origin.name for origin in origins],
-        'ruches': ruches
+        'ruches': ruche_assigned
+        
     })
 
 def amenagement_add(request):
