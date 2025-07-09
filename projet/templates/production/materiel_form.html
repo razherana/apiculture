@@ -54,6 +54,18 @@
                 <input type="number" class="form-input" id="durre_de_vie_estimee" name="durre_de_vie_estimee" min="0" required>
                 <small class="form-help">Durée de vie prévue en mois</small>
             </div>
+
+            <div class="form-group">
+                <label class="form-label" for="nb">Nombre *</label>
+                <input type="number" class="form-input" id="nb" name="nb" min="1" value="1" required>
+                <small class="form-help">Quantité de matériel à ajouter</small>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="prix_materiel">Prix du matériel (€)</label>
+                <input type="number" class="form-input" id="prix_materiel" name="prix_materiel" min="0" step="0.01" placeholder="Ex: 120.00">
+                <small class="form-help">Saisissez le prix d'achat du matériel (optionnel)</small>
+            </div>
             
             <div class="form-row">
                 <div class="btn-group" style="margin-left: auto;">

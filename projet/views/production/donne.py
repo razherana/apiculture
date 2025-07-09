@@ -7,7 +7,7 @@ import json
 
 from datetime import datetime, timedelta
 from projet.models.productions import Recolte
-from projet.models.ressources import Ruche , HausseType , RucheHausseHistory , Hausse, HausseCadre , EssaimDetail , EssaimStatusHistory , EssaimStatus , Essaim , EssaimRace , EssaimOrigin,EssaimSanteHistory
+from projet.models.ressources import PrixMateriel, Ruche , HausseType , RucheHausseHistory , Hausse, HausseCadre , EssaimDetail , EssaimStatusHistory , EssaimStatus , Essaim , EssaimRace , EssaimOrigin,EssaimSanteHistory
 
 from pytz import timezone as pytz_timezone 
 from django.db.models import Avg
@@ -19,14 +19,8 @@ from projet.models.ressources import Materiel , MaterielType , MaterielStatus , 
 
 from projet.models.ressources import Materiel , MaterielType , MaterielStatus , Consommable , ConsommableType , ConsommableConsomme 
 from projet.models.ventes import VenteDetail
-from projet.models.ressources import Ruche
-from projet.models.ressources import Materiel
-from projet.models.productions  import Task
-from django.utils.dateparse import parse_date
-
-
-from projet.models.productions import Recolte
-
+from projet.models.productions import MielPriceHistory, Miel
+from django.db.models import Sum
 
 def recolte_list(request):
     recolteModel = Recolte.objects.select_related("ruche").all()
@@ -174,22 +168,34 @@ def materiel_form(request):
         materiel_type_id = request.POST.get('materiel_type')
         materiel_status_id = request.POST.get('materiel_status')
         durre_de_vie_estimee = request.POST.get('durre_de_vie_estimee')
+        prix_materiel = request.POST.get('prix_materiel')
+        nb = request.POST.get('nb', 1)  # récupération du nombre
 
-        if materiel_type_id and materiel_status_id and durre_de_vie_estimee:
+        if materiel_type_id and materiel_status_id and durre_de_vie_estimee and nb:
             try:
                 materiel_type = MaterielType.objects.get(id=materiel_type_id)
                 materiel_status = MaterielStatus.objects.get(id=materiel_status_id)
                 durre_de_vie_estimee = int(durre_de_vie_estimee)
+                nb = int(nb)
 
                 materiel = Materiel.objects.create(
                     materiel_type=materiel_type,
-                    durre_de_vie_estimee=durre_de_vie_estimee
+                    durre_de_vie_estimee=durre_de_vie_estimee,
+                    nb=nb
                 )
 
                 MaterielStatusHistory.objects.create(
                     materiel=materiel,
                     materiel_status=materiel_status
                 )
+
+                # Création du prix total si renseigné
+                if prix_materiel and float(prix_materiel) > 0:
+                    prix_total = float(prix_materiel) * nb
+                    PrixMateriel.objects.create(
+                        materiel=materiel,
+                        prix_materiel=prix_total
+                    )
 
                 return redirect('materiel_list')
             except MaterielType.DoesNotExist:
@@ -211,7 +217,7 @@ def materiel_form(request):
                     'types': MaterielType.objects.all(),
                     'statuts': MaterielStatus.objects.all(),
                     'page_title': 'Ajouter du Matériel',
-                    'error': 'La durée de vie doit être un nombre entier.'
+                    'error': 'La durée de vie et le nombre doivent être des nombres entiers.'
                 })
 
     types = MaterielType.objects.all()
@@ -418,54 +424,33 @@ def stats_mortalite(request):
 
 
 def analyse_rentabilite(request):
-    # Définir la période (année en cours : 1er janvier 2025 à aujourd'hui)
-    start_date = datetime(2025, 1, 1)
-    fh = pytz_timezone('Africa/Nairobi')
-    datenow = fh.localize(datetime.now())
-    end_date = datenow
+    # Calcul du revenu total : somme (prix unitaire * quantité vendue) pour chaque vente
+    revenus = 0.0
+    vente_details = VenteDetail.objects.select_related('miel')
+    for vd in vente_details:
+        # Récupérer le dernier prix du miel vendu à la date de la vente (ou le plus récent)
+        miel = vd.miel
+        # On prend le dernier prix connu pour ce miel
+        prix_obj = MielPriceHistory.objects.filter(miel=miel).order_by('-created_at').first()
+        prix_unitaire = prix_obj.price if prix_obj else 0.0
+        revenus += prix_unitaire * vd.quantite
 
-    # Calcul des revenus des ventes de miel
-    revenus_miel = VenteDetail.objects.filter(
-        vente__created_at__gte=start_date,
-        vente__created_at__lte=end_date
-    ).aggregate(total=Sum('quantite'))['total'] or 0
-    # Supposons un prix moyen par unité de miel (par exemple, 10 par unité)
-    prix_moyen_miel = 10  # À remplacer par une valeur réelle, par exemple, depuis MielPriceHistory
-    revenus_miel = revenus_miel * prix_moyen_miel
+    # Calcule des coûts : somme des prix de tous les matériels (PrixMateriel)
+    couts_totaux = PrixMateriel.objects.aggregate(total=Sum('prix_materiel'))['total'] or 0
+    couts_totaux = float(couts_totaux)
 
-    # Estimation des revenus des ventes d'essaims (hypothétique, car pas de modèle spécifique)
-    revenus_essaims = 500  # À remplacer par un calcul réel si vous avez un modèle pour les ventes d'essaims
+    # Bénéfice net
+    benefice_net = revenus - couts_totaux
 
-    # Calcul des revenus totaux
-    revenus_totaux = revenus_miel + revenus_essaims
-
-    # Calcul des coûts des matériels
-    couts_materiel = Materiel.objects.filter(
-        created_at__gte=start_date,
-        created_at__lte=end_date
-    ).count() * 100  # Supposons un coût moyen de 100 par matériel (à ajuster)
-
-    # Calcul des coûts des traitements (consommables)
-    couts_traitements = Consommable.objects.filter(
-        created_at__gte=start_date,
-        created_at__lte=end_date
-    ).count() * 50  # Supposons un coût moyen de 50 par consommable (à ajuster)
-
-    # Calcul des coûts totaux
-    couts_totaux = couts_materiel + couts_traitements
-
-    # Calcul du bénéfice net
-    benefice_net = revenus_totaux - couts_totaux
-
-    # Données pour le graphique
-    chart_labels = ['Ventes de miel', 'Ventes d\'essaims', 'Coûts matériel', 'Coûts traitements']
-    chart_values = [revenus_miel, revenus_essaims, -couts_materiel, -couts_traitements]
-    chart_colors = ['rgb(25, 135, 84)', 'rgb(13, 202, 240)', 'rgb(220, 53, 69)', 'rgb(255, 193, 7)']
+    # Pour le graphique : [Revenus, Coûts totaux, Bénéfice]
+    chart_labels = ["Revenus totaux", "Coûts totaux", "Bénéfice net"]
+    chart_values = [revenus, couts_totaux, benefice_net]
+    chart_colors = ["rgb(25, 135, 84)", "rgb(220, 53, 69)", "rgb(255, 209, 0)"]
 
     context = {
-        'revenus_totaux': round(float(revenus_totaux), 1),
-        'couts_totaux': round(float(couts_totaux), 1),
-        'benefice_net': round(float(benefice_net), 1),
+        'revenus_totaux': round(revenus, 1),
+        'couts_totaux': round(couts_totaux, 1),
+        'benefice_net': round(benefice_net, 1),
         'chart_labels': chart_labels,
         'chart_values': chart_values,
         'chart_colors': chart_colors,

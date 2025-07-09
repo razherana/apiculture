@@ -55,6 +55,7 @@ class Materiel(models.Model):
     materiel_type = models.ForeignKey(
         MaterielType, on_delete=models.CASCADE, related_name='materiels')
     created_at = models.DateTimeField(auto_now_add=True)
+    nb = models.IntegerField(default=1)  # Ajout du champ nombre
 
     class Meta:
         db_table = 'materiels'
@@ -301,3 +302,13 @@ class RucheHausseHistory(models.Model):
 
     class Meta:
         db_table = 'ruche_hausse_histories'
+
+
+class PrixMateriel(models.Model):
+    materiel = models.ForeignKey(
+        Materiel, on_delete=models.CASCADE, related_name='prix_materiels'
+    )
+    prix_materiel = models.DecimalField(max_digits=10, decimal_places=2)
+
+    class Meta:
+        db_table = 'prix_materiel'
