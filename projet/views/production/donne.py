@@ -3,7 +3,6 @@ from django.db.models import Sum
 from django.db.models import Count
 from django.contrib import messages
 from django.http import JsonResponse
-from django.utils import timezone
 import json
 
 from datetime import datetime, timedelta
@@ -284,13 +283,13 @@ def alertes_penurie(request):
             id__in=ConsommableConsomme.objects.filter(
                 created_at__date__lte=selected_date
             ).values('consommable_id')
-        ).aggregate(total=Count('*'))['total'] or 0
+        ).aggregate(total=Sum('quantite_unite'))['total'] or 0
         
         if stock_actuel < consommable_type.seuil_alerte:
-            level = 'danger'
+            level = 'danger' if stock_actuel <= consommable_type.seuil_alerte * 0.3 else 'warning'
             message = (
-                f"{consommable_type.name} : Stock actuel ({stock_actuel}) "
-                f"est en dessous du seuil d'alerte ({consommable_type.seuil_alerte})."
+                f"{consommable_type.name} : Stock actuel ({stock_actuel} {consommable_type.unite.name}) "
+                f"est en dessous du seuil d'alerte ({consommable_type.seuil_alerte} {consommable_type.unite.name})."
             )
             alertes_stock.append({'message': message, 'level': level})
     
@@ -322,7 +321,8 @@ def alertes_penurie(request):
 def dashboard_stats(request):
     total_recolte = Recolte.objects.aggregate(total=Sum('poids_miel'))['total'] or 0
     nombre_ruches = Ruche.objects.count()
-    datenow = timezone.now()
+    fh = pytz_timezone('Africa/Nairobi')
+    datenow = fh.localize(datetime.now())
     one_year_ago = datenow - timedelta(days=365)
     total_essaims = EssaimDetail.objects.filter(created_at__gte=one_year_ago).count()
     dead_essaims = EssaimDetail.objects.filter(
@@ -369,143 +369,78 @@ def stats_production_par_ruche(request):
     }
 
     return render(request, 'production/stats_production.html', context)
-    """
-    Dynamic database-driven mortality statistics for production view.
-    All calculations are based on actual data from EssaimDetail model.
-    """
-    # Set timezone and date range
+
+
+def stats_mortalite(request):
     fh = pytz_timezone('Africa/Nairobi')
-    end_date = timezone.now()
-    start_date = end_date - timedelta(days=30 * 10)  # 10 months
+    end_date = fh.localize(datetime.now())
+    start_date = end_date - timedelta(days=30 * 10) 
     
-    # Generate month labels
     labels = []
     current_date = start_date
     for i in range(10):
         labels.append(current_date.strftime('%b').capitalize())
-        current_date = current_date + timedelta(days=30)
+        current_date = current_date + timedelta(days=30)  
     
-    # Get actual monthly mortality data
     monthly_mortalities = (
         EssaimDetail.objects
         .filter(created_at__gte=start_date, created_at__lte=end_date, is_death=True)
         .extra(select={'month': "strftime('%%m', created_at)"})
         .values('month')
-        .annotate(
-            total_deaths=Sum('ouvrier_added') + Sum('faux_bourdon_added') + Sum('reine_added')
-        )
+        .annotate(count=Count('id'))
         .order_by('month')
     )
     
-    # Initialize values array for 10 months
     values = [0] * 10
     start_month = start_date.month
-    
-    # Fill in actual mortality data
     for item in monthly_mortalities:
-        month_num = int(item['month'])
-        # Calculate the index in our 10-month array
-        month_index = (month_num - start_month) % 12
-        if 0 <= month_index < 10:
-            values[month_index] = abs(item['total_deaths'] or 0)
+        month_index = int(item['month']) - start_month
+        if month_index >= 0:
+            month_index = month_index % 12
+            if month_index == 0:
+                month_index = 12
+            values[month_index - 1] = item['count']
     
-    # Calculate total mortality (actual deaths)
     total_mortalite = EssaimDetail.objects.filter(
-        created_at__gte=start_date, 
-        created_at__lte=end_date, 
-        is_death=True
-    ).aggregate(
-        total_deaths=Sum('ouvrier_added') + Sum('faux_bourdon_added') + Sum('reine_added')
-    )['total_deaths'] or 0
+        created_at__gte=start_date, created_at__lte=end_date, is_death=True
+    ).count()
     
-    total_mortalite = abs(total_mortalite)
-    
-    # Calculate total population (living + dead)
-    total_population = EssaimDetail.objects.filter(
-        created_at__gte=start_date, 
-        created_at__lte=end_date
-    ).aggregate(
-        total_pop=Sum('ouvrier_added') + Sum('faux_bourdon_added') + Sum('reine_added')
-    )['total_pop'] or 0
-    
-    total_population = abs(total_population)
-    
-    # Calculate mortality rate
-    if total_population > 0:
-        taux_mortalite = (total_mortalite / total_population) * 100
-    else:
-        taux_mortalite = 0.0
-    
-    # Count unique colonies (essaims) that had population changes
     total_colonies = EssaimDetail.objects.filter(
-        created_at__gte=start_date, 
-        created_at__lte=end_date
-    ).values('essaim').distinct().count()
+        created_at__gte=start_date, created_at__lte=end_date
+    ).count()
     
-    # Determine mortality status for template styling
-    mortality_status = 'good'
-    if taux_mortalite > 15:
-        mortality_status = 'critical'
-    elif taux_mortalite > 5:
-        mortality_status = 'warning'
-    
-    # Calculate average monthly mortality
-    non_zero_months = [v for v in values if v > 0]
-    average_monthly_mortality = sum(non_zero_months) / len(non_zero_months) if non_zero_months else 0
-    
+    taux_mortalite = (total_mortalite / total_colonies * 100) if total_colonies > 0 else 0
+
     context = {
         'labels': labels,
         'values': values,
         'total_mortalite': total_mortalite,
         'total_colonies': total_colonies,
         'taux_mortalite': round(taux_mortalite, 1),
-        'mortality_status': mortality_status,
-        'average_monthly_mortality': round(average_monthly_mortality, 1),
-        'has_data': total_population > 0,
         'page_title': 'Analyse du Taux de Mortalité'
     }
 
     return render(request, 'production/stats_mortalite.html', context)
 
+
 def analyse_rentabilite(request):
-    # Définir la période (année en cours : 1er janvier 2025 à aujourd'hui)
-    start_date = datetime(2025, 1, 1)
-    fh = pytz_timezone('Africa/Nairobi')
-    datenow = fh.localize(datetime.now())
-    end_date = datenow
+    # Calcul du revenu total : somme (prix unitaire * quantité vendue) pour chaque vente
+    revenus = 0.0
+    vente_details = VenteDetail.objects.select_related('miel')
+    for vd in vente_details:
+        # Récupérer le dernier prix du miel vendu à la date de la vente (ou le plus récent)
+        miel = vd.miel
+        # On prend le dernier prix connu pour ce miel
+        prix_obj = MielPriceHistory.objects.filter(miel=miel).order_by('-created_at').first()
+        prix_unitaire = prix_obj.price if prix_obj else 0.0
+        revenus += prix_unitaire * vd.quantite
 
-    # Calcul des revenus des ventes de miel
-    revenus_miel = VenteDetail.objects.filter(
-        vente__created_at__gte=start_date,
-        vente__created_at__lte=end_date
-    ).aggregate(total=Sum('quantite'))['total'] or 0
-    # Supposons un prix moyen par unité de miel (par exemple, 10 par unité)
-    prix_moyen_miel = 10  # À remplacer par une valeur réelle, par exemple, depuis MielPriceHistory
-    revenus_miel = revenus_miel * prix_moyen_miel
+    # Calcule des coûts : somme des prix de tous les matériels (PrixMateriel)
+    couts_totaux = PrixMateriel.objects.aggregate(total=Sum('prix_materiel'))['total'] or 0
+    couts_totaux = float(couts_totaux)
 
-    # Estimation des revenus des ventes d'essaims (hypothétique, car pas de modèle spécifique)
-    revenus_essaims = 500  # À remplacer par un calcul réel si vous avez un modèle pour les ventes d'essaims
-
-    # Calcul des revenus totaux
-    revenus_totaux = revenus_miel + revenus_essaims
-
-    # Calcul des coûts des matériels
-    couts_materiel = Materiel.objects.filter(
-        created_at__gte=start_date,
-        created_at__lte=end_date
-    ).count() * 100  # Supposons un coût moyen de 100 par matériel (à ajuster)
-
-    # Calcul des coûts des traitements (consommables)
-    couts_traitements = Consommable.objects.filter(
-        created_at__gte=start_date,
-        created_at__lte=end_date
-    ).count() * 50  # Supposons un coût moyen de 50 par consommable (à ajuster)
-
-    # Calcul des coûts totaux
-    couts_totaux = couts_materiel + couts_traitements
-
-    # Calcul du bénéfice net
-    benefice_net = revenus_totaux - couts_totaux
+    # Bénéfice net
+    benefice_net = revenus - couts_totaux
 
     # Pour le graphique : [Revenus, Coûts totaux, Bénéfice]
     chart_labels = ["Revenus totaux", "Coûts totaux", "Bénéfice net"]
