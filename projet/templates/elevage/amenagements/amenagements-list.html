@@ -85,7 +85,7 @@
                 <div class="info-card-icon">
                     <i class="fas fa-dna"></i>
                 </div>
-                <div class="info-card-title">Races</div>
+                <div class="info-card-title">Races </div>
             </div>
             <div class="info-card-value">{{ races|length }}</div>
             <div class="info-card-subtitle">Races différentes</div>
@@ -102,7 +102,6 @@
                         <th>Date</th>
                         <th>Origine</th>
                         <th>Race</th>
-                        <th>Force estimée</th>
                         <th>Ruche destination</th>
                         <th>Notes</th>
                         <th class="actions-column">Actions</th>
@@ -121,12 +120,6 @@
                         <td>{{ amenagement.origine }}</td>
                         <td>
                             <span class="tag tag-success">{{ amenagement.race }}</span>
-                        </td>
-                        <td>
-                            <div class="progress-container" style="width: 80px; height: 20px; background: rgba(0,0,0,0.1); border-radius: 10px; overflow: hidden; position: relative;">
-                                <div class="progress-bar" style="width: {{ amenagement.force }}0%; height: 100%; background: var(--gradient-honey); border-radius: 10px; transition: width 0.3s ease;"></div>
-                                <span style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 0.7rem; font-weight: 600; color: var(--text-primary);">{{ amenagement.force }}/10</span>
-                            </div>
                         </td>
                         <td>
                             {% if amenagement.ruche_destination %}
