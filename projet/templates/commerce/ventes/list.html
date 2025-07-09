@@ -3,9 +3,11 @@
 {% block title %}Liste des ventes{% endblock %}
 {% block content %}
 <link rel="stylesheet" href="{% static 'commerce/css/list.css' %}">
+<link rel="stylesheet" href="{% static 'commerce/css/dark-mode-fix.css' %}">
+
 <div class="liste-content">
     <h2>Liste des ventes</h2>
-    <form action="{% url 'vente_form' %}" method="post">
+    <form action="{% url 'vente_form' %}" method="post" style="display: inline">
         {% csrf_token %}
         <button class="action-btn add" type="submit">
             Nouvelle Vente
@@ -14,33 +16,48 @@
     <form action="{% url 'ventes_stats'%}" method="post" style="display:inline;">
         {% csrf_token %}
         <button class="action-btn add" type="submit">
-            Statistiques générale des ventes cette saison
+            Statistiques des ventes cette saison
         </button>
     </form>
+    
     <div class="table-card">
         <div class="table-scroll-container">
             <table class="commerce-table">
                 <thead>
                     <tr>
+                        <th>ID</th>
                         <th>Date</th>
                         <th>Client</th>
-                        <th>Produit</th> 
-                        <th>Quantité</th>
-                        <th>Montant (€)</th>
+                        <th>Produit(s)</th> 
+                        <th>Quantité totale</th>
+                        <th>Montant total (Ar)</th>
+                        <th>Mode de paiement</th>
+                        <th>Commande liée</th>
+                        <th>Note</th>
                         <th class="actions-column">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for vente in ventes %}
-                    <tr>
+                    <tr class="expandable-row" data-vente-id="{{ vente.id }}">
+                        <td>{{ vente.id }}</td>
                         <td>{{ vente.date }}</td>
                         <td>{{ vente.client }}</td>
                         <td>{{ vente.produit }}</td>
                         <td>{{ vente.quantite }}</td>
-                        <td>{{ vente.montant }}</td>
+                        <td>{{ vente.montant|floatformat:2 }}Ar</td>
+                        <td>{{ vente.mode_payement.name }}</td>
                         <td>
-                            <form action="{% url 'vente_vue' %}" method="post">
-                                {% csrf_token %}
+                            {% if vente.commande %}
+                                <a href="#" class="link-hover">{{ vente.commande.id }}</a>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ vente.note|default:"-" }}</td>
+                        <td>
+                            <form action="{% url 'vente_vue' %}" method="get" style="display: inline">
+                                <input type="hidden" name="id" value="{{ vente.id }}">
                                 <button class="action-btn view" type="submit">
                                     Voir
                                 </button>
@@ -49,7 +66,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="6">Aucune vente trouvée.</td>
+                        <td colspan="10">Aucune vente trouvée.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -57,4 +74,316 @@
         </div>
     </div>
 </div>
+
+<!-- Modal for vente details -->
+<div id="venteModal" class="modal">
+    <div class="modal-content">
+        <span class="close-modal">&times;</span>
+        <h3>Détails de la vente <span id="modal-vente-id"></span></h3>
+        
+        <div class="modal-tabs">
+            <div class="modal-tab active" data-tab="details">Détails</div>
+            <div class="modal-tab" data-tab="payment">Paiement</div>
+        </div>
+        
+        <div id="details-tab" class="modal-tab-content active">
+            <table class="details-table">
+                <thead>
+                    <tr>
+                        <th>Miel</th>
+                        <th>Quantité</th>
+                        <th>Prix unitaire</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody id="modal-details-body">
+                    <!-- Details will be populated via JavaScript -->
+                </tbody>
+            </table>
+        </div>
+        
+        <div id="payment-tab" class="modal-tab-content">
+            <table class="details-table">
+                <thead>
+                    <tr>
+                        <th>Mode de paiement</th>
+                        <th>Montant</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody id="modal-payment-body">
+                    <!-- Payment info will be populated via JavaScript -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const expandableRows = document.querySelectorAll(".expandable-row");
+    const modal = document.getElementById("venteModal");
+    const closeBtn = document.querySelector(".close-modal");
+    const modalVenteId = document.getElementById("modal-vente-id");
+    const modalDetailsBody = document.getElementById("modal-details-body");
+    const modalPaymentBody = document.getElementById("modal-payment-body");
+    const modalTabs = document.querySelectorAll(".modal-tab");
+    
+    // Store vente data for modal access
+    const venteData = {};
+    
+    {% for vente in ventes %}
+        venteData[{{ vente.id }}] = {
+            details: [
+                {% for detail in vente.vente_details.all %}
+                    { 
+                        miel: "{{ detail.miel.miel_type.name }} - {{ detail.miel.consommable_type.name }}", 
+                        quantite: {{ detail.quantite }}, 
+                        prix_unitaire: {{ detail.miel.prix_unitaire }},
+                        total: {{ detail.quantite }} * {{ detail.miel.prix_unitaire }}
+                    },
+                {% endfor %}
+            ],
+            payment: {
+                mode: "{{ vente.mode_payement.name }}",
+                montant: {{ vente.montant }},
+                date: "{{ vente.date }}"
+            }
+        };
+    {% endfor %}
+    
+    // Tab switching functionality
+    modalTabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+            // Remove active class from all tabs and contents
+            modalTabs.forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.modal-tab-content').forEach(c => c.classList.remove('active'));
+            
+            // Add active class to clicked tab and corresponding content
+            this.classList.add('active');
+            const tabName = this.getAttribute('data-tab');
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+        });
+    });
+    
+    // Open modal when clicking on a row
+    expandableRows.forEach(row => {
+        row.addEventListener("click", function(e) {
+            // Prevent click on buttons from opening modal
+            if (e.target.tagName === "BUTTON" || e.target.closest("button") || e.target.closest("form")) {
+                return;
+            }
+            
+            const venteId = this.getAttribute("data-vente-id");
+            modalVenteId.textContent = venteId;
+            
+            // Populate details tab
+            modalDetailsBody.innerHTML = '';
+            if (venteData[venteId] && venteData[venteId].details.length > 0) {
+                venteData[venteId].details.forEach(detail => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${detail.miel}</td>
+                        <td>${detail.quantite}</td>
+                        <td>${detail.prix_unitaire.toFixed(2)}Ar</td>
+                        <td>${detail.total.toFixed(2)}Ar</td>
+                    `;
+                    modalDetailsBody.appendChild(row);
+                });
+            } else {
+                const row = document.createElement('tr');
+                row.innerHTML = '<td colspan="4">Aucun détail disponible</td>';
+                modalDetailsBody.appendChild(row);
+            }
+            
+            // Populate payment tab
+            modalPaymentBody.innerHTML = '';
+            if (venteData[venteId] && venteData[venteId].payment) {
+                const payment = venteData[venteId].payment;
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><span class="tag tag-info">${payment.mode}</span></td>
+                    <td>${payment.montant.toFixed(2)}Ar</td>
+                    <td>${payment.date}</td>
+                `;
+                modalPaymentBody.appendChild(row);
+            } else {
+                const row = document.createElement('tr');
+                row.innerHTML = '<td colspan="3">Aucune information de paiement disponible</td>';
+                modalPaymentBody.appendChild(row);
+            }
+            
+            // Show the modal
+            modal.style.display = "block";
+        });
+    });
+    
+    // Close modal when clicking on X
+    closeBtn.addEventListener("click", function() {
+        modal.style.display = "none";
+    });
+    
+    // Close modal when clicking outside of it
+    window.addEventListener("click", function(e) {
+        if (e.target === modal) {
+            modal.style.display = "none";
+        }
+    });
+});
+</script>
+
+<style>
+/* Modal styles matching commandes */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+}
+
+.modal-content {
+    background: var(--bg-elevated);
+    backdrop-filter: blur(16px);
+    margin: 5% auto;
+    padding: 2rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    width: 90%;
+    max-width: 900px;
+    color: var(--text-primary);
+    animation: fadeUp 0.3s ease-out;
+}
+
+.close-modal {
+    color: var(--text-secondary);
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: color var(--transition-fast);
+}
+
+.close-modal:hover,
+.close-modal:focus {
+    color: var(--honey-primary);
+}
+
+.modal-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border-subtle);
+    margin-bottom: 1.5rem;
+}
+
+.modal-tab {
+    padding: 0.75rem 1.5rem;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all var(--transition-fast);
+    color: var(--text-secondary);
+}
+
+.modal-tab.active {
+    color: var(--honey-primary);
+    border-bottom-color: var(--honey-primary);
+    background: var(--bg-elevated-hover);
+}
+
+.modal-tab-content {
+    display: none;
+}
+
+.modal-tab-content.active {
+    display: block;
+    animation: fadeIn 0.3s ease-out;
+}
+
+.details-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+}
+
+.details-table th,
+.details-table td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.details-table th {
+    background: var(--bg-elevated-hover);
+    font-weight: 600;
+    color: var(--honey-primary);
+}
+
+.expandable-row {
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.expandable-row:hover {
+    background-color: var(--bg-elevated-hover);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+}
+
+.link-hover {
+    color: var(--honey-primary);
+    text-decoration: none;
+    transition: all var(--transition-fast);
+}
+
+.link-hover:hover {
+    color: var(--honey-dark);
+    text-decoration: underline;
+}
+
+.text-muted {
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+.tag {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.tag-info {
+    background: rgba(13, 110, 253, 0.1);
+    color: #0d6efd;
+}
+
+:root:not(.light-mode) .tag-info {
+    background: rgba(13, 110, 253, 0.2);
+    color: #6ea8fe;
+}
+
+@keyframes fadeUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+</style>
 {% endblock %}

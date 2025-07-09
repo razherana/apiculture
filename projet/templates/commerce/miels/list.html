@@ -54,7 +54,7 @@
                         </td>
                         <td>{{ miel.quantite_unite }}{{ miel.unite_mesure }}</td>
                         <td>
-                            <span class="text-honey">{{ miel.prix_actuel }}€</span>
+                            <span class="text-honey">{{ miel.prix_actuel }}Ar</span>
                         </td>
                         <td>{{ miel.seuil_alerte }}</td>
                         <td>
@@ -220,7 +220,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     const row = document.createElement('tr');
                     row.innerHTML = `
                         <td>${price.date}</td>
-                        <td class="text-honey">${price.price}€</td>
+                        <td class="text-honey">${price.price}Ar</td>
                     `;
                     modalPriceBody.appendChild(row);
                 });

@@ -38,3 +38,9 @@ INSERT INTO localization_status (name) VALUES
 ('En Service'),
 ('Hors Service'),
 ('En Réparation');
+
+INSERT INTO mode_payements (name) VALUES
+('Espèces'),
+('Chèque'),
+('Carte Bancaire'),
+('Virement');
