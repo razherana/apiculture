@@ -58,6 +58,16 @@
                     </div>
                     <div class="detail-stat-label">Date réalisation</div>
                 </div>
+                <div class="detail-stat">
+                    <div class="detail-stat-value">
+                        {% if intervention.prix_service %}
+                            {{ intervention.prix_service|floatformat:2 }} €
+                        {% else %}
+                            -
+                        {% endif %}
+                    </div>
+                    <div class="detail-stat-label">Prix du service</div>
+                </div>
             </div>
             
             <div class="btn-group">
@@ -129,6 +139,16 @@
                                 {{ intervention.localization.name }}
                             {% else %}
                                 Non spécifiée
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Prix du service</th>
+                        <td>
+                            {% if intervention.prix_service %}
+                                {{ intervention.prix_service|floatformat:2 }} €
+                            {% else %}
+                                Non renseigné
                             {% endif %}
                         </td>
                     </tr>
