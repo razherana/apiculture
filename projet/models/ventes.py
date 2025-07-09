@@ -76,7 +76,7 @@ class Commande(models.Model):
     client = models.ForeignKey(
         Client, on_delete=models.CASCADE, related_name='commandes')
     vente = models.ForeignKey(
-        Vente, on_delete=models.CASCADE, related_name='commandes')
+        Vente, on_delete=models.CASCADE, related_name='commandes', null=True)
     note = models.TextField()
     livraison_date = models.DateField()
     created_at = models.DateTimeField(auto_now_add=True)

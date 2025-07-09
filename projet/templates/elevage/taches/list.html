@@ -29,16 +29,6 @@
                 </select>
             </div>
             <div class="filter-group">
-                <label class="filter-label" for="type-filter">Type:</label>
-                <select class="filter-select" id="type-filter">
-                    <option value="">Tous les types</option>
-                    <option value="visite">Visite</option>
-                    <option value="traitement">Traitement</option>
-                    <option value="recolte">Récolte</option>
-                    <option value="autre">Autre</option>
-                </select>
-            </div>
-            <div class="filter-group">
                 <label class="filter-label" for="status-filter">Statut:</label>
                 <select class="filter-select" id="status-filter">
                     <option value="">Tous les statuts</option>
@@ -48,50 +38,35 @@
                 </select>
             </div>
             <div class="filter-group">
-                <label class="filter-label" for="rucher-filter">Rucher:</label>
-                <select class="filter-select" id="rucher-filter">
-                    <option value="">Tous les ruchers</option>
-                    {% for rucher in ruchers %}
-                        <option value="{{ rucher.id }}">{{ rucher.nom }}</option>
-                    {% endfor %}
+                <label class="filter-label" for="type-filter">Type:</label>
+                <select class="filter-select" id="type-filter">
+                    <option value="">Tous les types</option>
+                    <option value="visite">Visite</option>
+                    <option value="traitement">Traitement</option>
+                    <option value="recolte">Récolte</option>
+                    <option value="autre">Autre</option>
                 </select>
-            </div>
-            <div class="filter-group">
-                <div class="search-container">
-                    <i class="fas fa-search search-icon"></i>
-                    <input type="text" id="search-input" class="search-input" placeholder="Rechercher une tâche...">
-                </div>
             </div>
         </div>
     </div>
     
     <div class="elevage-card">
         <div class="table-container">
-            <table class="elevage-table" id="tasks-table">
+            <table class="elevage-table">
                 <thead>
                     <tr>
-                        <th width="5%">Priorité</th>
-                        <th width="15%">Date prévue</th>
-                        <th width="15%">Type</th>
-                        <th width="15%">Rucher</th>
-                        <th width="20%">Description</th>
-                        <th width="10%">Statut</th>
-                        <th width="15%" class="actions-column">Actions</th>
+                        <th>Type</th>
+                        <th>Priorité</th>
+                        <th>Date prévue</th>
+                        <th>Statut</th>
+                        <th>Rucher</th>
+                        <th>Description</th>
+                        <th class="actions-column">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for tache in taches %}
-                    <tr data-priority="{{ tache.priorite }}" data-type="{{ tache.type }}" data-status="{{ tache.statut }}" data-rucher="{{ tache.rucher_id }}">
-                        <td>
-                            {% if tache.priorite == 'urgent' %}
-                                <span class="tag tag-danger">Urgent</span>
-                            {% elif tache.priorite == 'normal' %}
-                                <span class="tag tag-warning">Normal</span>
-                            {% else %}
-                                <span class="tag tag-info">Faible</span>
-                            {% endif %}
-                        </td>
-                        <td>{{ tache.date_prevue }}</td>
+                    <tr data-priority="{{ tache.priorite }}" data-status="{{ tache.statut }}" data-type="{{ tache.type }}">
                         <td>
                             {% if tache.type == 'visite' %}
                                 <i class="fas fa-eye"></i> Visite
@@ -103,27 +78,34 @@
                                 <i class="fas fa-tasks"></i> {{ tache.type|title }}
                             {% endif %}
                         </td>
-                        <td>{{ tache.rucher.nom }}</td>
-                        <td class="cell-expand">{{ tache.description }}</td>
                         <td>
-                            {% if tache.statut == 'a_faire' %}
-                                <span class="tag tag-warning">À faire</span>
-                            {% elif tache.statut == 'en_cours' %}
-                                <span class="tag tag-info">En cours</span>
+                            {% if tache.priorite == 'urgent' %}
+                                <span class="tag tag-danger">Urgent</span>
+                            {% elif tache.priorite == 'normal' %}
+                                <span class="tag tag-warning">Normal</span>
                             {% else %}
-                                <span class="tag tag-success">Terminé</span>
+                                <span class="tag tag-info">Faible</span>
                             {% endif %}
                         </td>
+                        <td>{{ tache.date_prevue }}</td>
+                        <td>
+                            <span class="status-clickable tag {% if tache.statut == 'termine' %}tag-success{% elif tache.statut == 'en_cours' %}tag-warning{% else %}tag-info{% endif %}" 
+                                  onclick="showTaskStatusHistory({{ tache.id }})">
+                                {% if tache.statut == 'a_faire' %}À faire{% elif tache.statut == 'en_cours' %}En cours{% else %}Terminé{% endif %}
+                                <i class="fas fa-history" style="font-size: 0.8em; margin-left: 3px;"></i>
+                            </span>
+                        </td>
+                        <td>{{ tache.rucher.nom if tache.rucher else 'Général' }}</td>
+                        <td class="cell-expand">{{ tache.description }}</td>
                         <td>
                             <a href="{% url 'tache_edit' id=tache.id %}" class="btn btn-secondary">
                                 <i class="fas fa-edit"></i>
                             </a>
-                            <a href="{% url 'tache_complete' id=tache.id %}" class="btn btn-primary">
-                                <i class="fas fa-check"></i>
-                            </a>
-                            <button class="btn btn-danger delete-task" data-id="{{ tache.id }}">
-                                <i class="fas fa-trash"></i>
-                            </button>
+                            {% if tache.statut != 'termine' %}
+                                <a href="{% url 'tache_complete' id=tache.id %}" class="btn btn-primary">
+                                    <i class="fas fa-check"></i>
+                                </a>
+                            {% endif %}
                         </td>
                     </tr>
                     {% empty %}
@@ -137,68 +119,119 @@
     </div>
 </div>
 
+<!-- Task Status History Modal -->
+<div id="taskStatusModal" class="modal" style="display: none;">
+    <div class="modal-content glass">
+        <span class="close-modal" onclick="closeTaskStatusModal()">&times;</span>
+        <h3>Historique des statuts de la tâche</h3>
+        
+        <div class="table-container">
+            <table class="elevage-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Statut</th>
+                        <th>Modifié par</th>
+                        <th>Commentaire</th>
+                    </tr>
+                </thead>
+                <tbody id="task-status-history-body">
+                    <!-- Will be populated via JavaScript -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Toggle filter panel
+    // Filter functionality
     const filterToggle = document.getElementById('filter-toggle');
     const filtersPanel = document.getElementById('filters-panel');
+    const priorityFilter = document.getElementById('priority-filter');
+    const statusFilter = document.getElementById('status-filter');
+    const typeFilter = document.getElementById('type-filter');
+    const tableRows = document.querySelectorAll('.elevage-table tbody tr[data-priorite]');
     
     filterToggle.addEventListener('click', function() {
         filtersPanel.style.display = filtersPanel.style.display === 'none' ? 'block' : 'none';
     });
     
-    // Filter functionality
-    const priorityFilter = document.getElementById('priority-filter');
-    const typeFilter = document.getElementById('type-filter');
-    const statusFilter = document.getElementById('status-filter');
-    const rucherFilter = document.getElementById('rucher-filter');
-    const searchInput = document.getElementById('search-input');
-    const rows = document.querySelectorAll('#tasks-table tbody tr');
-    
     function applyFilters() {
-        const priorityValue = priorityFilter.value.toLowerCase();
-        const typeValue = typeFilter.value.toLowerCase();
-        const statusValue = statusFilter.value.toLowerCase();
-        const rucherValue = rucherFilter.value.toLowerCase();
-        const searchValue = searchInput.value.toLowerCase();
+        const priority = priorityFilter.value;
+        const status = statusFilter.value;
+        const type = typeFilter.value;
         
-        rows.forEach(row => {
-            if (row.querySelector('td')) { // Skip empty message row
-                const priority = row.getAttribute('data-priority');
-                const type = row.getAttribute('data-type');
-                const status = row.getAttribute('data-status');
-                const rucher = row.getAttribute('data-rucher');
-                const text = row.textContent.toLowerCase();
-                
-                const priorityMatch = !priorityValue || priority === priorityValue;
-                const typeMatch = !typeValue || type === typeValue;
-                const statusMatch = !statusValue || status === statusValue;
-                const rucherMatch = !rucherValue || rucher === rucherValue;
-                const searchMatch = !searchValue || text.includes(searchValue);
-                
-                row.style.display = (priorityMatch && typeMatch && statusMatch && rucherMatch && searchMatch) ? '' : 'none';
-            }
+        tableRows.forEach(row => {
+            const rowPriority = row.getAttribute('data-priority');
+            const rowStatus = row.getAttribute('data-status');
+            const rowType = row.getAttribute('data-type');
+            
+            const matchesPriority = !priority || rowPriority === priority;
+            const matchesStatus = !status || rowStatus === status;
+            const matchesType = !type || rowType === type;
+            
+            row.style.display = matchesPriority && matchesStatus && matchesType ? '' : 'none';
         });
     }
     
-    // Add event listeners to filters
     priorityFilter.addEventListener('change', applyFilters);
-    typeFilter.addEventListener('change', applyFilters);
     statusFilter.addEventListener('change', applyFilters);
-    rucherFilter.addEventListener('change', applyFilters);
-    searchInput.addEventListener('input', applyFilters);
+    typeFilter.addEventListener('change', applyFilters);
+});
+
+function showTaskStatusHistory(tacheId) {
+    // Simulate task status history
+    const statusHistory = [
+        {
+            date: new Date().toLocaleDateString('fr-FR'),
+            status: 'À faire',
+            modifie_par: 'Système',
+            commentaire: 'Tâche créée'
+        }
+    ];
     
-    // Delete task confirmation
-    const deleteButtons = document.querySelectorAll('.delete-task');
-    deleteButtons.forEach(button => {
-        button.addEventListener('click', function(e) {
-            e.preventDefault();
-            const id = this.getAttribute('data-id');
-            if (confirm('Êtes-vous sûr de vouloir supprimer cette tâche ?')) {
-                window.location.href = `/elevage/taches/delete/${id}/`;
-            }
-        });
+    const statusBody = document.getElementById('task-status-history-body');
+    statusBody.innerHTML = '';
+    
+    statusHistory.forEach(entry => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${entry.date}</td>
+            <td><span class="tag tag-info">${entry.status}</span></td>
+            <td>${entry.modifie_par}</td>
+            <td>${entry.commentaire}</td>
+        `;
+        statusBody.appendChild(row);
     });
+    
+    document.getElementById('taskStatusModal').style.display = 'block';
+}
+
+function closeTaskStatusModal() {
+    document.getElementById('taskStatusModal').style.display = 'none';
+}
+
+// Close modal when clicking outside
+window.addEventListener('click', function(e) {
+    const modal = document.getElementById('taskStatusModal');
+    if (e.target === modal) {
+        closeTaskStatusModal();
+    }
 });
 </script>
+
+<style>
+.status-clickable {
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.status-clickable:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+}
+
+/* ...existing modal styles... */
+</style>
 {% endblock %}

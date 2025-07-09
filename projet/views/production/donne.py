@@ -7,6 +7,13 @@ from projet.models.productions import Recolte
 from projet.models.ressources import Ruche , HausseType , RucheHausseHistory , Hausse, HausseCadre , EssaimDetail , EssaimStatusHistory , EssaimStatus , Essaim , EssaimRace , EssaimOrigin
 from projet.models.ressources import Materiel , MaterielType , MaterielStatus , Consommable , ConsommableType , ConsommableConsomme 
 from projet.models.ventes import Vente , VenteDetail
+from projet.models.ressources import Ruche
+from projet.models.ressources import Materiel
+from projet.models.productions  import Task
+from projet.models.productions  import TaskStatusHistory
+from projet.models.productions  import TaskPriorite
+from projet.models.productions  import TaskType
+
 
 def recolte_list(request):
     recolteModel = Recolte.objects.select_related("ruche").all()
@@ -89,13 +96,16 @@ def historique_production(request):
 
 
 def materiel_list(request):
+    materiel = Materiel.objects.all()
     materiels = [
-        {'type': 'Hausse', 'designation': 'Hausse Dadant 9 cadres',
-            'date_ajout': '2023-03-15', 'statut': 'Neuf', 'duree_vie': 60},
-        {'type': 'Cadre', 'designation': 'Cadre de corps ciré',
-            'date_ajout': '2023-02-10', 'statut': 'Bon', 'duree_vie': 24},
-        {'type': 'Extracteur', 'designation': 'Extracteur 4 cadres manuel',
-            'date_ajout': '2021-07-01', 'statut': 'Usé', 'duree_vie': 120},
+
+        {   'type': m.materiel_type, 
+            'designation': m.designation,
+            'date_ajout': m.created_at('%Y-%m-%d'), 
+            'statut': m.seuil_alerte ,
+            'duree_vie': m.durre_de_vie_estimee 
+        }
+        for m in  materiel
     ]
     return render(request, 'production/materiel_list.html', {'materiels': materiels, 'page_title': 'Inventaire du Matériel'})
 
@@ -130,15 +140,17 @@ def stock_consommables(request):
     })
 
 def maintenance_planning(request):
-    tasks = [
-        {'description': 'Nettoyage des planchers - Ruche A1, A2, A3',
-            'date_prevue': '2023-11-25', 'statut': 'À faire'},
-        {'description': 'Changement des cadres de corps - Ruche B1',
-            'date_prevue': '2023-12-01', 'statut': 'À faire'},
-        {'description': 'Révision extracteur',
-            'date_realisation': '2023-10-15', 'statut': 'Terminé'},
-    ]
-    return render(request, 'production/maintenance_planning.html', {'tasks': tasks, 'page_title': 'Planning de Maintenance'})
+
+        tasks = Task.objects.select_related('task_type', 'task_priorite', 'ruche', 'localization').prefetch_related('task_status_histories__task_status_type')
+        tasks_data = [
+            {
+                'description': t.description if t.description else t.title, 
+                'date_prevue': t.date_prevue.strftime('%Y-%m-%d'),
+                'date_realisation': t.date_realisation.strftime('%Y-%m-%d') if t.date_realisation else None,
+                'statut': t.task_status_histories.last().task_status_type.name if t.task_status_histories.exists() else 'À faire'
+            } for t in tasks
+        ]
+        return render(request, 'production/stock_consommables.html', {'tasks': tasks_data, 'page_title': 'Stock des Consommables'})
 
 
 def alertes_penurie(request):

@@ -115,10 +115,6 @@
                                     <span class="icon"><i class="fas fa-archive"></i></span>
                                     <span class="title">Ruches</span>
                                 </a>
-                                <a href="{% url 'reines_list' %}" class="sidebar-btn sub-sub-item {% if request.resolver_match.url_name == 'reines_list' %}active{% endif %}">
-                                    <span class="icon"><i class="fas fa-crown"></i></span>
-                                    <span class="title">Reines</span>
-                                </a>
                                 <a href="{% url 'amenagements_list' %}" class="sidebar-btn sub-sub-item {% if request.resolver_match.url_name == 'amenagements_list' %}active{% endif %}">
                                     <span class="icon"><i class="fas fa-house-chimney"></i></span>
                                     <span class="title">Aménagements</span>
@@ -137,6 +133,10 @@
                                 <a href="{% url 'soins_list' %}" class="sidebar-btn sub-sub-item {% if request.resolver_match.url_name == 'soins_list' %}active{% endif %}">
                                     <span class="icon"><i class="fas fa-flask-vial"></i></span>
                                     <span class="title">Journal des soins</span>
+                                </a>
+                                <a href="{% url 'interventions_list' %}" class="sidebar-btn sub-sub-item {% if request.resolver_match.url_name == 'soins_list' %}active{% endif %}">
+                                    <span class="icon"><i class="fas fa-flask-vial"></i></span>
+                                    <span class="title">Journal des interventions</span>
                                 </a>
                                 <a href="{% url 'taches_list' %}" class="sidebar-btn sub-sub-item {% if 'taches' in request.resolver_match.url_name %}active{% endif %}">
                                     <span class="icon"><i class="fas fa-clipboard-check"></i></span>
