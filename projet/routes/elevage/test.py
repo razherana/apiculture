@@ -28,6 +28,8 @@ urlpatterns = [
     path('essaims/population/add/<int:id>/', essaim_population_add, name='essaim_population_add'),
     path('essaims/population/kill/<int:id>/', essaim_population_kill, name='essaim_population_kill'),
     path('essaims/assign-ruche/<int:id>/', essaim_assign_ruche, name='essaim_assign_ruche'),
+    path('essaim-origins/create/', essaim_origin_create, name='essaim_origin_create'),
+    path('essaim-races/create/', essaim_race_create, name='essaim_race_create'),
     
     # Dashboard
     path('dashboard/colonies/', dashboard_colonies, name='dashboard_colonies'),

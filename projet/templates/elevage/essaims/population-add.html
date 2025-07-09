@@ -4,6 +4,7 @@
 {% block title %}Ajouter population - Essaim #{{ essaim.id }}{% endblock %}
 
 {% block content %}
+<link rel="stylesheet" href="{% static 'elevage/css/elevage.css' %}">
 <div class="elevage-content">
     <div class="elevage-card">
         <h2>Ajouter population à l'essaim #{{ essaim.id }}</h2>
@@ -72,7 +73,7 @@
             
             <div class="form-group">
                 <label class="form-label" for="notes">Notes</label>
-                <textarea class="form-input" id="notes" name="notes" rows="4" 
+                <textarea class="form-textarea" id="notes" name="notes" rows="4" 
                           placeholder="Notes sur l'ajout de population...">{{ form_data.notes|default:'' }}</textarea>
                 <small class="form-help">Raison de l'ajout ou observations</small>
             </div>
@@ -104,6 +105,14 @@
     color: var(--honey-primary);
     margin-bottom: 1rem;
     font-weight: 600;
+}
+
+.form-help {
+    color: var(--text-secondary) !important;
+    font-size: 0.8rem;
+    margin-top: 0.25rem;
+    display: block;
+    font-style: italic;
 }
 
 :root:not(.light-mode) .info-section {

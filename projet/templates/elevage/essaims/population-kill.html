@@ -4,6 +4,8 @@
 {% block title %}Tuer population - Essaim #{{ essaim.id }}{% endblock %}
 
 {% block content %}
+<link rel="stylesheet" href="{% static 'elevage/css/elevage.css' %}">
+
 <div class="elevage-content">
     <div class="elevage-card">
         <h2>Déclarer la mort d'une population - Essaim #{{ essaim.id }}</h2>
@@ -89,7 +91,7 @@
             
             <div class="form-group">
                 <label class="form-label" for="note">Notes *</label>
-                <textarea class="form-input" id="note" name="note" rows="4" 
+                <textarea class="form-textarea" id="note" name="note" rows="4" 
                           placeholder="Cause de la mort, observations..." required>{{ form_data.note|default:'' }}</textarea>
                 <small class="form-help">Cause de la mort et observations (obligatoire)</small>
             </div>
@@ -152,6 +154,14 @@ document.addEventListener('DOMContentLoaded', function() {
     color: var(--queen-red);
     margin-bottom: 1rem;
     font-weight: 600;
+}
+
+.form-help {
+    color: var(--text-secondary) !important;
+    font-size: 0.8rem;
+    margin-top: 0.25rem;
+    display: block;
+    font-style: italic;
 }
 
 :root:not(.light-mode) .info-section {

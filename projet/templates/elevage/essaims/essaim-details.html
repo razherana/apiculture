@@ -5,22 +5,25 @@
 
 {% block content %}
 <div class="elevage-content">
+    <link rel="stylesheet" href="{% static 'elevage/css/elevage.css' %}">
+    
     <!-- Header with essential info -->
     <div class="detail-header">
         <div class="detail-info">
             <h2 class="detail-title">Essaim #{{ essaim.id }}</h2>
-            <p class="detail-subtitle">{{ essaim.race }} - {{ essaim.origine }}</p>
+            <p class="detail-subtitle">{{ essaim.essaim_race.name }} - {{ essaim.essaim_origin.name }}</p>
             
             <div class="detail-stats">
                 <div class="detail-stat">
-                    <div class="detail-stat-value">{{ essaim.race }}</div>
-                    <div class="detail-stat-label">Race</div>
+                    <div class="detail-stat-label mb-3">Race</div>
+                    <div class="detail-stat-value">{{ essaim.essaim_race.name }}</div>
                 </div>
                 <div class="detail-stat">
-                    <div class="detail-stat-value">{{ essaim.origine }}</div>
-                    <div class="detail-stat-label">Origine</div>
+                    <div class="detail-stat-label mb-3">Origine</div>
+                    <div class="detail-stat-value">{{ essaim.essaim_origin.name }}</div>
                 </div>
                 <div class="detail-stat">
+                    <div class="detail-stat-label mb-3">Ruche actuelle</div>
                     <div class="detail-stat-value">
                         {% if essaim.ruche %}
                             <a href="{% url 'ruche_details' essaim.ruche.id %}" class="tag tag-success">
@@ -30,9 +33,9 @@
                             <span class="tag tag-warning">Non assigné</span>
                         {% endif %}
                     </div>
-                    <div class="detail-stat-label">Ruche actuelle</div>
                 </div>
                 <div class="detail-stat">
+                    <div class="detail-stat-label mb-3">Statut</div>
                     <div class="detail-stat-value">
                         {% if essaim.is_dead %}
                             <span class="tag tag-danger">Mort</span>
@@ -42,7 +45,6 @@
                             <span class="tag tag-warning">Libre</span>
                         {% endif %}
                     </div>
-                    <div class="detail-stat-label">Statut</div>
                 </div>
             </div>
             

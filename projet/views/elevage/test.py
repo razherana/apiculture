@@ -1,6 +1,7 @@
 from django.shortcuts import redirect, render
 from datetime import datetime, timedelta
 import random
+import json
 from django.utils import timezone
 from django.db.models import Sum
 from django.http import JsonResponse
@@ -1151,7 +1152,12 @@ def essaims_list(request):
                 current_faux_bourdon += change.faux_bourdon_added
                 current_reine += change.reine_added
         
-        total_population = max(0, current_ouvrier) + max(0, current_faux_bourdon) + max(0, current_reine)
+        total_population = {
+            'ouvriers': max(0, current_ouvrier),
+            'faux_bourdons': max(0, current_faux_bourdon),
+            'reines': max(0, current_reine),
+            'total': max(0, current_ouvrier + current_faux_bourdon + current_reine)
+        }
         
         essaim_data = {
             'id': essaim.id,
@@ -1199,9 +1205,9 @@ def essaim_details(request, id):
     
     for detail in reversed(population_history):
         if detail.is_death:
-            running_ouvrier -= detail.ouvrier_added
-            running_faux_bourdon -= detail.faux_bourdon_added
-            running_reine -= detail.reine_added
+            running_ouvrier -= abs(detail.ouvrier_added)
+            running_faux_bourdon -= abs(detail.faux_bourdon_added)
+            running_reine -= abs(detail.reine_added)
         else:
             running_ouvrier += detail.ouvrier_added
             running_faux_bourdon += detail.faux_bourdon_added
@@ -1229,11 +1235,17 @@ def essaim_details(request, id):
     
     context = {
         'essaim': essaim,
+        'essaim_details': population_history,
         'population_history': population_history,
         'current_ouvrier': max(0, running_ouvrier),
         'current_faux_bourdon': max(0, running_faux_bourdon),
         'current_reine': max(0, running_reine),
-        'current_population': max(0, running_ouvrier) + max(0, running_faux_bourdon) + max(0, running_reine),
+        'current_population': {
+            'ouvriers': max(0, running_ouvrier),
+            'faux_bourdons': max(0, running_faux_bourdon),
+            'reines': max(0, running_reine),
+            'total': max(0, running_ouvrier + running_faux_bourdon + running_reine)
+        },
         'current_ruche': current_ruche,
         'status_history': status_history,
         'health_history': health_history,
@@ -1382,7 +1394,7 @@ def essaim_population_add(request, id):
 
 def essaim_population_kill(request, id):
     """Enregistrer la mort d'une partie de la population"""
-    essaim = Essaim.objects.filter(id=id).first()
+    essaim = Essaim.objects.prefetch_related("essaim_details").filter(id=id).first()
     if not essaim:
         return render(request, 'elevage/404.html', {'message': 'Essaim non trouvé'})
     
@@ -1411,10 +1423,30 @@ def essaim_population_kill(request, id):
         except Exception as e:
             # Handle error
             pass
+        
+    current_population = {
+        'ouvriers': 0,
+        'faux_bourdons': 0,
+        'reines': 0,
+        'total': 0   
+    }
+    
+    population_details = EssaimDetail.objects.filter(essaim=essaim).order_by('-created_at')
+    
+    for detail in population_details:
+        if detail.is_death:
+            current_population['ouvriers'] -= abs(detail.ouvrier_added)
+            current_population['faux_bourdons'] -= abs(detail.faux_bourdon_added)
+            current_population['reines'] -= abs(detail.reine_added)
+        else:
+            current_population['ouvriers'] += detail.ouvrier_added
+            current_population['faux_bourdons'] += detail.faux_bourdon_added
+            current_population['reines'] += detail.reine_added
     
     # GET request - show form
     context = {
         'essaim': essaim,
+        'current_population': current_population
     }
     
     # Ajouter les alertes au contexte
@@ -1452,3 +1484,65 @@ def essaim_assign_ruche(request, id):
     
     # GET request - redirect to details
     return redirect('essaim_details', id=essaim.id)
+
+import json
+
+def essaim_origin_create(request):
+    """Create a new essaim origin"""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            name = data.get('name', '').strip()
+            
+            if not name:
+                return JsonResponse({'success': False, 'message': 'Le nom est requis'})
+            
+            # Check if origin already exists
+            if EssaimOrigin.objects.filter(name=name).exists():
+                return JsonResponse({'success': False, 'message': 'Cette origine existe déjà'})
+            
+            # Create new origin
+            origin = EssaimOrigin.objects.create(name=name)
+            
+            return JsonResponse({
+                'success': True,
+                'origin': {
+                    'id': origin.id,
+                    'name': origin.name
+                }
+            })
+            
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)})
+    
+    return JsonResponse({'success': False, 'message': 'Méthode non autorisée'})
+
+def essaim_race_create(request):
+    """Create a new essaim race"""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            name = data.get('name', '').strip()
+            
+            if not name:
+                return JsonResponse({'success': False, 'message': 'Le nom est requis'})
+            
+            # Check if race already exists
+            if EssaimRace.objects.filter(name=name).exists():
+                return JsonResponse({'success': False, 'message': 'Cette race existe déjà'})
+            
+            # Create new race
+            race = EssaimRace.objects.create(name=name)
+            
+            return JsonResponse({
+                'success': True,
+                'race': {
+                    'id': race.id,
+                    'name': race.name
+                }
+            })
+            
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)})
+    
+    return JsonResponse({'success': False, 'message': 'Méthode non autorisée'})

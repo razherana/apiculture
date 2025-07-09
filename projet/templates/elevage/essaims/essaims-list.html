@@ -4,6 +4,9 @@
 {% block title %}Gestion des Essaims{% endblock %}
 
 {% block content %}
+
+<link rel="stylesheet" href="{% static 'elevage/css/elevage.css' %}">
+
 <div class="elevage-content">
     <h2>Gestion des Essaims</h2>
     
@@ -44,7 +47,7 @@
     </div>
     
     <div class="btn-group">
-        <a href="{% url 'essaim_add' %}" class="btn btn-primary">
+        <a href="{% url 'essaim_add' %}" class="btn btn-primary action-btn">
             <i class="fas fa-plus"></i> Nouvel essaim
         </a>
     </div>
@@ -144,7 +147,7 @@
                         </td>
                         <td>{{ essaim.origin }}</td>
                         <td>
-                            {% if essaim.current_ruche %}
+                            {% if essaim.current_ruche_id %}
                                 <a href="{% url 'ruche_details' essaim.current_ruche_id %}" class="tag tag-success">
                                     {{ essaim.current_ruche }}
                                 </a>

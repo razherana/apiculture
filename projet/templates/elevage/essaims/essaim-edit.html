@@ -4,6 +4,7 @@
 {% block title %}{% if essaim %}Modifier{% else %}Nouvel{% endif %} essaim{% endblock %}
 
 {% block content %}
+
 <div class="elevage-content">
     <div class="elevage-card">
         <h2>{% if essaim %}Modifier l'essaim{% else %}Nouvel essaim{% endif %}</h2>
@@ -28,63 +29,73 @@
                     <label class="form-label" for="description">Description</label>
                     <input type="text" class="form-input" id="description" name="description" 
                            value="{{ essaim.description|default:'' }}" placeholder="Description de l'essaim">
-                    <small class="form-help">Description optionnelle de l'essaim</small>
+                <small class="form-help">Description optionnelle de l'essaim</small>
                 </div>
             </div>
             
             <div class="form-row">
                 <div class="form-group">
                     <label class="form-label" for="origin">Origine *</label>
-                    <select class="form-input" id="origin" name="origin" required>
-                        <option value="">Sélectionnez une origine</option>
-                        {% for origine in origins %}
-                            <option value="{{ origine.id }}" 
-                                {% if essaim and essaim.essaim_origin.id == origine.id %}selected{% endif %}>
-                                {{ origine.name }}
-                            </option>
-                        {% endfor %}
-                    </select>
+                    <div style="display: flex; gap: 0.5rem; align-items: flex-start; flex-direction: column;">
+                        <select class="form-select" id="origin" name="origin" required style="flex: 1;">
+                            <option value="">Sélectionnez une origine</option>
+                            {% for origine in origins %}
+                                <option value="{{ origine.id }}" 
+                                    {% if essaim and essaim.essaim_origin.id == origine.id %}selected{% endif %}>
+                                    {{ origine.name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                        <button type="button" class="btn btn-secondary" onclick="openOriginModal()" title="Créer une nouvelle origine">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
                     <small class="form-help">Origine de l'essaim</small>
                 </div>
                 
                 <div class="form-group">
                     <label class="form-label" for="race">Race *</label>
-                    <select class="form-input" id="race" name="race" required>
-                        <option value="">Sélectionnez une race</option>
-                        {% for race in races %}
-                            <option value="{{ race.id }}" 
-                                {% if essaim and essaim.essaim_race.id == race.id %}selected{% endif %}>
-                                {{ race.name }}
-                            </option>
-                        {% endfor %}
-                    </select>
+                    <div style="display: flex; gap: 0.5rem; align-items: flex-start; flex-direction: column;">
+                        <select class="form-select" id="race" name="race" required style="flex: 1;">
+                            <option value="">Sélectionnez une race</option>
+                            {% for race in races %}
+                                <option value="{{ race.id }}" 
+                                    {% if essaim and essaim.essaim_race.id == race.id %}selected{% endif %}>
+                                    {{ race.name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                        <button type="button" class="btn btn-secondary" onclick="openRaceModal()" title="Créer une nouvelle race">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
                     <small class="form-help">Race de l'essaim</small>
                 </div>
             </div>
             
             <!-- Population initiale (pour nouveaux essaims seulement) -->
             {% if not essaim %}
-            <div class="form-section">
-                <h4>Population initiale</h4>
+            <div class="elevage-card" style="margin: 1.5rem 0; padding: 1.5rem; background: rgba(255, 209, 0, 0.05); border: 1px solid rgba(255, 209, 0, 0.2);">
+                <h4 style="color: var(--honey-primary); margin-bottom: 1rem; font-weight: 600;">Population initiale</h4>
                 <div class="form-row">
                     <div class="form-group">
                         <label class="form-label" for="initial_ouvrier">Ouvrières</label>
                         <input type="number" class="form-input" id="initial_ouvrier" name="initial_ouvrier" 
-                               value="{{ form_data.initial_ouvrier|default:0 }}" min="0">
+                          value="{{ form_data.initial_ouvrier|default:0 }}" min="0">
                         <small class="form-help">Nombre d'ouvrières</small>
                     </div>
                     
                     <div class="form-group">
                         <label class="form-label" for="initial_faux_bourdon">Faux-bourdons</label>
                         <input type="number" class="form-input" id="initial_faux_bourdon" name="initial_faux_bourdon" 
-                               value="{{ form_data.initial_faux_bourdon|default:0 }}" min="0">
+                          value="{{ form_data.initial_faux_bourdon|default:0 }}" min="0">
                         <small class="form-help">Nombre de faux-bourdons</small>
                     </div>
                     
                     <div class="form-group">
                         <label class="form-label" for="initial_reine">Reines</label>
                         <input type="number" class="form-input" id="initial_reine" name="initial_reine" 
-                               value="{{ form_data.initial_reine|default:1 }}" min="0">
+                          value="{{ form_data.initial_reine|default:1 }}" min="0">
                         <small class="form-help">Nombre de reines</small>
                     </div>
                 </div>
@@ -93,9 +104,8 @@
             
             <div class="form-group">
                 <label class="form-label" for="notes">Notes</label>
-                <textarea class="form-input" id="notes" name="notes" rows="4" 
-                          placeholder="Notes sur l'essaim...">{% if essaim %}{{ essaim.notes }}{% else %}{{ form_data.notes|default:'' }}{% endif %}</textarea>
-                <small class="form-help">Observations et notes sur l'essaim</small>
+                <textarea class="form-textarea" id="notes" name="notes" rows="4" 
+                          placeholder="Notes sur l'essaim...">{% if essaim %}{{ essaim.notes }}{% else %}{{ form_data.notes|default:'' }}{% endif %}</textarea>                <small class="form-help">Observations et notes sur l'essaim</small>
             </div>
             
             <div class="form-row">
@@ -113,23 +123,355 @@
     </div>
 </div>
 
+<!-- Origin Creation Modal -->
+<div id="origin-modal" class="origin-modal" style="display: none;">
+    <div class="origin-modal-content">
+        <span class="close-modal" onclick="closeOriginModal()">&times;</span>
+        <h4 style="margin-bottom: 1.5rem; color: var(--honey-primary);">Nouvelle origine d'essaim</h4>
+        
+        <form id="origin-form">
+            {% csrf_token %}
+            <div class="form-group">
+                <label class="form-label" for="new-origin-name">Nom de l'origine *</label>
+                <input type="text" class="form-input" id="new-origin-name" name="name" required 
+                       placeholder="Ex: Élevage local, Essaim sauvage, Achat...">
+                <small class="form-help">Nom descriptif de l'origine</small>
+            </div>
+            
+            <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem;">
+                <button type="button" class="btn btn-secondary" onclick="closeOriginModal()">
+                    <i class="fas fa-times"></i> Annuler
+                </button>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Créer
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Race Creation Modal -->
+<div id="race-modal" class="race-modal" style="display: none;">
+    <div class="race-modal-content">
+        <span class="close-modal" onclick="closeRaceModal()">&times;</span>
+        <h4 style="margin-bottom: 1.5rem; color: var(--honey-primary);">Nouvelle race d'essaim</h4>
+        
+        <form id="race-form">
+            {% csrf_token %}
+            <div class="form-group">
+                <label class="form-label" for="new-race-name">Nom de la race *</label>
+                <input type="text" class="form-input" id="new-race-name" name="name" required 
+                       placeholder="Ex: Buckfast, Carnica, Italienne...">
+                <small class="form-help">Nom de la race d'abeille</small>
+            </div>
+            
+            <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem;">
+                <button type="button" class="btn btn-secondary" onclick="closeRaceModal()">
+                    <i class="fas fa-times"></i> Annuler
+                </button>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Créer
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Origin management
+    function openOriginModal() {
+        document.getElementById('origin-modal').style.display = 'block';
+        document.getElementById('new-origin-name').focus();
+    }
+
+    function closeOriginModal() {
+        document.getElementById('origin-modal').style.display = 'none';
+        document.getElementById('origin-form').reset();
+    }
+
+    // Race management
+    function openRaceModal() {
+        document.getElementById('race-modal').style.display = 'block';
+        document.getElementById('new-race-name').focus();
+    }
+
+    function closeRaceModal() {
+        document.getElementById('race-modal').style.display = 'none';
+        document.getElementById('race-form').reset();
+    }
+
+    // Handle origin form submission
+    document.getElementById('origin-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        const originName = formData.get('name').trim();
+        
+        if (!originName) {
+            alert('Veuillez saisir un nom pour l\'origine.');
+            return;
+        }
+        
+        // Send AJAX request to create origin
+        fetch('/elevage/essaim-origins/create/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify({
+                'name': originName
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Add new option to select
+                const originSelect = document.getElementById('origin');
+                const newOption = document.createElement('option');
+                newOption.value = data.origin.id;
+                newOption.textContent = data.origin.name;
+                newOption.selected = true;
+                originSelect.appendChild(newOption);
+                
+                closeOriginModal();
+                showNotification(`Origine "${originName}" créée avec succès!`, 'success');
+            } else {
+                alert('Erreur lors de la création de l\'origine: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Erreur lors de la création de l\'origine');
+        });
+    });
+
+    // Handle race form submission
+    document.getElementById('race-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        const raceName = formData.get('name').trim();
+        
+        if (!raceName) {
+            alert('Veuillez saisir un nom pour la race.');
+            return;
+        }
+        
+        // Send AJAX request to create race
+        fetch('/elevage/essaim-races/create/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify({
+                'name': raceName
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Add new option to select
+                const raceSelect = document.getElementById('race');
+                const newOption = document.createElement('option');
+                newOption.value = data.race.id;
+                newOption.textContent = data.race.name;
+                newOption.selected = true;
+                raceSelect.appendChild(newOption);
+                
+                closeRaceModal();
+                showNotification(`Race "${raceName}" créée avec succès!`, 'success');
+            } else {
+                alert('Erreur lors de la création de la race: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Erreur lors de la création de la race');
+        });
+    });
+
+    // Close modals when clicking outside
+    window.addEventListener('click', function(e) {
+        const originModal = document.getElementById('origin-modal');
+        const raceModal = document.getElementById('race-modal');
+        
+        if (e.target === originModal) {
+            closeOriginModal();
+        }
+        if (e.target === raceModal) {
+            closeRaceModal();
+        }
+    });
+
+    // Notification system
+    function showNotification(message, type = 'info') {
+        const notification = document.createElement('div');
+        notification.className = `notification notification-${type}`;
+        notification.innerHTML = `
+            <i class="fas fa-${type === 'success' ? 'check-circle' : 'info-circle'}"></i>
+            <span>${message}</span>
+            <button onclick="this.parentElement.remove()" style="background: none; border: none; color: inherit; cursor: pointer; margin-left: auto;">
+                <i class="fas fa-times"></i>
+            </button>
+        `;
+        
+        // Add to page
+        const container = document.querySelector('.elevage-content');
+        container.insertBefore(notification, container.firstChild);
+        
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            if (notification.parentElement) {
+                notification.remove();
+            }
+        }, 5000);
+    }
+</script>
+
 <style>
-.form-section {
-    margin: 2rem 0;
-    padding: 1.5rem;
-    background: rgba(255, 209, 0, 0.05);
-    border-radius: var(--radius-md);
-    border: 1px solid rgba(255, 209, 0, 0.2);
+.form-help {
+    color: var(--text-secondary) !important;
+    font-size: 0.8rem;
+    margin-top: 0.25rem;
+    display: block;
+    font-style: italic;
 }
 
-.form-section h4 {
+:root:not(.light-mode) .elevage-card[style*="background: rgba(255, 209, 0, 0.05)"] {
+    background: rgba(255, 209, 0, 0.1) !important;
+}
+
+/* Modal styles */
+.origin-modal, .race-modal {
+    display: none;
+    position: fixed;
+    z-index: 1001;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+
+.origin-modal-content, .race-modal-content {
+    background: var(--glass-bg);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    margin: 10% auto;
+    padding: 2rem;
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    width: 90%;
+    max-width: 500px;
+    color: var(--text-primary);
+    animation: fadeUp 0.3s ease-out;
+}
+
+.close-modal {
+    color: var(--text-secondary);
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: color var(--transition-fast);
+}
+
+.close-modal:hover,
+.close-modal:focus {
     color: var(--honey-primary);
-    margin-bottom: 1rem;
-    font-weight: 600;
 }
 
-:root:not(.light-mode) .form-section {
-    background: rgba(255, 209, 0, 0.1);
+/* Notification styles */
+.notification {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: var(--radius-md);
+    border: 1px solid transparent;
+    animation: slideDown 0.3s ease-out;
+    background: var(--glass-bg);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--glass-border);
+}
+
+.notification-success {
+    background-color: rgba(0, 204, 136, 0.1);
+    border-color: var(--pollen-green);
+    color: var(--pollen-green);
+}
+
+.notification-info {
+    background-color: rgba(0, 136, 255, 0.1);
+    border-color: var(--nectar-blue);
+    color: var(--nectar-blue);
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Enhanced form styling for modal */
+.origin-modal .form-input, .race-modal .form-input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    transition: all var(--transition-fast);
+}
+
+.origin-modal .form-input:focus, .race-modal .form-input:focus {
+    outline: none;
+    border-color: var(--honey-primary);
+    box-shadow: 0 0 0 3px rgba(255, 209, 0, 0.2);
+}
+
+/* Responsive for mobile */
+@media (max-width: 768px) {
+    .origin-modal-content, .race-modal-content {
+        margin: 5% auto;
+        width: 95%;
+        padding: 1.5rem;
+    }
+    
+    .form-row {
+        flex-direction: column;
+    }
+    
+    .form-group {
+        min-width: 100%;
+    }
 }
 </style>
 {% endblock %}
