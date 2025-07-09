@@ -25,8 +25,10 @@ urlpatterns = [
     
     # Soins
     path('soins/liste/', soins_list, name='soins_list'),
-    path('soins/edit/', soin_edit, name='soin_add'),
+    path('soins/add/', soin_add, name='soin_add'),
     path('soins/edit/<int:id>/', soin_edit, name='soin_edit'),
+    path('soins/details/<int:id>/', soin_details, name='soin_details'),
+    path('consommable-types/create/', consommable_type_create, name='consommable_type_create'),
     
     # Interventions
     path('interventions/liste/', interventions_list, name='interventions_list'),
