@@ -1,0 +1,440 @@
+{% extends "base_elevage.html" %}
+{% load static %}
+
+{% block title %}Journal des interventions{% endblock %}
+{% block page_title %}Journal des interventions{% endblock %}
+
+{% block content %}
+<div class="elevage-content">
+    <h2>Journal des interventions</h2>
+    
+    <!-- Statistics Cards -->
+    <div class="info-cards">
+        <div class="info-card">
+            <div class="info-card-header">
+                <div class="info-card-icon">
+                    <i class="fas fa-tasks"></i>
+                </div>
+                <div class="info-card-title">Total</div>
+            </div>
+            <div class="info-card-value">{{ interventions|length }}</div>
+        </div>
+        
+        <div class="info-card">
+            <div class="info-card-header">
+                <div class="info-card-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="info-card-title">Réalisées</div>
+            </div>
+            <div class="info-card-value">
+                {% with realisees_count=0 %}
+                    {% for intervention in interventions %}
+                        {% if intervention.statut == "Réalisée" %}
+                            {% with realisees_count=realisees_count|add:1 %}{% endwith %}
+                        {% endif %}
+                    {% endfor %}
+                    {{ realisees_count }}
+                {% endwith %}
+            </div>
+        </div>
+        
+        <div class="info-card">
+            <div class="info-card-header">
+                <div class="info-card-icon">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div class="info-card-title">En retard</div>
+            </div>
+            <div class="info-card-value">
+                {% with retard_count=0 %}
+                    {% for intervention in interventions %}
+                        {% if intervention.statut == "En retard" %}
+                            {% with retard_count=retard_count|add:1 %}{% endwith %}
+                        {% endif %}
+                    {% endfor %}
+                    {{ retard_count }}
+                {% endwith %}
+            </div>
+        </div>
+        
+        <div class="info-card">
+            <div class="info-card-header">
+                <div class="info-card-icon">
+                    <i class="fas fa-calendar-day"></i>
+                </div>
+                <div class="info-card-title">Aujourd'hui</div>
+            </div>
+            <div class="info-card-value">
+                {% with aujourdhui_count=0 %}
+                    {% for intervention in interventions %}
+                        {% if intervention.statut == "Aujourd'hui" %}
+                            {% with aujourdhui_count=aujourdhui_count|add:1 %}{% endwith %}
+                        {% endif %}
+                    {% endfor %}
+                    {{ aujourdhui_count }}
+                {% endwith %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="btn-group">
+        <a href="{% url 'intervention_add' %}" class="btn btn-primary action-btn">
+            <i class="fas fa-plus"></i> Nouvelle intervention
+        </a>
+        <button class="btn btn-secondary" onclick="exportData()">
+            <i class="fas fa-download"></i> Exporter
+        </button>
+    </div>
+    
+    <div class="filters-container">
+        <div class="filter-group">
+            <label class="filter-label" for="type-filter">Type:</label>
+            <select class="filter-select" id="type-filter">
+                <option value="">Tous les types</option>
+                {% for type in types_intervention %}
+                    <option value="{{ type }}">{{ type }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="filter-group">
+            <label class="filter-label" for="statut-filter">Statut:</label>
+            <select class="filter-select" id="statut-filter">
+                <option value="">Tous les statuts</option>
+                <option value="Planifiée">Planifiée</option>
+                <option value="Aujourd'hui">Aujourd'hui</option>
+                <option value="En retard">En retard</option>
+                <option value="Réalisée">Réalisée</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label class="filter-label" for="ruche-filter">Ruche:</label>
+            <select class="filter-select" id="ruche-filter">
+                <option value="">Toutes les ruches</option>
+                {% for ruche in ruches %}
+                    <option value="{{ ruche.id }}">{{ ruche.description }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="filter-group">
+            <label class="filter-label" for="localisation-filter">Localisation:</label>
+            <select class="filter-select" id="localisation-filter">
+                <option value="">Toutes les localisations</option>
+                {% for localisation in localisations %}
+                    <option value="{{ localisation.id }}">{{ localisation.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="filter-group">
+            <label class="filter-label" for="periode-filter">Période:</label>
+            <select class="filter-select" id="periode-filter">
+                <option value="">Toutes les périodes</option>
+                <option value="7">7 prochains jours</option>
+                <option value="30">30 prochains jours</option>
+                <option value="90">3 prochains mois</option>
+                <option value="past">Interventions passées</option>
+            </select>
+        </div>
+        <div class="filter-group" style="position: relative;">
+            <label class="filter-label">Recherche :</label>
+            <input type="text" class="search-input" id="intervention-search" placeholder="Rechercher...">
+            <i class="fas fa-search search-icon"></i>
+        </div>
+    </div>
+    
+    <div class="elevage-card">
+        <div class="table-container">
+            <table class="elevage-table" id="interventions-table">
+                <thead>
+                    <tr>
+                        <th>Titre</th>
+                        <th>Type</th>
+                        <th>Date prévue</th>
+                        <th>Date réalisation</th>
+                        <th>Ruche</th>
+                        <th>Localisation</th>
+                        <th>Statut</th>
+                        <th>Détails</th>
+                        <th class="actions-column">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for intervention in interventions %}
+                    <tr data-type="{{ intervention.intervention_type.name }}" 
+                        data-statut="{{ intervention.statut }}" 
+                        data-ruche="{{ intervention.ruche.id|default:'' }}" 
+                        data-localisation="{{ intervention.localization.id|default:'' }}" 
+                        data-date="{{ intervention.date_prevue|date:'Y-m-d' }}"
+                        class="intervention-row">
+                        <td>{{ intervention.title }}</td>
+                        <td>
+                            <span class="tag tag-info">{{ intervention.intervention_type.name }}</span>
+                        </td>
+                        <td>{{ intervention.date_prevue|date:"d/m/Y" }}</td>
+                        <td>
+                            {% if intervention.date_realisation %}
+                                {{ intervention.date_realisation|date:"d/m/Y" }}
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if intervention.ruche %}
+                                <a href="{% url 'ruche_details' intervention.ruche.id %}" class="link-hover">
+                                    {{ intervention.ruche.description }}
+                                </a>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if intervention.localization %}
+                                <span class="tag tag-secondary">{{ intervention.localization.name }}</span>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if intervention.statut_class == 'success' %}
+                                <span class="tag tag-success">{{ intervention.statut }}</span>
+                            {% elif intervention.statut_class == 'danger' %}
+                                <span class="tag tag-danger">{{ intervention.statut }}</span>
+                            {% elif intervention.statut_class == 'warning' %}
+                                <span class="tag tag-warning">{{ intervention.statut }}</span>
+                            {% else %}
+                                <span class="tag tag-info">{{ intervention.statut }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="cell-expand">{{ intervention.details|truncatechars:50 }}</span>
+                        </td>
+                        <td class="actions-column">
+                            <div style="display: flex; gap: 0.25rem;">
+                                <a href="{% url 'intervention_details' intervention.id %}" class="btn btn-secondary" style="padding: 0.4rem;" title="Voir détails">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{% url 'intervention_edit' intervention.id %}" class="btn btn-primary" style="padding: 0.4rem;" title="Modifier">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                {% if intervention.statut != "Réalisée" %}
+                                <button class="btn btn-success" style="padding: 0.4rem;" title="Marquer comme réalisée" onclick="markAsCompleted({{ intervention.id }})">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" style="text-align: center; color: var(--text-secondary); padding: 2rem;">
+                            Aucune intervention enregistrée.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Filtrage des interventions
+    const typeFilter = document.getElementById('type-filter');
+    const statutFilter = document.getElementById('statut-filter');
+    const rucheFilter = document.getElementById('ruche-filter');
+    const localisationFilter = document.getElementById('localisation-filter');
+    const periodeFilter = document.getElementById('periode-filter');
+    const searchInput = document.getElementById('intervention-search');
+    const interventionRows = document.querySelectorAll('.intervention-row');
+    
+    function filterInterventions() {
+        const typeValue = typeFilter.value.toLowerCase();
+        const statutValue = statutFilter.value.toLowerCase();
+        const rucheValue = rucheFilter.value;
+        const localisationValue = localisationFilter.value;
+        const periodeValue = periodeFilter.value;
+        const searchValue = searchInput.value.toLowerCase();
+        
+        const today = new Date();
+        
+        interventionRows.forEach(row => {
+            const type = row.getAttribute('data-type')?.toLowerCase() || '';
+            const statut = row.getAttribute('data-statut')?.toLowerCase() || '';
+            const ruche = row.getAttribute('data-ruche') || '';
+            const localisation = row.getAttribute('data-localisation') || '';
+            const dateStr = row.getAttribute('data-date');
+            const text = row.textContent.toLowerCase();
+            
+            // Vérifier les filtres de base
+            const matchesType = !typeValue || type.includes(typeValue);
+            const matchesStatut = !statutValue || statut.includes(statutValue);
+            const matchesRuche = !rucheValue || ruche === rucheValue;
+            const matchesLocalisation = !localisationValue || localisation === localisationValue;
+            const matchesSearch = !searchValue || text.includes(searchValue);
+            
+            // Vérifier le filtre de période
+            let matchesPeriode = true;
+            if (periodeValue) {
+                const date = new Date(dateStr);
+                if (periodeValue === 'past') {
+                    matchesPeriode = date < today;
+                } else {
+                    const diffTime = date - today;
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    const periodeDays = parseInt(periodeValue, 10);
+                    matchesPeriode = diffDays >= 0 && diffDays <= periodeDays;
+                }
+            }
+            
+            if (matchesType && matchesStatut && matchesRuche && matchesLocalisation && matchesPeriode && matchesSearch) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+    
+    // Attacher les événements de filtrage
+    typeFilter.addEventListener('change', filterInterventions);
+    statutFilter.addEventListener('change', filterInterventions);
+    rucheFilter.addEventListener('change', filterInterventions);
+    localisationFilter.addEventListener('change', filterInterventions);
+    periodeFilter.addEventListener('change', filterInterventions);
+    searchInput.addEventListener('input', filterInterventions);
+    
+    // Mise en évidence des interventions urgentes
+    interventionRows.forEach(row => {
+        const statut = row.getAttribute('data-statut');
+        if (statut === 'En retard') {
+            row.style.borderLeft = '4px solid var(--queen-red)';
+        } else if (statut === 'Aujourd\'hui') {
+            row.style.borderLeft = '4px solid var(--honey-primary)';
+        }
+    });
+});
+
+function markAsCompleted(interventionId) {
+    if (confirm('Marquer cette intervention comme réalisée ?')) {
+        // In a real implementation, this would make an AJAX call
+        // For now, we'll simulate the action
+        fetch(`/elevage/interventions/${interventionId}/complete/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                'date_realisation': new Date().toISOString().split('T')[0]
+            })
+        })
+        .then(response => {
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert('Erreur lors de la mise à jour');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Erreur lors de la mise à jour');
+        });
+    }
+}
+
+function exportData() {
+    // Implement export functionality
+    alert('Fonctionnalité d\'export à implémenter');
+}
+</script>
+
+<style>
+/* Intervention specific styles */
+.intervention-row {
+    transition: all var(--transition-medium);
+}
+
+.intervention-row:hover {
+    background-color: var(--glass-overlay);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.link-hover {
+    color: var(--honey-primary);
+    text-decoration: none;
+    transition: all var(--transition-fast);
+}
+
+.link-hover:hover {
+    color: var(--honey-dark);
+    text-decoration: underline;
+}
+
+.text-muted {
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+/* Priority indicators */
+.intervention-row[data-statut="En retard"] {
+    animation: gentlePulse 3s infinite ease-in-out;
+}
+
+@keyframes gentlePulse {
+    0%, 100% { 
+        background-color: rgba(255, 51, 102, 0.05); 
+    }
+    50% { 
+        background-color: rgba(255, 51, 102, 0.15); 
+    }
+}
+
+/* Enhanced mobile responsiveness */
+@media (max-width: 768px) {
+    .filters-container {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .filter-group {
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+    
+    .filter-select,
+    .search-input {
+        width: 100%;
+    }
+    
+    .actions-column {
+        min-width: 120px;
+    }
+    
+    .elevage-table th,
+    .elevage-table td {
+        min-width: 80px;
+        font-size: 0.85rem;
+        padding: 0.5rem 0.25rem;
+    }
+    
+    .btn {
+        padding: 0.3rem;
+        font-size: 0.8rem;
+    }
+}
+
+/* Status-specific row styling */
+.intervention-row[data-statut="Réalisée"] {
+    opacity: 0.8;
+}
+
+.intervention-row[data-statut="En retard"] {
+    border-left: 4px solid var(--queen-red);
+}
+
+.intervention-row[data-statut="Aujourd'hui"] {
+    border-left: 4px solid var(--honey-primary);
+}
+</style>
+{% endblock %}
