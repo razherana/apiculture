@@ -3,7 +3,6 @@ from django.db.models import Sum
 from django.db.models import Count
 from pytz import timezone as pytz_timezone
 from datetime import datetime, timedelta 
-from django.utils import timezone
 from django.db.models import Count, Avg, Sum
 from datetime import datetime, timedelta
 from projet.models.productions import Recolte

@@ -40,7 +40,7 @@
                     </div>
                     <div class="mini-card small-card">
                         <div class="mini-card-title">Chiffre d'affaires</div>
-                        <div class="mini-card-value" id="val-ca">0€</div>
+                        <div class="mini-card-value" id="val-ca">0Ar</div>
                     </div>
                 </div>
                 <div id="commandes-stats" class="small-card"></div>
@@ -69,7 +69,7 @@ function renderMiniCards(type) {
     document.getElementById("val-commandes-livrees").innerText = stats.commandes_livrees;
     document.getElementById("val-commandes-annulees").innerText = stats.commandes_annulees;
     document.getElementById("val-taux-livraison").innerText = (stats.taux_livraison * 100).toFixed(1) + '%';
-    document.getElementById("val-ca").innerText = stats.ca_estime.toFixed(2) + '€';
+    document.getElementById("val-ca").innerText = stats.ca_estime.toFixed(2) + 'Ar';
 }
 
 function renderCommandesStats(type){
@@ -92,7 +92,7 @@ function renderCommandesStats(type){
             <tr><th>Commandes livrées</th><td>${stats.commandes_livrees}</td></tr>
             <tr><th>Commandes annulées</th><td>${stats.commandes_annulees}</td></tr>
             <tr><th>Taux de livraison</th><td>${(stats.taux_livraison * 100).toFixed(1)}%</td></tr>
-            <tr><th>Chiffre d'affaires</th><td>${stats.ca_estime.toFixed(2)}€</td></tr>
+            <tr><th>Chiffre d'affaires</th><td>${stats.ca_estime.toFixed(2)}Ar</td></tr>
         </table>
         <h4 style="margin-top:1em;">Commandes par jour</h4>
         <table class="stat-table">${jourHtml}</table>

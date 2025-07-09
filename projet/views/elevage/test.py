@@ -1,13 +1,12 @@
 from django.shortcuts import redirect, render
 from datetime import datetime, timedelta
 import random
-import json
 from django.utils import timezone
 from django.db import models
 from django.http import JsonResponse
 from projet.models.ressources import (
-    Consommable, ConsommableConsomme, ConsommableType, EssaimDetail, EssaimOrigin, EssaimRace, Ruche, RucheStatus, RucheStatusHistory, Localization, 
-    RucheType, Essaim, EssaimStatus, EssaimStatusHistory
+    ConsommableType, EssaimDetail, EssaimOrigin, EssaimRace, Ruche, RucheStatus, Localization, 
+    RucheType, Essaim
 )
 from projet.models.productions import Intervention, InterventionType
 

@@ -102,7 +102,7 @@
                                 data-nom="{{ miel.nom }}"
                                 data-unite="{{ miel.unite }}"
                                 data-quantite-unite="{{ miel.quantite_unite }}">
-                            {{ miel.nom }} - {{ miel.prix }}€ ({{ miel.quantite_unite }}{{ miel.unite }})
+                            {{ miel.nom }} - {{ miel.prix }}Ar ({{ miel.quantite_unite }}{{ miel.unite }})
                         </option>
                     {% endfor %}
                 </select>
@@ -116,7 +116,7 @@
                     <!-- Cart items will be added here dynamically -->
                 </div>
                 <div class="cart-total">
-                    Total estimé: <span id="total-price">0.00</span>€
+                    Total estimé: <span id="total-price">0.00</span>Ar
                 </div>
             </div>
         </div>
@@ -196,7 +196,7 @@ function updateCartDisplay() {
         cartItem.innerHTML = `
             <div>
                 <strong>${item.nom}</strong><br>
-                ${item.quantite} × ${item.prix}€ = ${itemTotal.toFixed(2)}€
+                ${item.quantite} × ${item.prix}Ar = ${itemTotal.toFixed(2)}Ar
             </div>
             <button type="button" class="remove-btn" onclick="removeFromCart(${index})">Supprimer</button>
         `;

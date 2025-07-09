@@ -1,9 +1,4 @@
-from django.db import models
-from django.db.models import Sum, Count, Avg
 
-from projet.models.ressources import Ruche, Essaim, Localization
-from projet.models.productions import Miel, Recolte
-from projet.models.ventes import Vente, CommandeDetail
 
 
 # class StatistiqueDashboard(models.Model):
