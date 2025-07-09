@@ -15,7 +15,6 @@
             <thead>
                 <tr>
                     <th>Type</th>
-                    <th>Désignation</th>
                     <th>Date d'ajout</th>
                     <th>Statut</th>
                     <th>Durée de vie (mois)</th>
@@ -25,10 +24,9 @@
                 {% for item in materiels %}
                 <tr>
                     <td>{{ item.type }}</td>
-                    <td>{{ item.designation }}</td>
                     <td>{{ item.date_ajout }}</td>
                     <td>{{ item.statut }}</td>
-                    <td>{{ item.duree_vie }}</td>
+                    <td>{{ item.durre_de_vie_estimee }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
