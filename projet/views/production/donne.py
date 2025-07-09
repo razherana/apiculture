@@ -2,6 +2,8 @@ from django.shortcuts import redirect, render
 from django.db.models import Sum
 from django.db.models import Count
 from django.contrib import messages
+from django.http import JsonResponse
+import json
 
 from datetime import datetime, timedelta
 from projet.models.productions import Recolte
@@ -471,3 +473,42 @@ def analyse_rentabilite(request):
     }
 
     return render(request, 'production/analyse_rentabilite.html', context)
+
+
+def materiel_type_create(request):
+    """Create a new materiel type"""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            name = data.get('name', '').strip()
+            designation = data.get('designation', '').strip()
+            seuil_alerte = data.get('seuil_alerte')
+            
+            if not name or not designation or seuil_alerte is None:
+                return JsonResponse({'success': False, 'message': 'Tous les champs sont requis'})
+            
+            # Check if materiel type already exists
+            if MaterielType.objects.filter(name=name).exists():
+                return JsonResponse({'success': False, 'message': 'Ce type de matériel existe déjà'})
+            
+            # Create new materiel type
+            materiel_type = MaterielType.objects.create(
+                name=name,
+                designation=designation,
+                seuil_alerte=int(seuil_alerte)
+            )
+            
+            return JsonResponse({
+                'success': True,
+                'materiel_type': {
+                    'id': materiel_type.id,
+                    'name': materiel_type.name,
+                    'designation': materiel_type.designation,
+                    'seuil_alerte': materiel_type.seuil_alerte
+                }
+            })
+            
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)})
+    
+    return JsonResponse({'success': False, 'message': 'Méthode non autorisée'})
