@@ -100,8 +100,9 @@ def stats_couvain(request):
 # Vue pour les statistiques de mortalité
 def stats_mortalite(request):
     """
-    Dynamic database-driven mortality statistics view.
+    Fully dynamic database-driven mortality statistics view.
     All calculations are based on actual data from EssaimDetail and EssaimSanteHistory models.
+    No hardcoded or probable cause logic - everything comes from database.
     """
     # Get actual data from models
     ruches = Ruche.objects.select_related('localizations', 'essaim').all()
@@ -112,9 +113,11 @@ def stats_mortalite(request):
     # Calculate mortality data from actual ruches using EssaimDetail
     mortalite_data = []
     ruchers_mortalite = {}
+    total_colonies_tracked = 0
     
     for ruche in ruches:
         if ruche.essaim:
+            total_colonies_tracked += 1
             # Get total population from all EssaimDetail entries (living bees)
             living_details = EssaimDetail.objects.filter(
                 essaim=ruche.essaim,
@@ -155,13 +158,28 @@ def stats_mortalite(request):
             else:
                 mortality_rate = 0.0  # No data means no mortality calculated
             
+            # Get the latest health status for this essaim
+            latest_health = EssaimSanteHistory.objects.filter(
+                essaim=ruche.essaim
+            ).order_by('-created_at').first()
+            
+            # Get recent interventions/notes related to deaths
+            recent_death_notes = EssaimDetail.objects.filter(
+                essaim=ruche.essaim,
+                is_death=True,
+                created_at__gte=timezone.now() - timedelta(days=30)
+            ).values_list('note', flat=True)
+            
             mortalite_data.append({
                 'ruche_id': ruche.id,
                 'ruche_nom': ruche.description,
                 'taux_mortalite': round(mortality_rate, 1),
                 'localisation': ruche.localizations.name if ruche.localizations else 'Non défini',
                 'total_deaths': total_deaths,
-                'total_population': total_population
+                'total_population': total_population,
+                'total_living': total_living,
+                'latest_health': latest_health,
+                'recent_death_notes': list(recent_death_notes) if recent_death_notes else []
             })
             
             # Group by location for rucher statistics
@@ -195,6 +213,12 @@ def stats_mortalite(request):
         mortalite_mensuelle.append(total_monthly_deaths)
     
     mortalite_mensuelle.reverse()
+    
+    # If no data, add some sample data for demonstration
+    if all(x == 0 for x in mortalite_mensuelle):
+        # Add minimal sample data to show chart structure
+        mortalite_mensuelle = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        # You could add some small random values for demo: [random.randint(0, 5) for _ in range(12)]
     
     # Calculate statistics for ruchers with actual mortality causes from health data
     mortalite_ruchers = []
@@ -300,39 +324,70 @@ def stats_mortalite(request):
     annees_hivernale.reverse()
     mortalite_hivernale.reverse()
     
-    # Dynamic causes of mortality based on actual health data
+    # If no winter data, ensure we have valid arrays for charts
+    if all(x == 0 for x in mortalite_hivernale):
+        # Keep zeros but ensure we have data points
+        mortalite_hivernale = [0, 0, 0, 0, 0, 0]
+    
+    # Dynamic causes of mortality based on actual health data and death notes
     health_records = EssaimSanteHistory.objects.all()
     
     # Collect all parasites and diseases from health records
     cause_counts = {}
+    parasite_frequency = {}
+    disease_frequency = {}
+    
     for record in health_records:
         if record.parasite and record.parasite.strip():
             parasite = record.parasite.strip()
-            cause_counts[parasite] = cause_counts.get(parasite, 0) + 1
+            cause_counts[f"Parasite: {parasite}"] = cause_counts.get(f"Parasite: {parasite}", 0) + 1
+            parasite_frequency[parasite] = parasite_frequency.get(parasite, 0) + 1
         
         if record.maladie and record.maladie.strip():
             disease = record.maladie.strip()
-            cause_counts[disease] = cause_counts.get(disease, 0) + 1
+            cause_counts[f"Maladie: {disease}"] = cause_counts.get(f"Maladie: {disease}", 0) + 1
+            disease_frequency[disease] = disease_frequency.get(disease, 0) + 1
     
-    # Prepare causes data for charts
+    # Also analyze death notes for additional insights
+    death_notes = EssaimDetail.objects.filter(
+        is_death=True,
+        note__isnull=False
+    ).exclude(note__exact='').values_list('note', flat=True)
+    
+    # Common keywords in death notes
+    death_keywords = {}
+    for note in death_notes:
+        if note and note.strip():
+            # Simple keyword extraction (could be enhanced with better NLP)
+            words = note.lower().split()
+            for word in words:
+                if len(word) > 3:  # Filter out very short words
+                    death_keywords[word] = death_keywords.get(word, 0) + 1
+    
+    # Prepare causes data for charts - now fully dynamic
     if cause_counts:
         # Sort by frequency and take top 5
         sorted_causes = sorted(cause_counts.items(), key=lambda x: x[1], reverse=True)[:5]
         causes_labels = [cause[0] for cause in sorted_causes]
         causes_data = [cause[1] for cause in sorted_causes]
         
-        # If we have less than 5 causes, pad with "Autres"
-        if len(causes_labels) < 5:
-            causes_labels.append("Autres")
-            causes_data.append(0)
+        # If we have less than 5 causes, don't pad with "Autres"
+        if len(causes_labels) == 0:
+            causes_labels = ["Aucune donnée de santé disponible"]
+            causes_data = [0]
     else:
-        # Default labels when no health data is available
-        causes_labels = ["Aucune donnée disponible"]
-        causes_data = [1]
+        # No health data available
+        causes_labels = ["Aucune donnée de santé disponible"]
+        causes_data = [0]
     
     # Prepare data for charts
     noms_ruches = [data['ruche_nom'] for data in mortalite_data]
     taux_mortalite = [data['taux_mortalite'] for data in mortalite_data]
+    
+    # If no ruche data, add sample data to show chart structure
+    if not noms_ruches:
+        noms_ruches = ['Aucune donnée']
+        taux_mortalite = [0]
     
     # Historical mortality for each hive based on actual death records
     historique_mortalite = {}
@@ -373,21 +428,45 @@ def stats_mortalite(request):
     
     # Calculate additional metrics for the template
     total_deaths = sum(data['total_deaths'] for data in mortalite_data)
+    total_living = sum(data['total_living'] for data in mortalite_data)
     has_data = len(mortalite_data) > 0
     
     # Calculate average mortality rate
     if mortalite_data:
         average_mortality = sum(data['taux_mortalite'] for data in mortalite_data) / len(mortalite_data)
+        average_monthly_mortality = sum(mortalite_mensuelle) / 12 if mortalite_mensuelle else 0
     else:
         average_mortality = 0.0
+        average_monthly_mortality = 0.0
     
-    # Determine mortality status
+    # Determine mortality status based on actual data
     if average_mortality > 25:
         mortality_status = 'critical'
     elif average_mortality > 15:
         mortality_status = 'warning'
     else:
         mortality_status = 'good'
+    
+    # Get recent trends (last 3 months vs previous 3 months)
+    recent_deaths = sum(mortalite_mensuelle[-3:]) if len(mortalite_mensuelle) >= 3 else 0
+    previous_deaths = sum(mortalite_mensuelle[-6:-3]) if len(mortalite_mensuelle) >= 6 else 0
+    
+    if previous_deaths > 0:
+        trend_percentage = ((recent_deaths - previous_deaths) / previous_deaths) * 100
+    else:
+        trend_percentage = 0.0
+    
+    # Get most affected colonies
+    most_affected = sorted(mortalite_data, key=lambda x: x['taux_mortalite'], reverse=True)[:3]
+    
+    # Get behavioral patterns from health data
+    comportement_stats = {}
+    if has_data:
+        comportements = EssaimSanteHistory.objects.select_related('comportement').all()
+        for comp in comportements:
+            if comp.comportement:
+                comp_name = comp.comportement.description
+                comportement_stats[comp_name] = comportement_stats.get(comp_name, 0) + 1
     
     return render(request, 'elevage/stats/mortalite.html', {
         'dates': json.dumps(dates),
@@ -403,8 +482,17 @@ def stats_mortalite(request):
         'ruches_data': mortalite_data,
         'has_data': has_data,
         'total_deaths': total_deaths,
+        'total_living': total_living,
+        'total_colonies_tracked': total_colonies_tracked,
         'average_mortality': round(average_mortality, 1),
+        'average_monthly_mortality': round(average_monthly_mortality, 1),
         'mortality_status': mortality_status,
+        'trend_percentage': round(trend_percentage, 1),
+        'most_affected': most_affected,
+        'parasite_frequency': parasite_frequency,
+        'disease_frequency': disease_frequency,
+        'death_keywords': death_keywords,
+        'comportement_stats': comportement_stats,
     })
 
 # Vue pour les statistiques des reines
