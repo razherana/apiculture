@@ -630,7 +630,6 @@ def soin_add(request):
         dose = request.POST.get('dose', '')
         notes = request.POST.get('notes', '')
         date_realisation = request.POST.get('date_realisation')
-        
         try:
             # Create new care treatment using Intervention model
             soin = Intervention(
