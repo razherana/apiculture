@@ -5,6 +5,8 @@
 {% block page_title %}Statistiques de mortalité{% endblock %}
 
 {% block extra_css %}
+<link rel="stylesheet" href="{% static 'elevage/css/elevage.css' %}">
+<link rel="stylesheet" href="{% static 'elevage/css/dark-mode-fix.css' %}">
 <style>
     .stat-summary {
         display: flex;
@@ -24,6 +26,12 @@
         box-shadow: var(--shadow-md);
         border: 1px solid var(--glass-border);
         text-align: center;
+        transition: all var(--transition-medium);
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-lg);
     }
     
     .stat-card h3 {
@@ -50,6 +58,7 @@
     .chart-container {
         position: relative;
         height: 400px;
+        margin-bottom: 1.5rem;
     }
     
     .ruche-card {
@@ -61,6 +70,12 @@
         backdrop-filter: blur(10px);
         -webkit-backdrop-filter: blur(10px);
         border: 1px solid var(--glass-border);
+        transition: all var(--transition-medium);
+    }
+    
+    .ruche-card:hover {
+        transform: translateX(5px);
+        box-shadow: var(--shadow-md);
     }
     
     .ruche-header {
@@ -79,27 +94,67 @@
     .mortalite-gauge {
         width: 100%;
         height: 12px;
-        background-color: #e0e0e0;
+        background-color: rgba(0, 0, 0, 0.1);
         border-radius: 6px;
         overflow: hidden;
         margin: 0.5rem 0;
+        position: relative;
     }
     
     .mortalite-fill {
         height: 100%;
         border-radius: 6px;
+        transition: width 0.8s ease;
     }
     
     .mortalite-critical {
-        background-color: var(--queen-red);
+        background: linear-gradient(90deg, var(--queen-red), #FF6B6B);
     }
     
     .mortalite-warning {
-        background-color: var(--honey-primary);
+        background: linear-gradient(90deg, var(--honey-primary), #FFE066);
     }
     
     .mortalite-good {
-        background-color: var(--pollen-green);
+        background: linear-gradient(90deg, var(--pollen-green), #66CC88);
+    }
+    
+    .mortalite-info {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 0.75rem;
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+    }
+    
+    .causes-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .info-section {
+        background: var(--glass-bg);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border-radius: var(--radius-lg);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        border: 1px solid var(--glass-border);
+    }
+    
+    .info-section h4 {
+        color: var(--honey-primary);
+        margin-bottom: 1rem;
+        font-size: 1.1rem;
+    }
+    
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
     }
 </style>
 {% endblock %}
@@ -124,23 +179,33 @@
         <div class="stat-card">
             <h3>Meilleure ruche</h3>
             <div class="stat-value" id="meilleure-ruche">-</div>
-            <div class="stat-label">Plus faible taux de mortalité</div>
+            <div class="stat-label">Plus faible taux</div>
         </div>
         
         <div class="stat-card">
-            <h3>Indice sanitaire</h3>
-            <div class="stat-value" id="indice-sanitaire">-</div>
-            <div class="stat-label">Santé globale du rucher</div>
+            <h3>Total décès</h3>
+            <div class="stat-value" id="total-deces">-</div>
+            <div class="stat-label">Abeilles enregistrées</div>
         </div>
     </div>
     
-    <div class="elevage-card">
-        <h3 style="color: var(--honey-primary); margin-bottom: 1rem;">
-            <i class="fas fa-chart-line"></i> Évolution de la mortalité
-        </h3>
+    <div class="causes-grid">
+        <div class="elevage-card">
+            <h3 style="color: var(--honey-primary); margin-bottom: 1rem;">
+                <i class="fas fa-chart-line"></i> Évolution mensuelle
+            </h3>
+            <div class="chart-container">
+                <canvas id="chart-evolution"></canvas>
+            </div>
+        </div>
         
-        <div class="chart-container">
-            <canvas id="chart-evolution"></canvas>
+        <div class="elevage-card">
+            <h3 style="color: var(--honey-primary); margin-bottom: 1rem;">
+                <i class="fas fa-chart-pie"></i> Causes estimées
+            </h3>
+            <div class="chart-container">
+                <canvas id="causes-chart"></canvas>
+            </div>
         </div>
     </div>
     
@@ -148,7 +213,6 @@
         <h3 style="color: var(--honey-primary); margin-bottom: 1rem;">
             <i class="fas fa-chart-bar"></i> Taux de mortalité par ruche
         </h3>
-        
         <div class="chart-container">
             <canvas id="chart-ruches"></canvas>
         </div>
@@ -156,41 +220,83 @@
     
     <div class="elevage-card">
         <h3 style="color: var(--honey-primary); margin-bottom: 1rem;">
-            <i class="fas fa-list"></i> Détail par ruche
+            <i class="fas fa-snowflake"></i> Mortalité hivernale (6 dernières années)
         </h3>
-        
-        <div id="ruches-list">
-            <!-- Liste des ruches générée par JavaScript -->
+        <div class="chart-container">
+            <canvas id="winter-mortality-chart"></canvas>
         </div>
     </div>
     
     <div class="elevage-card">
         <h3 style="color: var(--honey-primary); margin-bottom: 1rem;">
-            <i class="fas fa-info-circle"></i> À propos de l'indice de dépopulation
+            <i class="fas fa-list"></i> Détail par ruche
+        </h3>
+        <div id="ruches-list">
+            <!-- Liste des ruches générée par JavaScript -->
+        </div>
+    </div>
+    
+    {% if mortalite_ruchers %}
+    <div class="elevage-card">
+        <h3 style="color: var(--honey-primary); margin-bottom: 1rem;">
+            <i class="fas fa-map-marker-alt"></i> Comparaison par rucher
+        </h3>
+        <div class="table-container">
+            <table class="elevage-table">
+                <thead>
+                    <tr>
+                        <th>Rucher</th>
+                        <th>Taux annuel</th>
+                        <th>Taux hivernal</th>
+                        <th>Cause principale</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for rucher in mortalite_ruchers %}
+                    <tr>
+                        <td>{{ rucher.nom }}</td>
+                        <td>
+                            <span class="tag {% if rucher.taux_annuel > 25 %}tag-danger{% elif rucher.taux_annuel > 15 %}tag-warning{% else %}tag-success{% endif %}">
+                                {{ rucher.taux_annuel }}%
+                            </span>
+                        </td>
+                        <td>{{ rucher.taux_hiver }}%</td>
+                        <td>{{ rucher.principale_cause }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+    
+    <div class="info-section">
+        <h3 style="color: var(--honey-primary); margin-bottom: 1rem;">
+            <i class="fas fa-info-circle"></i> Informations sur la mortalité des abeilles
         </h3>
         
-        <p>L'indice de dépopulation représente le pourcentage estimé d'abeilles perdues dans chaque ruche sur une période donnée. Un taux supérieur à 30% est considéré comme critique et nécessite une intervention rapide pour déterminer la cause (maladies, parasites, intoxication...).</p>
+        <p style="margin-bottom: 1.5rem;">L'indice de dépopulation est calculé à partir des enregistrements réels de mortalité dans la base de données. Les causes listées sont des estimations basées sur les connaissances apicoles générales.</p>
         
-        <div style="display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 1rem;">
-            <div style="flex: 1; min-width: 200px;">
-                <h4 style="color: var(--honey-primary); margin-bottom: 0.5rem;">Causes principales de mortalité</h4>
-                <ul style="padding-left: 1.5rem;">
-                    <li>Varroa destructor</li>
-                    <li>Pesticides et produits phytosanitaires</li>
-                    <li>Maladies (loque, nosémose)</li>
-                    <li>Stress environnemental</li>
-                    <li>Conditions climatiques extrêmes</li>
+        <div class="info-grid">
+            <div>
+                <h4>Causes principales de mortalité</h4>
+                <ul style="padding-left: 1.5rem; line-height: 1.6;">
+                    <li><strong>Varroa destructor</strong> - Principal parasite des abeilles</li>
+                    <li><strong>Famine</strong> - Manque de nourriture en période critique</li>
+                    <li><strong>Intoxication</strong> - Pesticides et produits chimiques</li>
+                    <li><strong>Froid</strong> - Conditions climatiques extrêmes</li>
+                    <li><strong>Autres</strong> - Maladies diverses et facteurs environnementaux</li>
                 </ul>
             </div>
             
-            <div style="flex: 1; min-width: 200px;">
-                <h4 style="color: var(--honey-primary); margin-bottom: 0.5rem;">Actions recommandées</h4>
-                <ul style="padding-left: 1.5rem;">
-                    <li>Traitement anti-varroa régulier</li>
-                    <li>Renouvellement des cires</li>
-                    <li>Nourrissement adapté</li>
-                    <li>Isolation en période hivernale</li>
-                    <li>Surveillance régulière</li>
+            <div>
+                <h4>Actions recommandées</h4>
+                <ul style="padding-left: 1.5rem; line-height: 1.6;">
+                    <li><strong>Surveillance régulière</strong> - Inspections mensuelles</li>
+                    <li><strong>Traitement préventif</strong> - Anti-varroa et nourrissement</li>
+                    <li><strong>Isolation hivernale</strong> - Protection contre le froid</li>
+                    <li><strong>Environnement sain</strong> - Éviter les zones polluées</li>
+                    <li><strong>Enregistrement précis</strong> - Suivi des mortalités</li>
                 </ul>
             </div>
         </div>
@@ -202,32 +308,37 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Récupérer les données
+    // Récupérer les données du serveur
     const noms_ruches = {{ noms_ruches|safe }};
     const taux_mortalite = {{ taux_mortalite|safe }};
     const dates = {{ dates|safe }};
-    const historique_mortalite = {{ historique_mortalite|safe }};
+    const mortaliteMensuelle = {{ mortalite_mensuelle|safe }};
+    const anneesHivernale = {{ annees_hivernale|safe }};
+    const mortaliteHivernale = {{ mortalite_hivernale|safe }};
+    const causesLabels = {{ causes_labels|safe }};
+    const causesData = {{ causes_data|safe }};
+    const ruchesData = {{ ruches_data|safe }};
     
     // Calculer les statistiques
-    const tauxMoyen = taux_mortalite.reduce((a, b) => a + b, 0) / taux_mortalite.length;
+    const tauxMoyen = taux_mortalite.length > 0 ? taux_mortalite.reduce((a, b) => a + b, 0) / taux_mortalite.length : 0;
     const ruchesCritiques = taux_mortalite.filter(taux => taux > 30).length;
-    const meilleurTaux = Math.min(...taux_mortalite);
+    const meilleurTaux = taux_mortalite.length > 0 ? Math.min(...taux_mortalite) : 0;
     const meilleureRucheIndex = taux_mortalite.indexOf(meilleurTaux);
-    const meilleureRucheNom = noms_ruches[meilleureRucheIndex];
+    const meilleureRucheNom = noms_ruches[meilleureRucheIndex] || 'Aucune';
     
-    // Indice sanitaire (simulé) - inversement proportionnel au taux de mortalité moyen
-    const indiceSanitaire = Math.max(1, Math.min(10, Math.round(10 - (tauxMoyen / 10))));
+    // Total des décès
+    const totalDeces = ruchesData.reduce((sum, ruche) => sum + (ruche.total_deaths || 0), 0);
     
     // Mettre à jour les statistiques
     document.getElementById('taux-moyen').textContent = `${Math.round(tauxMoyen)}%`;
     document.getElementById('ruches-critiques').textContent = ruchesCritiques;
-    document.getElementById('meilleure-ruche').textContent = `${meilleureRucheNom} (${meilleurTaux}%)`;
-    document.getElementById('indice-sanitaire').textContent = `${indiceSanitaire}/10`;
+    document.getElementById('meilleure-ruche').textContent = meilleureRucheNom;
+    document.getElementById('total-deces').textContent = totalDeces.toLocaleString();
     
     // Générer la liste des ruches
     const ruchesList = document.getElementById('ruches-list');
-    noms_ruches.forEach((nom, index) => {
-        const taux = taux_mortalite[index];
+    ruchesData.forEach((ruche) => {
+        const taux = ruche.taux_mortalite;
         let statusClass = 'mortalite-good';
         let statusText = 'Excellent';
         
@@ -243,7 +354,7 @@ document.addEventListener('DOMContentLoaded', function() {
         rucheCard.className = 'ruche-card';
         rucheCard.innerHTML = `
             <div class="ruche-header">
-                <div class="ruche-title">${nom}</div>
+                <div class="ruche-title">${ruche.ruche_nom}</div>
                 <div>
                     <span class="tag ${taux > 30 ? 'tag-danger' : taux > 15 ? 'tag-warning' : 'tag-success'}">
                         ${statusText}
@@ -253,169 +364,95 @@ document.addEventListener('DOMContentLoaded', function() {
             <div>
                 <strong>Taux de mortalité:</strong> ${taux}%
                 <div class="mortalite-gauge">
-                    <div class="mortalite-fill ${statusClass}" style="width: ${taux}%"></div>
+                    <div class="mortalite-fill ${statusClass}" style="width: ${Math.min(taux, 50)}%"></div>
                 </div>
-            </div>
-            <div style="display: flex; justify-content: space-between; margin-top: 0.75rem;">
-                <span>
-                    <i class="fas fa-calendar-alt"></i> Dernière mesure: Aujourd'hui
-                </span>
-                <a href="#" class="btn btn-secondary">
-                    <i class="fas fa-eye"></i> Détails
-                </a>
+                <div class="mortalite-info">
+                    <span>
+                        <i class="fas fa-map-marker-alt"></i> ${ruche.localisation}
+                    </span>
+                    <span>
+                        <i class="fas fa-skull"></i> ${ruche.total_deaths || 0} décès enregistrés
+                    </span>
+                </div>
             </div>
         `;
         
         ruchesList.appendChild(rucheCard);
     });
     
-    // Graphique d'évolution
+    // Configuration commune pour tous les graphiques
+    const commonOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                labels: {
+                    color: 'var(--text-primary)',
+                    font: {
+                        family: "'Plus Jakarta Sans', sans-serif"
+                    }
+                }
+            }
+        },
+        scales: {
+            y: {
+                grid: {
+                    color: 'rgba(255, 255, 255, 0.05)'
+                },
+                ticks: {
+                    color: 'var(--text-secondary)'
+                }
+            },
+            x: {
+                grid: {
+                    color: 'rgba(255, 255, 255, 0.05)'
+                },
+                ticks: {
+                    color: 'var(--text-secondary)'
+                }
+            }
+        }
+    };
+    
+    // Graphique d'évolution mensuelle
     const evolutionCtx = document.getElementById('chart-evolution').getContext('2d');
-    const evolutionChart = new Chart(evolutionCtx, {
-        type: 'line',
-        data: {
-            labels: dates,
-            datasets: Object.keys(historique_mortalite).map((ruche, index) => {
-                const colors = [
-                    'rgba(255, 209, 0, 0.7)',
-                    'rgba(0, 204, 136, 0.7)',
-                    'rgba(0, 136, 255, 0.7)',
-                    'rgba(255, 51, 102, 0.7)',
-                    'rgba(153, 102, 255, 0.7)',
-                    'rgba(255, 159, 64, 0.7)',
-                    'rgba(75, 192, 192, 0.7)',
-                    'rgba(54, 162, 235, 0.7)'
-                ];
-                
-                return {
-                    label: ruche,
-                    data: historique_mortalite[ruche],
-                    borderColor: colors[index % colors.length],
-                    backgroundColor: colors[index % colors.length].replace('0.7', '0.1'),
-                    tension: 0.3,
-                    pointRadius: 3,
-                    pointHoverRadius: 5
-                };
-            })
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'top',
-                },
-                tooltip: {
-                    mode: 'index',
-                    intersect: false,
-                }
-            },
-            scales: {
-                y: {
-                    min: 0,
-                    max: 100,
-                    title: {
-                        display: true,
-                        text: 'Taux de mortalité (%)'
-                    }
-                }
-            }
-        }
-    });
-    
-    // Graphique par ruche
-    const ruchesCtx = document.getElementById('chart-ruches').getContext('2d');
-    const ruchesChart = new Chart(ruchesCtx, {
-        type: 'bar',
-        data: {
-            labels: noms_ruches,
-            datasets: [{
-                label: 'Taux de mortalité (%)',
-                data: taux_mortalite,
-                backgroundColor: taux_mortalite.map(taux => {
-                    if (taux > 30) return 'rgba(255, 51, 102, 0.7)';
-                    if (taux > 15) return 'rgba(255, 209, 0, 0.7)';
-                    return 'rgba(0, 204, 136, 0.7)';
-                }),
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: false
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    max: 30,
-                    title: {
-                        display: true,
-                        text: 'Taux de mortalité (%)'
-                    },
-                    grid: {
-                        color: 'rgba(255, 255, 255, 0.05)'
-                    }
-                },
-                x: {
-                    grid: {
-                        color: 'rgba(255, 255, 255, 0.05)'
-                    }
-                }
-            }
-        }
-    });
-    
-    // Configuration du graphique de mortalité mensuelle
-    const monthlyMortalityCtx = document.getElementById('monthly-mortality-chart').getContext('2d');
-    const monthlyMortalityChart = new Chart(monthlyMortalityCtx, {
+    new Chart(evolutionCtx, {
         type: 'line',
         data: {
             labels: dates,
             datasets: [{
-                label: 'Abeilles mortes par jour',
+                label: 'Abeilles décédées',
                 data: mortaliteMensuelle,
                 borderColor: '#FF3366',
                 backgroundColor: 'rgba(255, 51, 102, 0.1)',
-                borderWidth: 2,
-                tension: 0.3,
-                fill: true
+                borderWidth: 3,
+                tension: 0.4,
+                fill: true,
+                pointBackgroundColor: '#FF3366',
+                pointBorderColor: '#ffffff',
+                pointBorderWidth: 2,
+                pointRadius: 5
             }]
         },
         options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: false
-                }
-            },
+            ...commonOptions,
             scales: {
+                ...commonOptions.scales,
                 y: {
+                    ...commonOptions.scales.y,
                     beginAtZero: true,
                     title: {
                         display: true,
-                        text: 'Nombre d\'abeilles'
-                    },
-                    grid: {
-                        color: 'rgba(255, 255, 255, 0.05)'
-                    }
-                },
-                x: {
-                    grid: {
-                        color: 'rgba(255, 255, 255, 0.05)'
+                        text: 'Nombre d\'abeilles décédées'
                     }
                 }
             }
         }
     });
     
-    // Configuration du graphique des causes de mortalité
+    // Graphique des causes (estimées)
     const causesCtx = document.getElementById('causes-chart').getContext('2d');
-    const causesChart = new Chart(causesCtx, {
+    new Chart(causesCtx, {
         type: 'doughnut',
         data: {
             labels: causesLabels,
@@ -423,9 +460,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 data: causesData,
                 backgroundColor: [
                     '#FFD100',
+                    '#FF3366',
                     '#0088FF',
                     '#00CC88',
-                    '#FF3366',
                     '#8A33FF'
                 ],
                 borderWidth: 0,
@@ -440,14 +477,99 @@ document.addEventListener('DOMContentLoaded', function() {
                 legend: {
                     position: 'right',
                     labels: {
-                        padding: 15
+                        padding: 15,
+                        color: 'var(--text-primary)'
                     }
                 },
                 tooltip: {
                     callbacks: {
                         label: function(context) {
-                            return `${context.label}: ${context.parsed}%`;
+                            return `${context.label}: ${context.parsed}% (estimé)`;
                         }
+                    }
+                }
+            }
+        }
+    });
+    
+    // Graphique par ruche
+    const ruchesCtx = document.getElementById('chart-ruches').getContext('2d');
+    new Chart(ruchesCtx, {
+        type: 'bar',
+        data: {
+            labels: noms_ruches,
+            datasets: [{
+                label: 'Taux de mortalité (%)',
+                data: taux_mortalite,
+                backgroundColor: taux_mortalite.map(taux => {
+                    if (taux > 30) return 'rgba(255, 51, 102, 0.8)';
+                    if (taux > 15) return 'rgba(255, 209, 0, 0.8)';
+                    return 'rgba(0, 204, 136, 0.8)';
+                }),
+                borderColor: taux_mortalite.map(taux => {
+                    if (taux > 30) return '#FF3366';
+                    if (taux > 15) return '#FFD100';
+                    return '#00CC88';
+                }),
+                borderWidth: 2,
+                borderRadius: 4
+            }]
+        },
+        options: {
+            ...commonOptions,
+            plugins: {
+                ...commonOptions.plugins,
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                ...commonOptions.scales,
+                y: {
+                    ...commonOptions.scales.y,
+                    beginAtZero: true,
+                    max: 50,
+                    title: {
+                        display: true,
+                        text: 'Taux de mortalité (%)'
+                    }
+                }
+            }
+        }
+    });
+    
+    // Graphique de mortalité hivernale
+    const winterCtx = document.getElementById('winter-mortality-chart').getContext('2d');
+    new Chart(winterCtx, {
+        type: 'bar',
+        data: {
+            labels: anneesHivernale,
+            datasets: [{
+                label: 'Mortalité hivernale (%)',
+                data: mortaliteHivernale,
+                backgroundColor: 'rgba(0, 136, 255, 0.7)',
+                borderColor: '#0088FF',
+                borderWidth: 2,
+                borderRadius: 4
+            }]
+        },
+        options: {
+            ...commonOptions,
+            plugins: {
+                ...commonOptions.plugins,
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                ...commonOptions.scales,
+                y: {
+                    ...commonOptions.scales.y,
+                    beginAtZero: true,
+                    max: 30,
+                    title: {
+                        display: true,
+                        text: 'Taux de mortalité hivernale (%)'
                     }
                 }
             }

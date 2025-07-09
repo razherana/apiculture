@@ -5,17 +5,19 @@ from dateutil.relativedelta import relativedelta
 from pytz import timezone as pytz_timezone
 from datetime import datetime, timedelta 
 from django.utils import timezone
+from django.db.models import Count, Avg, Sum
+from datetime import datetime, timedelta
 from projet.models.productions import Recolte
-from projet.models.ressources import Ruche , HausseType , RucheHausseHistory , Hausse, HausseCadre , EssaimDetail , EssaimStatusHistory , EssaimStatus , Essaim , EssaimRace , EssaimOrigin
+from projet.models.ressources import EssaimSanteHistory, Ruche , HausseCadre , EssaimDetail
 from projet.models.ressources import Materiel , MaterielType , MaterielStatus , Consommable , ConsommableType , ConsommableConsomme 
-from projet.models.ventes import Vente , VenteDetail
+from projet.models.ventes import VenteDetail
 from projet.models.ressources import Ruche
 from projet.models.ressources import Materiel
 from projet.models.productions  import Task
-from projet.models.productions  import TaskStatusHistory
-from projet.models.productions  import TaskPriorite
-from projet.models.productions  import TaskType
 
+
+from django.shortcuts import render
+from projet.models.productions import Recolte
 
 def recolte_list(request):
     recolteModel = Recolte.objects.select_related("ruche").all()
@@ -34,6 +36,11 @@ def recolte_list(request):
     ]
 
     return render(request, 'production/recolte_list.html', {'recoltes': recoltes, 'page_title': 'Liste des Récoltes'})
+    # recoltes = [
+    #     {'id': 1, 'created_at': '2023-07-15', 'ruche': {'description': 'Ruche A1 - Forêt'}, 'poids_miel': 25.5, 'qualite': 8, 'taux_humidite': 17.5},
+    #     {'id': 2, 'created_at': '2023-07-18', 'ruche': {'description': 'Ruche B2 - Prairie'}, 'poids_miel': 18.0, 'qualite': 9, 'taux_humidite': 16.8},
+    #     {'id': 3, 'created_at': '2023-08-02', 'ruche': {'description': 'Ruche C4 - Montagne'}, 'poids_miel': 32.2, 'qualite': 7, 'taux_humidite': 18.1},
+    # ]
 
 
 def recolte_detail(request, pk):

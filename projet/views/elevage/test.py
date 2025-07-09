@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import redirect, render
 from datetime import datetime, timedelta
 import random
 import json
@@ -6,7 +6,7 @@ from django.utils import timezone
 from django.db import models
 from django.http import JsonResponse
 from projet.models.ressources import (
-    Ruche, RucheStatus, RucheStatusHistory, Localization, 
+    Consommable, ConsommableConsomme, ConsommableType, EssaimDetail, EssaimOrigin, EssaimRace, Ruche, RucheStatus, RucheStatusHistory, Localization, 
     RucheType, Essaim, EssaimStatus, EssaimStatusHistory
 )
 from projet.models.productions import Intervention, InterventionType
@@ -14,6 +14,26 @@ from projet.models.productions import Intervention, InterventionType
 # Données de test
 ruches_data = [
     {"id": 1, "nom": "Ruche Lavande", "type": "Dadant", "statut": "Active", "localisation": "Champ Sud", "date_installation": "2021-05-12", "force": 8, "production": 25.5, "nb_hausses": 2},
+    {"id": 2, "nom": "Ruche Tournesol", "type": "Langstroth", "statut": "Active", "localisation": "Verger Est", "date_installation": "2022-03-18", "force": 9, "production": 32.1, "nb_hausses": 3},
+    {"id": 3, "nom": "Ruche Acacia", "type": "Warré", "statut": "Faible", "localisation": "Colline Nord", "date_installation": "2020-07-24", "force": 3, "production": 8.7, "nb_hausses": 1},
+    {"id": 4, "nom": "Ruche Tilleul", "type": "Dadant", "statut": "Active", "localisation": "Champ Sud", "date_installation": "2021-09-05", "force": 7, "production": 22.8, "nb_hausses": 2},
+    {"id": 5, "nom": "Ruche Romarin", "type": "Langstroth", "statut": "Orpheline", "localisation": "Verger Est", "date_installation": "2022-04-30", "force": 5, "production": 0, "nb_hausses": 1},
+    {"id": 6, "nom": "Ruche Thym", "type": "Warré", "statut": "Active", "localisation": "Colline Nord", "date_installation": "2023-01-15", "force": 6, "production": 15.3, "nb_hausses": 1},
+    {"id": 7, "nom": "Ruche Châtaignier", "type": "Dadant", "statut": "Malade", "localisation": "Forêt Ouest", "date_installation": "2021-06-29", "force": 4, "production": 11.6, "nb_hausses": 1},
+    {"id": 8, "nom": "Ruche Sapin", "type": "Langstroth", "statut": "Active", "localisation": "Forêt Ouest", "date_installation": "2022-08-10", "force": 8, "production": 28.2, "nb_hausses": 2},
+]
+
+reines_data = [
+    {"id": 1, "nom": "Cléopâtre", "ruche_id": 1, "race": "Buckfast", "origine": "Élevage local", "date_naissance": "2021-04-10", "date_introduction": "2021-05-12", "qualite_ponte": 9, "statut": "Active", "marquage": "Vert"},
+    {"id": 2, "nom": "Athéna", "ruche_id": 2, "race": "Carnica", "origine": "Importée Slovénie", "date_naissance": "2022-02-15", "date_introduction": "2022-03-20", "qualite_ponte": 8, "statut": "Active", "marquage": "Jaune"},
+    {"id": 3, "nom": "Néfertiti", "ruche_id": 3, "race": "Noire", "origine": "Essaim sauvage", "date_naissance": "2020-05-01", "date_introduction": "2020-07-24", "qualite_ponte": 3, "statut": "Vieillissante", "marquage": "Bleu"},
+    {"id": 4, "nom": "Diane", "ruche_id": 4, "race": "Italienne", "origine": "Élevage local", "date_naissance": "2021-08-10", "date_introduction": "2021-09-05", "qualite_ponte": 7, "statut": "Active", "marquage": "Vert"},
+    {"id": 5, "nom": "Victoria", "ruche_id": 6, "race": "Buckfast", "origine": "Élevage local", "date_naissance": "2022-12-05", "date_introduction": "2023-01-15", "qualite_ponte": 7, "statut": "Active", "marquage": "Blanc"},
+    {"id": 6, "nom": "Artémis", "ruche_id": 8, "race": "Carnica", "origine": "Importée Slovénie", "date_naissance": "2022-07-01", "date_introduction": "2022-08-10", "qualite_ponte": 9, "statut": "Active", "marquage": "Jaune"},
+]
+
+amenagements_data = [
+    {"id": 1, "type": "Essaim", "date": "2021-05-10", "origine": "Élevage local", "race": "Buckfast", "force": 8, "ruche_destination": "Ruche Lavande", "notes": "Essaim très vigoureux avec reine marquée verte"},
     {"id": 2, "nom": "Ruche Tournesol", "type": "Langstroth", "statut": "Active", "localisation": "Verger Est", "date_installation": "2022-03-18", "force": 9, "production": 32.1, "nb_hausses": 3},
     {"id": 3, "nom": "Ruche Acacia", "type": "Warré", "statut": "Faible", "localisation": "Colline Nord", "date_installation": "2020-07-24", "force": 3, "production": 8.7, "nb_hausses": 1},
     {"id": 4, "nom": "Ruche Tilleul", "type": "Dadant", "statut": "Active", "localisation": "Champ Sud", "date_installation": "2021-09-05", "force": 7, "production": 22.8, "nb_hausses": 2},
@@ -259,27 +279,207 @@ def reine_edit(request, id=None):
 
 # Vues pour les aménagements
 def amenagements_list(request):
+    # Get actual data from models
+    essaims = Essaim.objects.select_related('essaim_origin', 'essaim_race').all()
+    ruches = Ruche.objects.select_related('localizations', 'ruche_type', 'essaim').all()
+    
+    # Get unique values for filters from database
+    origins = EssaimOrigin.objects.all()
+    races = EssaimRace.objects.all()
+    
+    # Create amenagements data from essaims and related ruches
+    amenagements_data = []
+    
+    for essaim in essaims:
+        # Find associated ruche
+        ruche = ruches.filter(essaim=essaim).first()
+        
+        amenagement = {
+            'id': essaim.id,
+            'type': 'Essaim',  # Default type, you might want to add a type field to Essaim model
+            'date': essaim.created_at.strftime('%Y-%m-%d') if essaim.created_at else '',
+            'origine': essaim.essaim_origin.name if essaim.essaim_origin else 'Origine inconnue',
+            'race': essaim.essaim_race.name if essaim.essaim_race else 'Race inconnue',
+            'force': 7,  # Default value, you might want to add this to EssaimDetail
+            'ruche_destination': ruche.description if ruche else 'Non assigné',
+            'ruche_id': ruche.id if ruche else None,
+            'notes': f'Essaim de race {essaim.essaim_race.name}' if essaim.essaim_race else 'Aucune note'
+        }
+        amenagements_data.append(amenagement)
+    
     return render(request, 'elevage/amenagements/amenagements-list.html', {
         'amenagements': amenagements_data,
-        'types': ['Essaim', 'Division', 'Essaim sauvage', 'Achat'],
-        'races': ['Buckfast', 'Carnica', 'Italienne', 'Noire', 'Caucasienne'],
-        'origines': ['Élevage local', 'Ruche Lavande', 'Ruche Tournesol', 'Forêt locale', 'Apiculteur voisin', 'Élevage régional']
+        'types': ['Essaim', 'Division', 'Essaim sauvage', 'Achat'],  # Static for now
+        'races': [race.name for race in races],
+        'origines': [origin.name for origin in origins],
+        'ruches': ruches
     })
 
+def amenagement_add(request):
+    """Créer un nouvel aménagement (essaim)"""
+    if request.method == 'POST':
+        try:
+            # Récupérer les données du formulaire
+            origine_name = request.POST.get('origine')
+            race_name = request.POST.get('race')
+            ruche_id = request.POST.get('ruche_destination')
+            notes = request.POST.get('notes', '')
+            force = int(request.POST.get('force', 7))
+            
+            # Récupérer ou créer l'origine et la race
+            origine, created = EssaimOrigin.objects.get_or_create(name=origine_name)
+            race, created = EssaimRace.objects.get_or_create(name=race_name)
+            
+            # Créer le nouvel essaim
+            essaim = Essaim.objects.create(
+                essaim_origin=origine,
+                essaim_race=race
+            )
+            
+            # Créer les détails de l'essaim avec la force
+            EssaimDetail.objects.create(
+                essaim=essaim,
+                note=notes,
+                is_death=False,
+                ouvrier_added=force * 1000,  # Estimation approximative
+                faux_bourdon_added=force * 100,
+                reine_added=1
+            )
+            
+            # Si une ruche est spécifiée, l'associer
+            if ruche_id:
+                try:
+                    ruche = Ruche.objects.get(id=ruche_id)
+                    ruche.essaim = essaim
+                    ruche.save()
+                except Ruche.DoesNotExist:
+                    pass
+            
+            # Rediriger vers la liste des aménagements
+            return redirect('amenagements_list')
+            
+        except Exception as e:
+            # En cas d'erreur, afficher le formulaire avec un message d'erreur
+            context = {
+                'error_message': f'Erreur lors de la création: {str(e)}',
+                'form_data': request.POST
+            }
+    else:
+        context = {}
+    
+    # Récupérer les données pour les formulaires
+    origins = EssaimOrigin.objects.all()
+    races = EssaimRace.objects.all()
+    ruches = Ruche.objects.select_related('localizations').all()
+    
+    context.update({
+        'amenagement': None,  # Nouveau aménagement
+        'essaim': None,
+        'races': races,
+        'origines': origins,
+        'ruches': ruches,
+        'race_objects': races,
+        'origin_objects': origins
+    })
+    
+    return render(request, 'elevage/amenagements/amenagement-edit.html', context)
+
 def amenagement_edit(request, id=None):
-    # Pour l'édition, on récupère l'aménagement existant
-    amenagement = None
-    if id:
-        amenagement = next((a for a in amenagements_data if a['id'] == id), None)
-        if not amenagement:
+    """Modifier un aménagement existant"""
+    if request.method == 'POST':
+        try:
+            essaim = Essaim.objects.get(id=id)
+            
+            # Récupérer les données du formulaire
+            origine_name = request.POST.get('origine')
+            race_name = request.POST.get('race')
+            ruche_id = request.POST.get('ruche_destination')
+            notes = request.POST.get('notes', '')
+            force = int(request.POST.get('force', 7))
+            
+            # Mettre à jour l'origine et la race
+            origine, created = EssaimOrigin.objects.get_or_create(name=origine_name)
+            race, created = EssaimRace.objects.get_or_create(name=race_name)
+            
+            essaim.essaim_origin = origine
+            essaim.essaim_race = race
+            essaim.save()
+            
+            # Mettre à jour ou créer les détails
+            detail, created = EssaimDetail.objects.get_or_create(
+                essaim=essaim,
+                defaults={
+                    'note': notes,
+                    'is_death': False,
+                    'ouvrier_added': force * 1000,
+                    'faux_bourdon_added': force * 100,
+                    'reine_added': 1
+                }
+            )
+            if not created:
+                detail.note = notes
+                detail.ouvrier_added = force * 1000
+                detail.faux_bourdon_added = force * 100
+                detail.save()
+            
+            # Mettre à jour l'association avec la ruche
+            if ruche_id:
+                try:
+                    ruche = Ruche.objects.get(id=ruche_id)
+                    ruche.essaim = essaim
+                    ruche.save()
+                except Ruche.DoesNotExist:
+                    pass
+            
+            return redirect('amenagements_list')
+            
+        except Essaim.DoesNotExist:
             return render(request, 'elevage/404.html', {'message': 'Aménagement non trouvé'})
+        except Exception as e:
+            context = {
+                'error_message': f'Erreur lors de la modification: {str(e)}',
+                'form_data': request.POST
+            }
+    
+    # Get actual data from models
+    essaim = None
+    if id:
+        try:
+            essaim = Essaim.objects.select_related('essaim_origin', 'essaim_race').get(id=id)
+        except Essaim.DoesNotExist:
+            return render(request, 'elevage/404.html', {'message': 'Aménagement non trouvé'})
+    
+    # Get options for dropdowns
+    origins = EssaimOrigin.objects.all()
+    races = EssaimRace.objects.all()
+    ruches = Ruche.objects.select_related('localizations').all()
+    
+    # Convert essaim to amenagement format for template compatibility
+    amenagement = None
+    if essaim:
+        ruche = Ruche.objects.filter(essaim=essaim).first()
+        detail = EssaimDetail.objects.filter(essaim=essaim).first()
+        
+        amenagement = {
+            'id': essaim.id,
+            'type': 'Essaim',
+            'date': essaim.created_at.strftime('%Y-%m-%d') if essaim.created_at else '',
+            'origine': essaim.essaim_origin.name if essaim.essaim_origin else '',
+            'race': essaim.essaim_race.name if essaim.essaim_race else '',
+            'force': detail.ouvrier_added // 1000 if detail else 7,  # Estimate from worker count
+            'ruche_destination': ruche.id if ruche else '',
+            'notes': detail.note if detail else ''
+        }
     
     return render(request, 'elevage/amenagements/amenagement-edit.html', {
         'amenagement': amenagement,
+        'essaim': essaim,
         'types': ['Essaim', 'Division', 'Essaim sauvage', 'Achat'],
-        'races': ['Buckfast', 'Carnica', 'Italienne', 'Noire', 'Caucasienne'],
-        'origines': ['Élevage local', 'Ruche Lavande', 'Ruche Tournesol', 'Forêt locale', 'Apiculteur voisin', 'Élevage régional'],
-        'ruches': [r['nom'] for r in ruches_data]
+        'races': [race.name for race in races],
+        'origines': [origin.name for origin in origins],
+        'ruches': ruches,
+        'race_objects': races,
+        'origin_objects': origins
     })
 
 # Vue pour le dashboard des colonies
@@ -338,27 +538,194 @@ def dashboard_colonies(request):
 
 # Vues pour les soins
 def soins_list(request):
-    return render(request, 'elevage/soins/soins-list.html', {
+    # Get all care treatments (using Intervention model for soins)
+    soins = Intervention.objects.select_related(
+        'ruche', 'intervention_type'
+    ).filter(
+        intervention_type__name__icontains='soin'  # Filter for care-related interventions
+    ).order_by('-date_prevue')
+    
+    # Prepare soins data with additional information
+    soins_data = []
+    for soin in soins:
+        soin_data = {
+            'id': soin.id,
+            'date': soin.date_realisation or soin.date_prevue,
+            'type': soin.intervention_type.name,
+            'dose': getattr(soin, 'donnees', 'Non spécifiée'),  # Using donnees field for dose
+            'notes': soin.details,
+            'ruche': soin.ruche,
+            'date_prevue': soin.date_prevue,
+            'date_realisation': soin.date_realisation,
+        }
+        soins_data.append(soin_data)
+    
+    # Get filter options
+    ruches = list(Ruche.objects.all())
+    types_soin = list(InterventionType.objects.filter(
+        name__icontains='soin'
+    ).values_list('name', flat=True))
+    
+    context = {
         'soins': soins_data,
-        'ruches': ruches_data,
-        'types_soin': ['Traitement Varroa', 'Nourrissement', 'Médicament', 'Préventif'],
-        'produits': ['Acide oxalique', 'Apivar', 'Sirop 50/50', 'Candy', 'Thymol', 'Acide formique', 'Fumagilin B', 'Sirop 60/40', 'Candy protéiné']
+        'ruches': ruches,
+        'types_soin': types_soin,
+    }
+    
+    # Ajouter les alertes au contexte
+    context.update(get_alertes_context(request))
+    return render(request, 'elevage/soins/soins-list.html', context)
+
+def soin_add(request):
+    if request.method == 'POST':
+        # Handle form submission
+        date_prevue = request.POST.get('date')
+        ruche_id = request.POST.get('ruche')
+        intervention_type_id = request.POST.get('intervention_type')
+        dose = request.POST.get('dose', '')
+        notes = request.POST.get('notes', '')
+        date_realisation = request.POST.get('date_realisation')
+        
+        try:
+            # Create new care treatment using Intervention model
+            soin = Intervention(
+                title=f"Soin - {InterventionType.objects.get(id=intervention_type_id).name}",
+                details=notes,
+                donnees=dose,  # Store dose in donnees field
+                date_prevue=date_prevue,
+                date_realisation=date_realisation if date_realisation else None
+            )
+            
+            # Set foreign keys
+            if intervention_type_id:
+                soin.intervention_type = InterventionType.objects.get(id=intervention_type_id)
+            if ruche_id:
+                soin.ruche = Ruche.objects.get(id=ruche_id)
+            
+            soin.save()
+            
+            return redirect('soins_list')
+        except Exception as e:
+            error_message = f"Erreur lors de la création: {str(e)}"
+            return render(request, 'elevage/soins/soin-edit.html', {
+                'error': error_message,
+                'ruches': Ruche.objects.all(),
+                'types_intervention': InterventionType.objects.all(),
+            })
+    
+    # GET request - show form
+    return render(request, 'elevage/soins/soin-edit.html', {
+        'ruches': Ruche.objects.all(),
+        'types_intervention': InterventionType.objects.all(),
     })
 
 def soin_edit(request, id=None):
-    # Pour l'édition, on récupère le soin existant
     soin = None
     if id:
-        soin = next((s for s in soins_data if s['id'] == id), None)
-        if not soin:
+        try:
+            soin = Intervention.objects.get(id=id)
+        except Intervention.DoesNotExist:
             return render(request, 'elevage/404.html', {'message': 'Soin non trouvé'})
     
+    if request.method == 'POST':
+        if not soin:
+            return soin_add(request)
+            
+        # Handle form submission for editing
+        soin.date_prevue = request.POST.get('date')
+        soin.details = request.POST.get('notes', '')
+        soin.donnees = request.POST.get('dose', '')
+        
+        date_realisation = request.POST.get('date_realisation')
+        soin.date_realisation = date_realisation if date_realisation else None
+        
+        # Update foreign keys
+        intervention_type_id = request.POST.get('intervention_type')
+        if intervention_type_id:
+            soin.intervention_type = InterventionType.objects.get(id=intervention_type_id)
+            soin.title = f"Soin - {soin.intervention_type.name}"
+        
+        ruche_id = request.POST.get('ruche')
+        if ruche_id:
+            soin.ruche = Ruche.objects.get(id=ruche_id)
+        else:
+            soin.ruche = None
+        
+        try:
+            soin.save()
+            return redirect('soins_list')
+        except Exception as e:
+            error_message = f"Erreur lors de la modification: {str(e)}"
+            return render(request, 'elevage/soins/soin-edit.html', {
+                'soin': soin,
+                'error': error_message,
+                'ruches': Ruche.objects.all(),
+                'types_intervention': InterventionType.objects.all(),
+            })
+    
+    # GET request - show form
     return render(request, 'elevage/soins/soin-edit.html', {
         'soin': soin,
-        'ruches': ruches_data,
-        'types_soin': ['Traitement Varroa', 'Nourrissement', 'Médicament', 'Préventif'],
-        'produits': ['Acide oxalique', 'Apivar', 'Sirop 50/50', 'Candy', 'Thymol', 'Acide formique', 'Fumagilin B', 'Sirop 60/40', 'Candy protéiné']
+        'ruches': Ruche.objects.all(),
+        'types_intervention': InterventionType.objects.all(),
     })
+
+def soin_details(request, id):
+    try:
+        soin = Intervention.objects.select_related(
+            'ruche', 'intervention_type'
+        ).get(id=id)
+    except Intervention.DoesNotExist:
+        return render(request, 'elevage/404.html', {'message': 'Soin non trouvé'})
+    
+    return render(request, 'elevage/soins/soin-details.html', {
+        'soin': soin,
+    })
+
+def consommable_type_create(request):
+    """Create a new consumable type via AJAX"""
+    if request.method == 'POST':
+        try:
+            import json
+            data = json.loads(request.body)
+            name = data.get('name', '').strip()
+            unite_id = data.get('unite_id')
+            seuil_alerte = data.get('seuil_alerte', 10)
+            
+            if not name:
+                return JsonResponse({'success': False, 'error': 'Le nom est requis'})
+            
+            # Check if type already exists
+            if ConsommableType.objects.filter(name=name).exists():
+                return JsonResponse({'success': False, 'error': 'Ce type de consommable existe déjà'})
+            
+            # Get or create default unit if not provided
+            if unite_id:
+                from projet.models.ressources import UniteMesure
+                unite = UniteMesure.objects.get(id=unite_id)
+            else:
+                from projet.models.ressources import UniteMesure
+                unite, created = UniteMesure.objects.get_or_create(name='ml')
+            
+            # Create new consumable type
+            consommable_type = ConsommableType.objects.create(
+                name=name,
+                unite=unite,
+                seuil_alerte=seuil_alerte
+            )
+            
+            return JsonResponse({
+                'success': True,
+                'consommable_type': {
+                    'id': consommable_type.id,
+                    'name': consommable_type.name
+                }
+            })
+            
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    
+    return JsonResponse({'success': False, 'error': 'Méthode non autorisée'})
 
 # Vue pour les alertes
 def alertes_list(request):
