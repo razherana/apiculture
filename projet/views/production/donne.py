@@ -153,21 +153,15 @@ def historique_production(request):
 def materiel_list(request):
     materiel = Materiel.objects.all()
     materiels = [
-
         {
             'type': m.materiel_type,
             'date_ajout': m.created_at.strftime('%Y-%m-%d'),
             'statut': m.materiel_status_histories.last().materiel_status.name if m.materiel_status_histories.exists() else 'N/A',
-        }
-        {   'type': m.materiel_type, 
-            'designation': m.materiel_type.designation,
-            'date_ajout': m.created_at.strftime('%Y-%m-%d'), 
-            'statut': m.materiel_type.seuil_alerte,
-            'duree_vie': m.durre_de_vie_estimee 
-
+            'durre_de_vie_estimee': m.durre_de_vie_estimee
         }
         for m in materiel
     ]
+    print(materiels)  # Debug to check the data
     return render(request, 'production/materiel_list.html', {
         'materiels': materiels,
         'page_title': 'Inventaire du Matériel'
