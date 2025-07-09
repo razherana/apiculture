@@ -111,7 +111,7 @@
             
             <div class="form-row">
                 <div class="form-group">
-                    <label for="prix_service" class="form-label">Prix du service (€)</label>
+                    <label for="prix_service" class="form-label">Prix du service (Ar)</label>
                     <input type="number" step="0.01" min="0" id="prix_service" name="prix_service" class="form-input"
                         value="{{ intervention.prix_service|default_if_none:'' }}">
                     <small class="form-text">Coût du service ou de l'intervention (optionnel)</small>

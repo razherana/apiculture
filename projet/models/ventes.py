@@ -68,6 +68,10 @@ class VenteDetail(models.Model):
         Vente, on_delete=models.CASCADE, related_name='vente_details')
     quantite = models.IntegerField()
 
+    @property
+    def prix_unitaire(self):
+        return self.miel.prix_unitaire
+
     class Meta:
         db_table = 'vente_details'
 

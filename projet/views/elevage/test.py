@@ -610,7 +610,7 @@ def soins_list(request):
             'ruche': soin.ruche,
             'date_prevue': soin.date_prevue,
             'date_realisation': soin.date_realisation,
-            'prix_service': getattr(soin, 'prix_service', None),  # Ajout du prix
+            'prix_service': getattr(soin, 'prix_service', 0),  # Ajout du prix
         }
         soins_data.append(soin_data)
     
@@ -640,6 +640,7 @@ def soin_add(request):
         notes = request.POST.get('notes', '')
         date_realisation = request.POST.get('date_realisation')
         prix_service = request.POST.get('prix_service', 0)  # Nouveau champ
+        
         try:
             soin = Intervention(
                 title=f"Soin - {InterventionType.objects.get(id=intervention_type_id).name}",
@@ -647,7 +648,7 @@ def soin_add(request):
                 donnees=dose,
                 date_prevue=date_prevue,
                 date_realisation=date_realisation if date_realisation else None,
-                prix_service=prix_service or 0  # Ajout du prix
+                prix_service=prix_service
             )
             
             # Set foreign keys
@@ -689,6 +690,7 @@ def soin_edit(request, id=None):
         soin.date_prevue = request.POST.get('date')
         soin.details = request.POST.get('notes', '')
         soin.donnees = request.POST.get('dose', '')
+        soin.prix_service = request.POST.get('prix_service', 0)  # Nouveau champ
         
         date_realisation = request.POST.get('date_realisation')
         soin.date_realisation = date_realisation if date_realisation else None
@@ -898,6 +900,7 @@ def intervention_add(request):
         date_prevue = request.POST.get('date_prevue')
         date_realisation = request.POST.get('date_realisation', None)
         prix_service = request.POST.get('prix_service', 0)  # Nouveau champ
+        
         try:
             intervention = Intervention(
                 title=title,
@@ -905,7 +908,7 @@ def intervention_add(request):
                 donnees=donnees,
                 date_prevue=date_prevue,
                 date_realisation=date_realisation if date_realisation else None,
-                prix_service=prix_service or 0  # Ajout du prix
+                prix_service=prix_service  # Ajout du prix
             )
             
             # Set optional foreign keys
@@ -949,6 +952,7 @@ def intervention_edit(request, id):
         intervention.details = request.POST.get('details')
         intervention.donnees = request.POST.get('donnees', '')
         intervention.date_prevue = request.POST.get('date_prevue')
+        intervention.prix_service = request.POST.get('prix_service', 0)  # Nouveau champ
         
         date_realisation = request.POST.get('date_realisation')
         intervention.date_realisation = date_realisation if date_realisation else None

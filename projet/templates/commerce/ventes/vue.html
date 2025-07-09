@@ -38,10 +38,10 @@
             
             <div class="form-group">
                 <label for="mode_payement">Mode de paiement</label>
-                <input type="text" id="mode_payement_input" name="mode_payement_display" value="{{ vente.mode_payement }}" readonly>
+                <input type="text" id="mode_payement_input" name="mode_payement_display" value="{{ vente.mode_payement.name }}" readonly>
                 <select id="mode_payement_select" name="mode_payement" style="display:none;">
                     {% for mp in modes_payement %}
-                        <option value="{{ mp.mode }}" {% if mp.mode == vente.mode_payement %}selected{% endif %}>{{ mp.mode }}</option>
+                        <option value="{{ mp.mode }}" {% if mp.mode == vente.mode_payement.name %}selected{% endif %}>{{ mp.mode }}</option>
                     {% endfor %}
                 </select>
             </div>
@@ -79,12 +79,12 @@
                     </thead>
                     <tbody>
                         {% for detail in vente_model.vente_details.all %}
-                        <tr>
-                            <td>{{ detail.miel.miel_type.name }} - {{ detail.miel.consommable_type.name }}</td>
-                            <td>{{ detail.quantite }}</td>
-                            <td>{{ detail.prix_unitaire|floatformat:2 }}Ar</td>
-                            <td>{{ detail.quantite|mul:detail.prix_unitaire|floatformat:2 }}Ar</td>
-                        </tr>
+                          <tr>
+                              <td>{{ detail.miel.miel_type.name }} - {{ detail.miel.consommable_type.name }}</td>
+                              <td>{{ detail.quantite }}</td>
+                              <td>{{ detail.prix_unitaire|floatformat:2 }}Ar</td>
+                              <td>{{ detail.prix_total|floatformat:2 }}Ar</td>
+                          </tr>
                         {% empty %}
                         <tr>
                             <td colspan="4" style="text-align: center; color: var(--text-secondary);">Aucun détail disponible</td>

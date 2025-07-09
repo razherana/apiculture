@@ -185,9 +185,25 @@
         <div class="stat-card">
             <h3>Total décès</h3>
             <div class="stat-value" id="total-deces">-</div>
-            <div class="stat-label">Abeilles enregistrées</div>
+            <div class="stat-label">Abeilles mortes</div>
         </div>
     </div>
+    
+    <!-- Alert for no data -->
+    {% if not ruches_data %}
+    <div class="elevage-card">
+        <div class="alert alert-info" role="alert">
+            <h4><i class="fas fa-info-circle"></i> Aucune donnée disponible</h4>
+            <p>Aucune donnée de mortalité n'a été trouvée dans votre système. Cela peut signifier :</p>
+            <ul>
+                <li>Vos colonies n'ont pas subi de mortalité (excellente nouvelle !)</li>
+                <li>Les données de mortalité n'ont pas encore été saisies</li>
+                <li>Aucune ruche n'a d'essaim assigné</li>
+            </ul>
+            <p>Pour commencer à suivre la mortalité, assurez-vous d'enregistrer les changements de population dans la gestion des essaims.</p>
+        </div>
+    </div>
+    {% else %}
     
     <div class="causes-grid">
         <div class="elevage-card">
@@ -301,10 +317,13 @@
             </div>
         </div>
     </div>
+    {% endif %}
+    
 </div>
 {% endblock %}
 
 {% block extra_js %}
+{% if has_data %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -577,4 +596,5 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
+{% endif %}
 {% endblock %}

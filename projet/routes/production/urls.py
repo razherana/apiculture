@@ -21,6 +21,5 @@ urlpatterns = [
     # 3. Statistiques
     path('statistiques/dashboard/', dashboard_stats, name='dashboard_stats'),
     path('statistiques/production-ruche/', stats_production_par_ruche, name='stats_production_par_ruche'),
-    path('statistiques/mortalite/', stats_mortalite, name='stats_mortalite'),
     path('statistiques/rentabilite/', analyse_rentabilite, name='analyse_rentabilite'),
 ]

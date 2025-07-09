@@ -47,8 +47,8 @@
                 </div>
                 <div class="detail-stat">
                     <div class="detail-stat-value">
-                        {% if soin.prix_service %}
-                            {{ soin.prix_service|floatformat:2 }} €
+                        {% if soin.prix_service >= 0 %}
+                            {{ soin.prix_service|floatformat:2 }} Ar
                         {% else %}
                             -
                         {% endif %}
@@ -142,7 +142,7 @@
                         <th>Prix du service</th>
                         <td>
                             {% if soin.prix_service %}
-                                {{ soin.prix_service|floatformat:2 }} €
+                                {{ soin.prix_service|floatformat:2 }} Ar
                             {% else %}
                                 Non renseigné
                             {% endif %}

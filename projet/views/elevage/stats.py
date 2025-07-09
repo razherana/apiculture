@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from datetime import datetime, timedelta
+from django.utils import timezone
 import random
 import json
 
@@ -98,6 +99,10 @@ def stats_couvain(request):
 
 # Vue pour les statistiques de mortalité
 def stats_mortalite(request):
+    """
+    Dynamic database-driven mortality statistics view.
+    All calculations are based on actual data from EssaimDetail and EssaimSanteHistory models.
+    """
     # Get actual data from models
     ruches = Ruche.objects.select_related('localizations', 'essaim').all()
     
@@ -114,49 +119,41 @@ def stats_mortalite(request):
             living_details = EssaimDetail.objects.filter(
                 essaim=ruche.essaim,
                 is_death=False
+            ).aggregate(
+                total_ouvriers=Sum('ouvrier_added'),
+                total_bourdons=Sum('faux_bourdon_added'),
+                total_reines=Sum('reine_added')
             )
             
             # Get mortality data from EssaimDetail entries where is_death=True
             death_details = EssaimDetail.objects.filter(
                 essaim=ruche.essaim,
                 is_death=True
+            ).aggregate(
+                dead_ouvriers=Sum('ouvrier_added'),
+                dead_bourdons=Sum('faux_bourdon_added'),
+                dead_reines=Sum('reine_added')
             )
             
-            # Calculate total living population
-            total_living = 0
-            if living_details.exists():
-                total_living = living_details.aggregate(
-                    total_ouvriers=Sum('ouvrier_added'),
-                    total_bourdons=Sum('faux_bourdon_added'),
-                    total_reines=Sum('reine_added')
-                )
-                total_living = (
-                    (total_living['total_ouvriers'] or 0) +
-                    (total_living['total_bourdons'] or 0) +
-                    (total_living['total_reines'] or 0)
-                )
+            # Calculate totals
+            total_living = (
+                (living_details['total_ouvriers'] or 0) +
+                (living_details['total_bourdons'] or 0) +
+                (living_details['total_reines'] or 0)
+            )
             
-            # Calculate total deaths
-            total_deaths = 0
-            if death_details.exists():
-                total_deaths = death_details.aggregate(
-                    dead_ouvriers=Sum('ouvrier_added'),
-                    dead_bourdons=Sum('faux_bourdon_added'),
-                    dead_reines=Sum('reine_added')
-                )
-                total_deaths = (
-                    (total_deaths['dead_ouvriers'] or 0) +
-                    (total_deaths['dead_bourdons'] or 0) +
-                    (total_deaths['dead_reines'] or 0)
-                )
+            total_deaths = abs(
+                (death_details['dead_ouvriers'] or 0) +
+                (death_details['dead_bourdons'] or 0) +
+                (death_details['dead_reines'] or 0)
+            )
             
             # Calculate mortality rate as percentage
             total_population = total_living + total_deaths
             if total_population > 0:
                 mortality_rate = (total_deaths / total_population) * 100
             else:
-                # If no data, use default estimation
-                mortality_rate = random.randint(5, 25)
+                mortality_rate = 0.0  # No data means no mortality calculated
             
             mortalite_data.append({
                 'ruche_id': ruche.id,
@@ -177,8 +174,8 @@ def stats_mortalite(request):
     mortalite_mensuelle = []
     for i in range(12):
         # Get death records for this month
-        month_start = datetime.now() - timedelta(days=30*(i+1))
-        month_end = datetime.now() - timedelta(days=30*i)
+        month_start = timezone.now() - timedelta(days=30*(i+1))
+        month_end = timezone.now() - timedelta(days=30*i)
         
         monthly_deaths = EssaimDetail.objects.filter(
             is_death=True,
@@ -189,48 +186,76 @@ def stats_mortalite(request):
             dead_reines=Sum('reine_added')
         )
         
-        total_monthly_deaths = (
+        total_monthly_deaths = abs(
             (monthly_deaths['dead_ouvriers'] or 0) +
             (monthly_deaths['dead_bourdons'] or 0) +
             (monthly_deaths['dead_reines'] or 0)
         )
         
-        # If no actual death data, use estimated mortality
-        if total_monthly_deaths == 0:
-            mortality = random.randint(100, 300)
-        else:
-            mortality = total_monthly_deaths
-        
-        mortalite_mensuelle.append(round(mortality))
+        mortalite_mensuelle.append(total_monthly_deaths)
     
     mortalite_mensuelle.reverse()
     
-    # Calculate statistics for ruchers
+    # Calculate statistics for ruchers with actual mortality causes from health data
     mortalite_ruchers = []
     for rucher_name, mortality_rates in ruchers_mortalite.items():
         if mortality_rates:
             avg_rate = sum(mortality_rates) / len(mortality_rates)
-            winter_rate = avg_rate * 1.5  # Winter is typically higher
             
-            # Determine main cause based on recent death count patterns
+            # Get ruches in this location
             rucher_ruches = Ruche.objects.filter(
                 localizations__name=rucher_name,
                 essaim__isnull=False
             )
             
-            recent_deaths = EssaimDetail.objects.filter(
+            # Get recent health data to determine main cause
+            recent_health_data = EssaimSanteHistory.objects.filter(
                 essaim__in=[r.essaim for r in rucher_ruches if r.essaim],
-                is_death=True,
-                created_at__gte=datetime.now() - timedelta(days=90)
+                created_at__gte=timezone.now() - timedelta(days=90)
+            ).exclude(
+                parasite__isnull=True, 
+                parasite__exact='',
+                maladie__isnull=True,
+                maladie__exact=''
             )
             
-            # Simple cause determination based on death patterns
-            if recent_deaths.count() > 10:  # High death count
-                main_cause = random.choice(["Varroa", "Maladie", "Famine"])
-            elif recent_deaths.count() > 5:  # Medium death count
-                main_cause = random.choice(["Famine", "Intoxication"])
+            # Determine main cause based on actual health data
+            main_cause = "Données insuffisantes"
+            if recent_health_data.exists():
+                # Count parasite and disease occurrences
+                parasite_counts = {}
+                disease_counts = {}
+                
+                for health_record in recent_health_data:
+                    if health_record.parasite and health_record.parasite.strip():
+                        parasite = health_record.parasite.strip()
+                        parasite_counts[parasite] = parasite_counts.get(parasite, 0) + 1
+                    
+                    if health_record.maladie and health_record.maladie.strip():
+                        disease = health_record.maladie.strip()
+                        disease_counts[disease] = disease_counts.get(disease, 0) + 1
+                
+                # Find most common cause
+                all_causes = {**parasite_counts, **disease_counts}
+                if all_causes:
+                    main_cause = max(all_causes, key=all_causes.get)
+            
+            # Calculate winter mortality (seasonal variation)
+            winter_deaths = EssaimDetail.objects.filter(
+                essaim__in=[r.essaim for r in rucher_ruches if r.essaim],
+                is_death=True,
+                created_at__month__in=[12, 1, 2]  # Winter months
+            ).count()
+            
+            total_deaths = EssaimDetail.objects.filter(
+                essaim__in=[r.essaim for r in rucher_ruches if r.essaim],
+                is_death=True
+            ).count()
+            
+            if total_deaths > 0:
+                winter_rate = (winter_deaths / total_deaths) * avg_rate
             else:
-                main_cause = random.choice(["Froid", "Stress environnemental"])
+                winter_rate = avg_rate
             
             mortalite_ruchers.append({
                 "nom": rucher_name,
@@ -242,7 +267,7 @@ def stats_mortalite(request):
     # Historical winter mortality based on actual death records
     mortalite_hivernale = []
     annees_hivernale = []
-    current_year = datetime.now().year
+    current_year = timezone.now().year
     
     for i in range(6):
         year = current_year - i
@@ -263,30 +288,47 @@ def stats_mortalite(request):
             created_at__month__in=[12, 1, 2]
         ).aggregate(
             total_pop=Sum('ouvrier_added') + Sum('faux_bourdon_added') + Sum('reine_added')
-        )['total_pop'] or 1
+        )['total_pop'] or 0
         
         if winter_deaths > 0 and winter_population > 0:
-            winter_mortality = (winter_deaths / winter_population) * 100
+            winter_mortality = abs((winter_deaths / winter_population) * 100)
         else:
-            # Fallback to estimated values
-            winter_mortality = random.randint(8, 20)
+            winter_mortality = 0.0  # No data means no mortality calculated
         
         mortalite_hivernale.append(round(winter_mortality))
     
     annees_hivernale.reverse()
     mortalite_hivernale.reverse()
     
-    # Simplified causes of mortality (no correlation with health data)
-    total_death_records = EssaimDetail.objects.filter(is_death=True).count()
-    if total_death_records > 50:  # Sufficient data for analysis
-        # Distribute causes based on general beekeeping knowledge
-        causes_data = [35, 25, 20, 15, 5]  # Varroa, Famine, Intoxication, Froid, Autre
-    elif total_death_records > 10:  # Some data available
-        causes_data = [40, 30, 15, 10, 5]  # Adjust distribution for smaller dataset
-    else:
-        causes_data = [40, 25, 15, 10, 10]  # Default percentages when little data
+    # Dynamic causes of mortality based on actual health data
+    health_records = EssaimSanteHistory.objects.all()
     
-    causes_labels = ["Varroa", "Famine", "Intoxication", "Froid", "Autre"]
+    # Collect all parasites and diseases from health records
+    cause_counts = {}
+    for record in health_records:
+        if record.parasite and record.parasite.strip():
+            parasite = record.parasite.strip()
+            cause_counts[parasite] = cause_counts.get(parasite, 0) + 1
+        
+        if record.maladie and record.maladie.strip():
+            disease = record.maladie.strip()
+            cause_counts[disease] = cause_counts.get(disease, 0) + 1
+    
+    # Prepare causes data for charts
+    if cause_counts:
+        # Sort by frequency and take top 5
+        sorted_causes = sorted(cause_counts.items(), key=lambda x: x[1], reverse=True)[:5]
+        causes_labels = [cause[0] for cause in sorted_causes]
+        causes_data = [cause[1] for cause in sorted_causes]
+        
+        # If we have less than 5 causes, pad with "Autres"
+        if len(causes_labels) < 5:
+            causes_labels.append("Autres")
+            causes_data.append(0)
+    else:
+        # Default labels when no health data is available
+        causes_labels = ["Aucune donnée disponible"]
+        causes_data = [1]
     
     # Prepare data for charts
     noms_ruches = [data['ruche_nom'] for data in mortalite_data]
@@ -299,8 +341,8 @@ def stats_mortalite(request):
         if ruche.essaim:
             hist_data = []
             for i in range(12):
-                month_start = datetime.now() - timedelta(days=30*(i+1))
-                month_end = datetime.now() - timedelta(days=30*i)
+                month_start = timezone.now() - timedelta(days=30*(i+1))
+                month_end = timezone.now() - timedelta(days=30*i)
                 
                 # Get actual death data for this month
                 monthly_deaths = EssaimDetail.objects.filter(
@@ -317,18 +359,35 @@ def stats_mortalite(request):
                     created_at__range=[month_start, month_end]
                 ).aggregate(
                     total_pop=Sum('ouvrier_added') + Sum('faux_bourdon_added') + Sum('reine_added')
-                )['total_pop'] or 1
+                )['total_pop'] or 0
                 
-                if monthly_deaths > 0:
-                    mortality = (monthly_deaths / monthly_population) * 100
+                if monthly_deaths > 0 and monthly_population > 0:
+                    mortality = abs((monthly_deaths / monthly_population) * 100)
                 else:
-                    # Fallback to estimated values
-                    mortality = random.uniform(5, 25)
+                    mortality = 0.0  # No data means no mortality calculated
                 
                 hist_data.append(round(mortality, 1))
             
             hist_data.reverse()
             historique_mortalite[data['ruche_nom']] = hist_data
+    
+    # Calculate additional metrics for the template
+    total_deaths = sum(data['total_deaths'] for data in mortalite_data)
+    has_data = len(mortalite_data) > 0
+    
+    # Calculate average mortality rate
+    if mortalite_data:
+        average_mortality = sum(data['taux_mortalite'] for data in mortalite_data) / len(mortalite_data)
+    else:
+        average_mortality = 0.0
+    
+    # Determine mortality status
+    if average_mortality > 25:
+        mortality_status = 'critical'
+    elif average_mortality > 15:
+        mortality_status = 'warning'
+    else:
+        mortality_status = 'good'
     
     return render(request, 'elevage/stats/mortalite.html', {
         'dates': json.dumps(dates),
@@ -341,7 +400,11 @@ def stats_mortalite(request):
         'noms_ruches': json.dumps(noms_ruches),
         'taux_mortalite': json.dumps(taux_mortalite),
         'historique_mortalite': json.dumps(historique_mortalite),
-        'ruches_data': mortalite_data
+        'ruches_data': mortalite_data,
+        'has_data': has_data,
+        'total_deaths': total_deaths,
+        'average_mortality': round(average_mortality, 1),
+        'mortality_status': mortality_status,
     })
 
 # Vue pour les statistiques des reines
