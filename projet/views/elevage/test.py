@@ -5,7 +5,7 @@ from django.utils import timezone
 from django.db.models import Sum
 from django.http import JsonResponse
 from projet.models.ressources import (
-    ConsommableType, EssaimDetail, EssaimOrigin, EssaimRace, Ruche, RucheStatus, Localization, 
+    ConsommableType, EssaimDetail, EssaimOrigin, EssaimRace, Ruche, RucheStatus, Localization, RucheStatusHistory, 
     RucheType, Essaim
 )
 from projet.models.productions import Intervention, InterventionType
