@@ -2,13 +2,14 @@ from django.shortcuts import redirect, render
 from datetime import datetime, timedelta
 import random
 import json
-
 from django.utils import timezone
-from django.db.models import Sum
-
-# Import models for integration
-from projet.models.ressources import EssaimDetail, Ruche, Essaim, EssaimOrigin, EssaimRace, Localization, RucheStatus, RucheType
-from projet.models.productions import Intervention, InterventionType, Task
+from django.db import models
+from django.http import JsonResponse
+from projet.models.ressources import (
+    Consommable, ConsommableConsomme, ConsommableType, EssaimDetail, EssaimOrigin, EssaimRace, Ruche, RucheStatus, RucheStatusHistory, Localization, 
+    RucheType, Essaim, EssaimStatus, EssaimStatusHistory
+)
+from projet.models.productions import Intervention, InterventionType
 
 # Données de test
 ruches_data = [
@@ -517,27 +518,194 @@ def dashboard_colonies(request):
 
 # Vues pour les soins
 def soins_list(request):
-    return render(request, 'elevage/soins/soins-list.html', {
+    # Get all care treatments (using Intervention model for soins)
+    soins = Intervention.objects.select_related(
+        'ruche', 'intervention_type'
+    ).filter(
+        intervention_type__name__icontains='soin'  # Filter for care-related interventions
+    ).order_by('-date_prevue')
+    
+    # Prepare soins data with additional information
+    soins_data = []
+    for soin in soins:
+        soin_data = {
+            'id': soin.id,
+            'date': soin.date_realisation or soin.date_prevue,
+            'type': soin.intervention_type.name,
+            'dose': getattr(soin, 'donnees', 'Non spécifiée'),  # Using donnees field for dose
+            'notes': soin.details,
+            'ruche': soin.ruche,
+            'date_prevue': soin.date_prevue,
+            'date_realisation': soin.date_realisation,
+        }
+        soins_data.append(soin_data)
+    
+    # Get filter options
+    ruches = list(Ruche.objects.all())
+    types_soin = list(InterventionType.objects.filter(
+        name__icontains='soin'
+    ).values_list('name', flat=True))
+    
+    context = {
         'soins': soins_data,
-        'ruches': ruches_data,
-        'types_soin': ['Traitement Varroa', 'Nourrissement', 'Médicament', 'Préventif'],
-        'produits': ['Acide oxalique', 'Apivar', 'Sirop 50/50', 'Candy', 'Thymol', 'Acide formique', 'Fumagilin B', 'Sirop 60/40', 'Candy protéiné']
+        'ruches': ruches,
+        'types_soin': types_soin,
+    }
+    
+    # Ajouter les alertes au contexte
+    context.update(get_alertes_context(request))
+    return render(request, 'elevage/soins/soins-list.html', context)
+
+def soin_add(request):
+    if request.method == 'POST':
+        # Handle form submission
+        date_prevue = request.POST.get('date')
+        ruche_id = request.POST.get('ruche')
+        intervention_type_id = request.POST.get('intervention_type')
+        dose = request.POST.get('dose', '')
+        notes = request.POST.get('notes', '')
+        date_realisation = request.POST.get('date_realisation')
+        
+        try:
+            # Create new care treatment using Intervention model
+            soin = Intervention(
+                title=f"Soin - {InterventionType.objects.get(id=intervention_type_id).name}",
+                details=notes,
+                donnees=dose,  # Store dose in donnees field
+                date_prevue=date_prevue,
+                date_realisation=date_realisation if date_realisation else None
+            )
+            
+            # Set foreign keys
+            if intervention_type_id:
+                soin.intervention_type = InterventionType.objects.get(id=intervention_type_id)
+            if ruche_id:
+                soin.ruche = Ruche.objects.get(id=ruche_id)
+            
+            soin.save()
+            
+            return redirect('soins_list')
+        except Exception as e:
+            error_message = f"Erreur lors de la création: {str(e)}"
+            return render(request, 'elevage/soins/soin-edit.html', {
+                'error': error_message,
+                'ruches': Ruche.objects.all(),
+                'types_intervention': InterventionType.objects.all(),
+            })
+    
+    # GET request - show form
+    return render(request, 'elevage/soins/soin-edit.html', {
+        'ruches': Ruche.objects.all(),
+        'types_intervention': InterventionType.objects.all(),
     })
 
 def soin_edit(request, id=None):
-    # Pour l'édition, on récupère le soin existant
     soin = None
     if id:
-        soin = next((s for s in soins_data if s['id'] == id), None)
-        if not soin:
+        try:
+            soin = Intervention.objects.get(id=id)
+        except Intervention.DoesNotExist:
             return render(request, 'elevage/404.html', {'message': 'Soin non trouvé'})
     
+    if request.method == 'POST':
+        if not soin:
+            return soin_add(request)
+            
+        # Handle form submission for editing
+        soin.date_prevue = request.POST.get('date')
+        soin.details = request.POST.get('notes', '')
+        soin.donnees = request.POST.get('dose', '')
+        
+        date_realisation = request.POST.get('date_realisation')
+        soin.date_realisation = date_realisation if date_realisation else None
+        
+        # Update foreign keys
+        intervention_type_id = request.POST.get('intervention_type')
+        if intervention_type_id:
+            soin.intervention_type = InterventionType.objects.get(id=intervention_type_id)
+            soin.title = f"Soin - {soin.intervention_type.name}"
+        
+        ruche_id = request.POST.get('ruche')
+        if ruche_id:
+            soin.ruche = Ruche.objects.get(id=ruche_id)
+        else:
+            soin.ruche = None
+        
+        try:
+            soin.save()
+            return redirect('soins_list')
+        except Exception as e:
+            error_message = f"Erreur lors de la modification: {str(e)}"
+            return render(request, 'elevage/soins/soin-edit.html', {
+                'soin': soin,
+                'error': error_message,
+                'ruches': Ruche.objects.all(),
+                'types_intervention': InterventionType.objects.all(),
+            })
+    
+    # GET request - show form
     return render(request, 'elevage/soins/soin-edit.html', {
         'soin': soin,
-        'ruches': ruches_data,
-        'types_soin': ['Traitement Varroa', 'Nourrissement', 'Médicament', 'Préventif'],
-        'produits': ['Acide oxalique', 'Apivar', 'Sirop 50/50', 'Candy', 'Thymol', 'Acide formique', 'Fumagilin B', 'Sirop 60/40', 'Candy protéiné']
+        'ruches': Ruche.objects.all(),
+        'types_intervention': InterventionType.objects.all(),
     })
+
+def soin_details(request, id):
+    try:
+        soin = Intervention.objects.select_related(
+            'ruche', 'intervention_type'
+        ).get(id=id)
+    except Intervention.DoesNotExist:
+        return render(request, 'elevage/404.html', {'message': 'Soin non trouvé'})
+    
+    return render(request, 'elevage/soins/soin-details.html', {
+        'soin': soin,
+    })
+
+def consommable_type_create(request):
+    """Create a new consumable type via AJAX"""
+    if request.method == 'POST':
+        try:
+            import json
+            data = json.loads(request.body)
+            name = data.get('name', '').strip()
+            unite_id = data.get('unite_id')
+            seuil_alerte = data.get('seuil_alerte', 10)
+            
+            if not name:
+                return JsonResponse({'success': False, 'error': 'Le nom est requis'})
+            
+            # Check if type already exists
+            if ConsommableType.objects.filter(name=name).exists():
+                return JsonResponse({'success': False, 'error': 'Ce type de consommable existe déjà'})
+            
+            # Get or create default unit if not provided
+            if unite_id:
+                from projet.models.ressources import UniteMesure
+                unite = UniteMesure.objects.get(id=unite_id)
+            else:
+                from projet.models.ressources import UniteMesure
+                unite, created = UniteMesure.objects.get_or_create(name='ml')
+            
+            # Create new consumable type
+            consommable_type = ConsommableType.objects.create(
+                name=name,
+                unite=unite,
+                seuil_alerte=seuil_alerte
+            )
+            
+            return JsonResponse({
+                'success': True,
+                'consommable_type': {
+                    'id': consommable_type.id,
+                    'name': consommable_type.name
+                }
+            })
+            
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    
+    return JsonResponse({'success': False, 'error': 'Méthode non autorisée'})
 
 # Vue pour les alertes
 def alertes_list(request):

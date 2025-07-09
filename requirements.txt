@@ -1,5 +1,6 @@
 # Core dependencies
 django
+pytz
 python-dotenv
 
 # Dev tools
