@@ -134,7 +134,7 @@
                         <th>Dose/Quantité</th>
                         <th>Statut</th>
                         <th>Notes</th>
-                        <th class="prix-col" style="display:none;">Prix (€)</th>
+                        <th class="prix-col" style="display:none;">Prix (Ar)</th>
                         <th class="actions-column">Actions</th>
                     </tr>
                 </thead>
@@ -179,7 +179,7 @@
                         </td>
                         <td class="prix-col" style="display:none;">
                             {% if soin.prix_service %}
-                                {{ soin.prix_service|floatformat:2 }} €
+                                {{ soin.prix_service|floatformat:2 }} Ar
                             {% else %}
                                 -
                             {% endif %}

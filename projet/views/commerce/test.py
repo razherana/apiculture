@@ -444,10 +444,10 @@ def vente_vue(request):
         clients = Client.objects.all()
         
         modes_payement = [
-            {'mode': 'Carte bancaire'},
-            {'mode': 'Chèque'},
-            {'mode': 'Espèces'},
-            {'mode': 'Virement'},
+            {
+                'id': mode.id,
+                'mode': mode.name
+            } for mode in ModePayement.objects.all()
         ]
         
         return render(request, "commerce/ventes/vue.html", {
@@ -471,7 +471,14 @@ def vente_vue(request):
             return redirect('ventes_list')
         
         # Update vente
-        vente_model.mode_payement = request.POST.get('mode_payement', vente_model.mode_payement)
+        mode_payement = request.POST.get('mode_payement', vente_model.mode_payement.name)
+        try:
+            mode_payement_model = ModePayement.objects.get(name=mode_payement)
+            vente_model.mode_payement = mode_payement_model
+        except ModePayement.DoesNotExist:
+            messages.error(request, 'Mode de paiement invalide.')
+            return redirect('vente_vue', id=vente_id)
+        
         vente_model.note = request.POST.get('note', vente_model.note)
         
         # Update client if changed

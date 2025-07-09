@@ -11,6 +11,31 @@ from projet.models.ressources import (
 )
 from projet.models.productions import Intervention, InterventionType, Recolte
 
+"""
+AUTOMATIC RUCHE STATUS MANAGEMENT
+
+This module implements automatic status management for ruches based on essaim assignment:
+
+1. When a ruche is created:
+   - If an essaim is assigned: status becomes 'Actif'
+   - If no essaim is assigned: status becomes 'Inactif'
+
+2. When a ruche is edited and essaim assignment changes:
+   - Essaim assigned: status becomes 'Actif' 
+   - Essaim removed: status becomes 'Inactif'
+
+3. When an essaim is assigned/reassigned to ruches:
+   - Old ruche (if any): status becomes 'Inactif'
+   - New ruche: status becomes 'Actif'
+
+Functions:
+- update_ruche_status(ruche): Updates status for a single ruche
+- initialize_all_ruche_statuses(): Initializes status for all ruches (migration helper)
+- initialize_ruche_statuses_view(request): Admin view to trigger initialization
+
+The system automatically prevents duplicate status entries by checking the latest status.
+"""
+
 # Données de test
 ruches_data = [                      
     {"id": 1, "nom": "Ruche Lavande", "type": "Dadant", "statut": "Active", "localisation": "Champ Sud", "date_installation": "2021-05-12", "force": 8, "production": 25.5, "nb_hausses": 2},
@@ -105,6 +130,51 @@ def get_alertes_context(request):
         'alertes': [a for a in alertes_data if a['status'] == 'En cours']
     }
 
+# Helper function to update ruche status based on essaim assignment
+def update_ruche_status(ruche):
+    """
+    Updates the ruche status based on essaim assignment:
+    - If ruche has an essaim assigned: status becomes 'Actif'
+    - If ruche has no essaim assigned: status becomes 'Inactif'
+    """
+    try:
+        if ruche.essaim:
+            # Ruche has an essaim -> status is 'Actif'
+            status_actif = RucheStatus.objects.get_or_create(name='Actif')[0]
+            # Check if the current status is already 'Actif' to avoid duplicate entries
+            latest_status = RucheStatusHistory.objects.filter(ruche=ruche).order_by('-created_at').first()
+            if not latest_status or latest_status.ruche_status.name != 'Actif':
+                RucheStatusHistory.objects.create(
+                    ruche=ruche,
+                    ruche_status=status_actif
+                )
+        else:
+            # Ruche has no essaim -> status is 'Inactif'
+            status_inactif = RucheStatus.objects.get_or_create(name='Inactif')[0]
+            # Check if the current status is already 'Inactif' to avoid duplicate entries
+            latest_status = RucheStatusHistory.objects.filter(ruche=ruche).order_by('-created_at').first()
+            if not latest_status or latest_status.ruche_status.name != 'Inactif':
+                RucheStatusHistory.objects.create(
+                    ruche=ruche,
+                    ruche_status=status_inactif
+                )
+    except Exception as e:
+        print(f"Erreur lors de la mise à jour du statut de la ruche {ruche.id}: {e}")
+
+# Utility function to initialize status for all existing ruches
+def initialize_all_ruche_statuses():
+    """
+    Utility function to initialize status for all existing ruches.
+    This can be called once to set up proper statuses for existing data.
+    """
+    ruches = Ruche.objects.all()
+    for ruche in ruches:
+        # Check if ruche already has a status history
+        has_status = RucheStatusHistory.objects.filter(ruche=ruche).exists()
+        if not has_status:
+            update_ruche_status(ruche)
+            print(f"Initialized status for ruche: {ruche.description}")
+
 # Vues pour les ruches
 def ruches_list(request):
     # Get the selected date from request, default to today
@@ -190,10 +260,6 @@ def ruche_details(request, id):
     if not ruche:
         return render(request, 'elevage/404.html', {'message': 'Ruche non trouvée'})
 
-    # Reine associée (si modèle existant, ici on simule avec InterventionType "Reine" ou à adapter)
-    reine = None
-  
-
     recolte = Recolte.objects.filter(ruche=ruche).order_by('-created_at').all()
     soins = Intervention.objects.filter(ruche=ruche).all()
     # Pour compatibilité avec le template (attributs attendus)
@@ -207,9 +273,6 @@ def ruche_details(request, id):
         'production': sum(recolte.poids_miel for recolte in ruche.recoltes.all()) if hasattr(ruche, 'recoltes') else 0,
         'nb_hausses': ruche.ruche_hausse_histories.filter(is_removed=False).count() if hasattr(ruche, 'ruche_hausse_histories') else 0,
     }
-
-    # Reine pour compatibilité template
-   
 
     return render(request, 'elevage/ruches/ruche-details.html', {
         'ruche': ruche_data,
@@ -247,15 +310,8 @@ def ruche_add(request):
                 created_at=timezone.now()
             )
             
-            # Créer un statut initial pour la ruche
-            try:
-                status_actif = RucheStatus.objects.get_or_create(name='Active')[0]
-                RucheStatusHistory.objects.create(
-                    ruche=ruche,
-                    ruche_status=status_actif
-                )
-            except Exception as status_error:
-                print(f"Erreur lors de la création du statut: {status_error}")
+            # Mettre à jour le statut automatiquement
+            update_ruche_status(ruche)
             
             # Rediriger vers la liste des ruches
             return redirect('ruches_list')
@@ -305,12 +361,17 @@ def ruche_edit(request, id=None):
                 raise ValueError("La localisation est requise")
             
             # Mettre à jour la ruche
+            old_essaim = ruche.essaim  # Garder l'ancien essaim pour comparaison
+            
             ruche.description = description
             ruche.ruche_type_id = ruche_type_id
             ruche.localizations_id = localization_id
             ruche.essaim = Essaim.objects.get(id=essaim_id) if essaim_id else None
-            ruche.created_at = timezone.now()  # Mettre à jour la date de création
             ruche.save()
+            
+            # Mettre à jour le statut si l'assignation d'essaim a changé
+            if old_essaim != ruche.essaim:
+                update_ruche_status(ruche)
             
             return redirect('ruches_list')
             
@@ -417,6 +478,8 @@ def amenagement_add(request):
                     ruche = Ruche.objects.get(id=ruche_id)
                     ruche.essaim = essaim
                     ruche.save()
+                    # Mettre à jour le statut de la ruche automatiquement
+                    update_ruche_status(ruche)
                 except Ruche.DoesNotExist:
                     pass
             
@@ -477,13 +540,34 @@ def amenagement_edit(request, id=None):
             
             
             # Mettre à jour l'association avec la ruche
+            old_ruche = None
+            # Find current ruche with this essaim to handle status updates
+            try:
+                old_ruche = Ruche.objects.get(essaim=essaim)
+            except Ruche.DoesNotExist:
+                pass
+            
             if ruche_id:
                 try:
-                    ruche = Ruche.objects.get(id=ruche_id)
-                    ruche.essaim = essaim
-                    ruche.save()
+                    new_ruche = Ruche.objects.get(id=ruche_id)
+                    # If changing ruches, update old ruche first
+                    if old_ruche and old_ruche.id != new_ruche.id:
+                        old_ruche.essaim = None
+                        old_ruche.save()
+                        update_ruche_status(old_ruche)
+                    
+                    # Assign to new ruche
+                    new_ruche.essaim = essaim
+                    new_ruche.save()
+                    update_ruche_status(new_ruche)
                 except Ruche.DoesNotExist:
                     pass
+            else:
+                # No ruche selected, remove from current ruche if any
+                if old_ruche:
+                    old_ruche.essaim = None
+                    old_ruche.save()
+                    update_ruche_status(old_ruche)
             
             return redirect('amenagements_list')
             
@@ -610,7 +694,7 @@ def soins_list(request):
             'ruche': soin.ruche,
             'date_prevue': soin.date_prevue,
             'date_realisation': soin.date_realisation,
-            'prix_service': getattr(soin, 'prix_service', None),  # Ajout du prix
+            'prix_service': getattr(soin, 'prix_service', 0),  # Ajout du prix
         }
         soins_data.append(soin_data)
     
@@ -640,6 +724,7 @@ def soin_add(request):
         notes = request.POST.get('notes', '')
         date_realisation = request.POST.get('date_realisation')
         prix_service = request.POST.get('prix_service', 0)  # Nouveau champ
+        
         try:
             soin = Intervention(
                 title=f"Soin - {InterventionType.objects.get(id=intervention_type_id).name}",
@@ -647,7 +732,7 @@ def soin_add(request):
                 donnees=dose,
                 date_prevue=date_prevue,
                 date_realisation=date_realisation if date_realisation else None,
-                prix_service=prix_service or 0  # Ajout du prix
+                prix_service=prix_service
             )
             
             # Set foreign keys
@@ -689,6 +774,7 @@ def soin_edit(request, id=None):
         soin.date_prevue = request.POST.get('date')
         soin.details = request.POST.get('notes', '')
         soin.donnees = request.POST.get('dose', '')
+        soin.prix_service = request.POST.get('prix_service', 0)  # Nouveau champ
         
         date_realisation = request.POST.get('date_realisation')
         soin.date_realisation = date_realisation if date_realisation else None
@@ -898,6 +984,7 @@ def intervention_add(request):
         date_prevue = request.POST.get('date_prevue')
         date_realisation = request.POST.get('date_realisation', None)
         prix_service = request.POST.get('prix_service', 0)  # Nouveau champ
+        
         try:
             intervention = Intervention(
                 title=title,
@@ -905,7 +992,7 @@ def intervention_add(request):
                 donnees=donnees,
                 date_prevue=date_prevue,
                 date_realisation=date_realisation if date_realisation else None,
-                prix_service=prix_service or 0  # Ajout du prix
+                prix_service=prix_service  # Ajout du prix
             )
             
             # Set optional foreign keys
@@ -949,6 +1036,7 @@ def intervention_edit(request, id):
         intervention.details = request.POST.get('details')
         intervention.donnees = request.POST.get('donnees', '')
         intervention.date_prevue = request.POST.get('date_prevue')
+        intervention.prix_service = request.POST.get('prix_service', 0)  # Nouveau champ
         
         date_realisation = request.POST.get('date_realisation')
         intervention.date_realisation = date_realisation if date_realisation else None
@@ -1548,3 +1636,26 @@ def essaim_race_create(request):
             return JsonResponse({'success': False, 'message': str(e)})
     
     return JsonResponse({'success': False, 'message': 'Méthode non autorisée'})
+
+def initialize_ruche_statuses_view(request):
+    """
+    Admin view to initialize statuses for all ruches.
+    This is useful for migrating existing data.
+    """
+    if request.method == 'POST':
+        try:
+            initialize_all_ruche_statuses()
+            return JsonResponse({
+                'success': True,
+                'message': 'Statuts initialisés pour toutes les ruches'
+            })
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            })
+    
+    return JsonResponse({
+        'success': False,
+        'error': 'Méthode non autorisée'
+    })
