@@ -6,20 +6,23 @@ from django.http import JsonResponse
 import json
 
 from datetime import datetime, timedelta
-from projet.models.productions import Recolte
-from projet.models.ressources import PrixMateriel, Ruche , HausseType , RucheHausseHistory , Hausse, HausseCadre , EssaimDetail , EssaimStatusHistory , EssaimStatus , Essaim , EssaimRace , EssaimOrigin,EssaimSanteHistory
+from projet.models.productions import Recolte, Task
+from projet.models.ressources import PrixMateriel, Ruche , HausseCadre , EssaimDetail
 
-from pytz import timezone as pytz_timezone 
+from pytz import timezone as pytz_timezone
+from django.utils.dateparse import parse_date
 from django.db.models import Avg
-from projet.models.productions import Recolte , InterventionType , Intervention
-from projet.models.ressources import EssaimSanteHistory, Ruche , HausseCadre , EssaimDetail
- 
+from projet.models.productions import Recolte , Intervention
+from projet.models.ressources import Ruche , HausseCadre , EssaimDetail
+
+
+
 from projet.models.ressources import Materiel , MaterielType , MaterielStatus , Consommable , ConsommableType , ConsommableConsomme ,MaterielStatusHistory
 
 
 from projet.models.ressources import Materiel , MaterielType , MaterielStatus , Consommable , ConsommableType , ConsommableConsomme 
 from projet.models.ventes import VenteDetail
-from projet.models.productions import MielPriceHistory, Miel
+from projet.models.productions import MielPriceHistory
 from django.db.models import Sum
 
 def recolte_list(request):
@@ -283,13 +286,13 @@ def alertes_penurie(request):
             id__in=ConsommableConsomme.objects.filter(
                 created_at__date__lte=selected_date
             ).values('consommable_id')
-        ).aggregate(total=Sum('quantite_unite'))['total'] or 0
+        ).aggregate(total=Count('*'))['total'] or 0
         
         if stock_actuel < consommable_type.seuil_alerte:
             level = 'danger' if stock_actuel <= consommable_type.seuil_alerte * 0.3 else 'warning'
             message = (
-                f"{consommable_type.name} : Stock actuel ({stock_actuel} {consommable_type.unite.name}) "
-                f"est en dessous du seuil d'alerte ({consommable_type.seuil_alerte} {consommable_type.unite.name})."
+                f"{consommable_type.name} : Stock actuel ({stock_actuel}) "
+                f"est en dessous du seuil d'alerte ({consommable_type.seuil_alerte})."
             )
             alertes_stock.append({'message': message, 'level': level})
     
