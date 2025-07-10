@@ -1,0 +1,408 @@
+{% extends "base_commerce.html" %}
+{% load static %}
+{% block title %}Gestion du stock{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="{% static 'commerce/css/list.css' %}">
+<link rel="stylesheet" href="{% static 'css/beenova.css' %}">
+<link rel="stylesheet" href="{% static 'commerce/css/dark-mode-fix.css' %}">
+
+<div class="liste-content">
+    <h2>Gestion du stock des miels</h2>
+    
+    <!-- Date Filter -->
+    <div class="card glass mb-4">
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-md);">
+            <div style="display: flex; align-items: center; gap: var(--space-md);">
+                <span class="form-label">Stock à la date :</span>
+                <span id="current-date" class="text-honey" style="font-weight: 600; font-size: 1.1em;">{{ selected_date }}</span>
+            </div>
+            <div style="display: flex; gap: var(--space-sm);">
+                <button type="button" class="btn btn-glass" onclick="changeDate(-1)" title="Jour précédent">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <button type="button" class="btn btn-honey" onclick="resetToToday()" title="Aujourd'hui">
+                    <i class="fas fa-calendar-day"></i>
+                    Aujourd'hui
+                </button>
+                <button type="button" class="btn btn-glass" onclick="changeDate(1)" title="Jour suivant">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+                <button type="button" class="btn btn-dark" onclick="openDatePicker()" title="Choisir une date">
+                    <i class="fas fa-calendar-alt"></i>
+                    Choisir
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Hidden date picker -->
+    <div id="date-picker-modal" class="modal" style="display: none;">
+        <div class="modal-content glass" style="max-width: 400px; margin: 15% auto;">
+            <span class="close-modal" onclick="closeDatePicker()">&times;</span>
+            <h4 style="margin-bottom: var(--space-lg);">Choisir une date</h4>
+            <form method="get" id="date-form">
+                <div class="form-group">
+                    <label for="date-input" class="form-label">Date :</label>
+                    <input type="date" id="date-input" name="date" value="{{ selected_date }}" class="form-control">
+                </div>
+                <div style="display: flex; gap: var(--space-md); justify-content: flex-end; margin-top: var(--space-lg);">
+                    <button type="button" class="btn btn-glass" onclick="closeDatePicker()">Annuler</button>
+                    <button type="submit" class="btn btn-honey">Appliquer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <div style="display:flex; gap: var(--space-md); margin-bottom: var(--space-lg);">
+      <a href="{% url 'stock_miels_form' %}" class="btn btn-honey action-btn">
+        <i class="fas fa-plus"></i>
+        Ajouter une entrée/sortie de miel
+      </a>
+    </div>
+    
+    <div class="card glass">
+        <div class="table-scroll-container">
+            <table class="commerce-table">
+                <thead>
+                    <tr>
+                        <th>Miel</th>
+                        <th>Type</th>
+                        <th>Conteneur</th>
+                        <th>Stock actuel</th>
+                        <th>Unité</th>
+                        <th>Prix actuel</th>
+                        <th>Seuil d'alerte</th>
+                        <th>Statut</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for miel in miels %}
+                    <tr class="expandable-row {% if miel.is_low_stock %}bg-danger{% endif %}" 
+                        data-miel-id="{{ miel.id }}" style="cursor: pointer; transition: all var(--transition-fast);">
+                        <td>{{ miel.nom }}</td>
+                        <td>{{ miel.type_miel }}</td>
+                        <td>{{ miel.conteneur }}</td>
+                        <td>
+                            <span class="{% if miel.is_low_stock %}text-danger{% else %}text-success{% endif %}">
+                                {{ miel.stock_actuel }}
+                            </span>
+                        </td>
+                        <td>{{ miel.quantite_unite }}{{ miel.unite_mesure }}</td>
+                        <td>
+                            <span class="text-honey">{{ miel.prix_actuel }}Ar</span>
+                        </td>
+                        <td>{{ miel.seuil_alerte }}</td>
+                        <td>
+                            {% if miel.is_low_stock %}
+                                <span class="badge badge-danger">Stock faible</span>
+                            {% else %}
+                                <span class="badge badge-dark">Stock normal</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="8" class="text-secondary">Aucun miel en stock.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for miel details -->
+<div id="mielModal" class="modal">
+    <div class="modal-content glass">
+        <span class="close-modal">&times;</span>
+        <h3>Historique du miel <span id="modal-miel-name" class="text-honey"></span></h3>
+        
+        <div class="modal-tabs" style="display: flex; border-bottom: 1px solid var(--border-subtle); margin-bottom: var(--space-md);">
+            <div class="modal-tab active btn btn-glass" data-tab="stock" style="border-radius: var(--radius-sm) var(--radius-sm) 0 0; margin-right: var(--space-xs);">
+                Historique des stocks
+            </div>
+            <div class="modal-tab btn btn-glass" data-tab="price" style="border-radius: var(--radius-sm) var(--radius-sm) 0 0;">
+                Historique des prix
+            </div>
+        </div>
+        
+        <div id="stock-tab" class="modal-tab-content active">
+            <div class="card">
+                <table class="commerce-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Quantité ajoutée</th>
+                            <th>Type</th>
+                        </tr>
+                    </thead>
+                    <tbody id="modal-stock-body">
+                        <!-- Stock history will be populated via JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div id="price-tab" class="modal-tab-content" style="display: none;">
+            <div class="card">
+                <table class="commerce-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Prix</th>
+                        </tr>
+                    </thead>
+                    <tbody id="modal-price-body">
+                        <!-- Price history will be populated via JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Date navigation functions
+let currentDate = new Date('{{ selected_date }}');
+
+function formatDate(date) {
+    return date.toISOString().split('T')[0];
+}
+
+function updateDateDisplay() {
+    const dateElement = document.getElementById('current-date');
+    const options = { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric',
+        weekday: 'long'
+    };
+    dateElement.textContent = currentDate.toLocaleDateString('fr-FR', options);
+}
+
+function changeDate(days) {
+    currentDate.setDate(currentDate.getDate() + days);
+    updateDateDisplay();
+    navigateToDate();
+}
+
+function resetToToday() {
+    currentDate = new Date();
+    updateDateDisplay();
+    navigateToDate();
+}
+
+function navigateToDate() {
+    const formattedDate = formatDate(currentDate);
+    window.location.href = `?date=${formattedDate}`;
+}
+
+function openDatePicker() {
+    document.getElementById('date-picker-modal').style.display = 'block';
+    document.getElementById('date-input').value = formatDate(currentDate);
+}
+
+function closeDatePicker() {
+    document.getElementById('date-picker-modal').style.display = 'none';
+}
+
+// Initialize date display
+updateDateDisplay();
+
+// Close date picker when clicking outside
+window.addEventListener('click', function(e) {
+    const modal = document.getElementById('date-picker-modal');
+    if (e.target === modal) {
+        closeDatePicker();
+    }
+});
+
+document.addEventListener("DOMContentLoaded", function () {
+    const expandableRows = document.querySelectorAll(".expandable-row");
+    const modal = document.getElementById("mielModal");
+    const closeBtn = document.querySelector(".close-modal");
+    const modalMielName = document.getElementById("modal-miel-name");
+    const modalStockBody = document.getElementById("modal-stock-body");
+    const modalPriceBody = document.getElementById("modal-price-body");
+    const modalTabs = document.querySelectorAll(".modal-tab");
+    
+    // Store miel data for modal access
+    const mielData = {};
+    
+    {% for miel in miels %}
+        mielData[{{ miel.id }}] = {
+            name: "{{ miel.nom }}",
+            stockHistory: [
+                {% for stock in miel.miel_stock.all %}
+                    { 
+                        date: "{{ stock.created_at|date:'Y-m-d H:i' }}", 
+                        quantity: {{ stock.added_quantity }},
+                        type: "{% if stock.added_quantity > 0 %}Entrée{% else %}Sortie{% endif %}"
+                    },
+                {% endfor %}
+            ],
+            priceHistory: [
+                {% for price in miel.miel_price_histories.all %}
+                    { 
+                        date: "{{ price.created_at|date:'Y-m-d H:i' }}", 
+                        price: {{ price.price }}
+                    },
+                {% endfor %}
+            ]
+        };
+    {% endfor %}
+    
+    // Tab switching functionality
+    modalTabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+            // Remove active class from all tabs and contents
+            modalTabs.forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.modal-tab-content').forEach(c => c.style.display = 'none');
+            
+            // Add active class to clicked tab and corresponding content
+            this.classList.add('active');
+            const tabName = this.getAttribute('data-tab');
+            document.getElementById(`${tabName}-tab`).style.display = 'block';
+        });
+    });
+    
+    // Open modal when clicking on a row
+    expandableRows.forEach(row => {
+        row.addEventListener("click", function(e) {
+            const mielId = this.getAttribute("data-miel-id");
+            const miel = mielData[mielId];
+            
+            if (!miel) return;
+            
+            modalMielName.textContent = miel.name;
+            
+            // Populate stock history tab
+            modalStockBody.innerHTML = '';
+            if (miel.stockHistory.length > 0) {
+                miel.stockHistory.forEach(stock => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${stock.date}</td>
+                        <td class="${stock.quantity > 0 ? 'text-success' : 'text-danger'}">${stock.quantity}</td>
+                        <td><span class="badge ${stock.quantity > 0 ? 'badge-dark' : 'badge-danger'}">${stock.type}</span></td>
+                    `;
+                    modalStockBody.appendChild(row);
+                });
+            } else {
+                const row = document.createElement('tr');
+                row.innerHTML = '<td colspan="3" class="text-secondary">Aucun historique de stock disponible</td>';
+                modalStockBody.appendChild(row);
+            }
+            
+            // Populate price history tab
+            modalPriceBody.innerHTML = '';
+            if (miel.priceHistory.length > 0) {
+                miel.priceHistory.forEach(price => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${price.date}</td>
+                        <td class="text-honey">${price.price}Ar</td>
+                    `;
+                    modalPriceBody.appendChild(row);
+                });
+            } else {
+                const row = document.createElement('tr');
+                row.innerHTML = '<td colspan="2" class="text-secondary">Aucun historique de prix disponible</td>';
+                modalPriceBody.appendChild(row);
+            }
+            
+            // Show the modal
+            modal.style.display = "block";
+        });
+    });
+    
+    // Close modal when clicking on X
+    closeBtn.addEventListener("click", function() {
+        modal.style.display = "none";
+    });
+    
+    // Close modal when clicking outside of it
+    window.addEventListener("click", function(e) {
+        if (e.target === modal) {
+            modal.style.display = "none";
+        }
+    });
+    
+    // Add hover effects for rows
+    expandableRows.forEach(row => {
+        row.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-2px)';
+            this.style.boxShadow = 'var(--shadow-md)';
+        });
+        
+        row.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+            this.style.boxShadow = 'none';
+        });
+    });
+});
+</script>
+
+<style>
+/* Modal styles using BeeNova design system */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: var(--z-modal);
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+}
+
+.modal-content {
+    margin: 5% auto;
+    padding: var(--space-xl);
+    width: 90%;
+    max-width: 1000px;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    animation: fadeUp 0.3s ease-out;
+}
+
+.close-modal {
+    color: var(--text-secondary);
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: color var(--transition-fast);
+}
+
+.close-modal:hover,
+.close-modal:focus {
+    color: var(--honey-primary);
+}
+
+.modal-tab.active {
+    background: var(--honey-primary) !important;
+    color: var(--hive-black) !important;
+    transform: translateY(-2px);
+}
+
+.modal-tab-content {
+    animation: fadeUp 0.3s ease-out;
+}
+
+/* Enhanced table styles */
+.expandable-row:hover {
+    background-color: var(--bg-elevated-hover) !important;
+}
+
+/* Low stock warning animation */
+.bg-danger {
+    background-color: rgba(255, 51, 102, 0.1) !important;
+    animation: gentlePulse 3s infinite ease-in-out;
+}
+
+:root:not(.light-mode) .bg-danger {
+    background-color: rgba(255, 51, 102, 0.2) !important;
+}
+</style>
+{% endblock %}

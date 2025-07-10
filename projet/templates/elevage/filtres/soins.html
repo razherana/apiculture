@@ -1,0 +1,344 @@
+{% extends "base_elevage.html" %}
+{% load static %}
+
+{% block title %}Filtres de soins{% endblock %}
+{% block page_title %}Filtres de soins{% endblock %}
+
+{% block content %}
+<div class="elevage-content">
+    <h2>Filtres historiques des traitements</h2>
+    
+    <div class="elevage-card">
+        <div class="filters-container">
+            <div class="filter-group">
+                <label class="filter-label" for="date-range">Période:</label>
+                <select class="filter-select" id="date-range">
+                    <option value="all">Toutes les dates</option>
+                    <option value="month">Dernier mois</option>
+                    <option value="quarter">Dernier trimestre</option>
+                    <option value="year">Dernière année</option>
+                    <option value="custom">Personnalisée</option>
+                </select>
+            </div>
+            
+            <div class="filter-group" id="custom-date-container" style="display: none;">
+                <div style="display: flex; gap: 0.5rem;">
+                    <div>
+                        <label class="filter-label" for="date-from">Du:</label>
+                        <input type="date" id="date-from" class="form-input">
+                    </div>
+                    <div>
+                        <label class="filter-label" for="date-to">Au:</label>
+                        <input type="date" id="date-to" class="form-input">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="filter-group">
+                <label class="filter-label" for="type-filter">Type:</label>
+                <select class="filter-select" id="type-filter">
+                    <option value="">Tous les types</option>
+                    {% for type in types_soin %}
+                        <option value="{{ type }}">{{ type }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label class="filter-label" for="produit-filter">Produit:</label>
+                <select class="filter-select" id="produit-filter">
+                    <option value="">Tous les produits</option>
+                    {% for produit in produits %}
+                        <option value="{{ produit }}">{{ produit }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label class="filter-label" for="ruche-filter">Ruche:</label>
+                <select class="filter-select" id="ruche-filter">
+                    <option value="">Toutes les ruches</option>
+                    {% for ruche in ruches %}
+                        <option value="{{ ruche.id }}">{{ ruche.nom }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        
+        <div class="btn-group" style="margin-top: 1rem;">
+            <button id="reset-filters" class="btn btn-secondary">
+                <i class="fas fa-undo"></i> Réinitialiser les filtres
+            </button>
+            <button id="export-data" class="btn btn-primary">
+                <i class="fas fa-file-export"></i> Exporter les données
+            </button>
+        </div>
+    </div>
+    
+    <!-- Efficacité des produits -->
+    <div class="elevage-card">
+        <h3 style="color: var(--honey-primary); margin-bottom: 1rem;">
+            <i class="fas fa-chart-line"></i> Efficacité des produits
+        </h3>
+        
+        <div class="info-cards">
+            {% for produit, data in efficacite_par_produit.items %}
+                <div class="info-card produit-card" data-produit="{{ produit }}">
+                    <div class="info-card-header">
+                        <div class="info-card-icon" style="position: relative;">
+                            <i class="fas fa-flask"></i>
+                            {% if data.efficacite_moyenne >= 8 %}
+                                <span style="position: absolute; top: -8px; right: -8px; color: var(--pollen-green);">
+                                    <i class="fas fa-check-circle"></i>
+                                </span>
+                            {% elif data.efficacite_moyenne < 6 %}
+                                <span style="position: absolute; top: -8px; right: -8px; color: var(--queen-red);">
+                                    <i class="fas fa-exclamation-circle"></i>
+                                </span>
+                            {% endif %}
+                        </div>
+                        <div class="info-card-title">{{ produit }}</div>
+                    </div>
+                    <div class="info-card-value">{{ data.efficacite_moyenne }}/10</div>
+                    <div class="info-card-subtitle">Efficacité moyenne</div>
+                    <div style="margin-top: 0.5rem; font-size: 0.8rem; color: var(--text-secondary);">
+                        {{ data.nombre }} utilisation{{ data.nombre|pluralize }}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <!-- Tableau des soins -->
+    <div class="elevage-card">
+        <h3 style="color: var(--honey-primary); margin-bottom: 1rem;">
+            <i class="fas fa-history"></i> Historique des traitements
+        </h3>
+        
+        <div class="table-container">
+            <table class="elevage-table" id="soins-table">
+                <thead>
+                    <tr>
+                        <th width="12%">Date</th>
+                        <th width="18%">Ruche</th>
+                        <th width="15%">Type</th>
+                        <th width="15%">Produit</th>
+                        <th width="10%">Dose</th>
+                        <th width="10%">Efficacité</th>
+                        <th width="20%">Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for soin in soins %}
+                    <tr data-date="{{ soin.date }}" data-type="{{ soin.type }}" data-produit="{{ soin.produit }}" data-ruche="{{ soin.ruche_id }}">
+                        <td>{{ soin.date }}</td>
+                        <td>{{ soin.ruche_nom }}</td>
+                        <td>{{ soin.type }}</td>
+                        <td>{{ soin.produit }}</td>
+                        <td>{{ soin.dose }}</td>
+                        <td>
+                            <div style="display: flex; align-items: center;">
+                                <div style="min-width: 30px; text-align: right; margin-right: 5px;">{{ soin.efficacite }}/10</div>
+                                <div style="flex-grow: 1; height: 6px; background-color: #e0e0e0; border-radius: 3px; overflow: hidden;">
+                                    <div style="height: 100%; width: {{ soin.efficacite|floatformat:0 }}0%; 
+                                        {% if soin.efficacite >= 8 %}
+                                            background-color: var(--pollen-green);
+                                        {% elif soin.efficacite >= 6 %}
+                                            background-color: var(--honey-primary);
+                                        {% else %}
+                                            background-color: var(--queen-red);
+                                        {% endif %}">
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="cell-expand">{{ soin.notes }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Message "Aucun résultat" -->
+        <div id="no-results" style="display: none; text-align: center; padding: 2rem; margin-top: 1rem;">
+            <i class="fas fa-search" style="font-size: 3rem; color: var(--text-secondary); margin-bottom: 1rem;"></i>
+            <h3>Aucun traitement ne correspond aux critères</h3>
+            <p>Essayez d'autres filtres ou <button id="reset-no-results" class="btn btn-secondary" style="margin-left: 0.5rem;">réinitialisez</button></p>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Éléments DOM
+    const dateRangeSelect = document.getElementById('date-range');
+    const customDateContainer = document.getElementById('custom-date-container');
+    const dateFrom = document.getElementById('date-from');
+    const dateTo = document.getElementById('date-to');
+    const typeFilter = document.getElementById('type-filter');
+    const produitFilter = document.getElementById('produit-filter');
+    const rucheFilter = document.getElementById('ruche-filter');
+    const resetFiltersBtn = document.getElementById('reset-filters');
+    const resetNoResultsBtn = document.getElementById('reset-no-results');
+    const exportDataBtn = document.getElementById('export-data');
+    const noResults = document.getElementById('no-results');
+    
+    // Tableau et ses lignes
+    const tableRows = document.querySelectorAll('#soins-table tbody tr');
+    const produitCards = document.querySelectorAll('.produit-card');
+    
+    // Initialiser les dates
+    const today = new Date();
+    dateTo.valueAsDate = today;
+    const lastMonth = new Date();
+    lastMonth.setMonth(today.getMonth() - 1);
+    dateFrom.valueAsDate = lastMonth;
+    
+    // Fonction pour afficher/masquer les dates personnalisées
+    dateRangeSelect.addEventListener('change', function() {
+        if (this.value === 'custom') {
+            customDateContainer.style.display = 'block';
+        } else {
+            customDateContainer.style.display = 'none';
+            
+            // Définir automatiquement les dates en fonction de la période sélectionnée
+            const today = new Date();
+            let fromDate = new Date(today);
+            
+            if (this.value === 'month') {
+                fromDate.setMonth(today.getMonth() - 1);
+            } else if (this.value === 'quarter') {
+                fromDate.setMonth(today.getMonth() - 3);
+            } else if (this.value === 'year') {
+                fromDate.setFullYear(today.getFullYear() - 1);
+            } else if (this.value === 'all') {
+                fromDate = new Date(0); // Date très ancienne
+            }
+            
+            dateFrom.valueAsDate = fromDate;
+            dateTo.valueAsDate = today;
+        }
+        
+        applyFilters();
+    });
+    
+    // Fonction pour appliquer les filtres
+    function applyFilters() {
+        const fromValue = dateFrom.value ? new Date(dateFrom.value) : new Date(0);
+        const toValue = dateTo.value ? new Date(dateTo.value) : new Date();
+        const typeValue = typeFilter.value;
+        const produitValue = produitFilter.value;
+        const rucheValue = rucheFilter.value;
+        
+        let visibleCount = 0;
+        
+        // Filtrer les lignes du tableau
+        tableRows.forEach(row => {
+            const rowDate = new Date(row.getAttribute('data-date'));
+            const rowType = row.getAttribute('data-type');
+            const rowProduit = row.getAttribute('data-produit');
+            const rowRuche = row.getAttribute('data-ruche');
+            
+            const matchDate = rowDate >= fromValue && rowDate <= toValue;
+            const matchType = !typeValue || rowType === typeValue;
+            const matchProduit = !produitValue || rowProduit === produitValue;
+            const matchRuche = !rucheValue || rowRuche === rucheValue;
+            
+            const isVisible = matchDate && matchType && matchProduit && matchRuche;
+            row.style.display = isVisible ? '' : 'none';
+            
+            if (isVisible) {
+                visibleCount++;
+            }
+        });
+        
+        // Filtrer les cartes de produits
+        produitCards.forEach(card => {
+            const cardProduit = card.getAttribute('data-produit');
+            
+            // Si un produit est sélectionné et que ce n'est pas celui-ci, le masquer
+            if (produitValue && cardProduit !== produitValue) {
+                card.style.display = 'none';
+            } else {
+                card.style.display = '';
+            }
+        });
+        
+        // Afficher ou masquer le message "Aucun résultat"
+        if (visibleCount === 0) {
+            document.querySelector('#soins-table').style.display = 'none';
+            noResults.style.display = 'block';
+        } else {
+            document.querySelector('#soins-table').style.display = '';
+            noResults.style.display = 'none';
+        }
+    }
+    
+    // Fonction pour réinitialiser les filtres
+    function resetFilters() {
+        dateRangeSelect.value = 'all';
+        customDateContainer.style.display = 'none';
+        dateFrom.value = '';
+        dateTo.valueAsDate = new Date();
+        typeFilter.value = '';
+        produitFilter.value = '';
+        rucheFilter.value = '';
+        
+        applyFilters();
+    }
+    
+    // Exporter les données filtrées
+    function exportFilteredData() {
+        // Récupérer les lignes visibles
+        const visibleRows = Array.from(tableRows).filter(row => row.style.display !== 'none');
+        
+        if (visibleRows.length === 0) {
+            alert('Aucune donnée à exporter. Veuillez ajuster vos filtres.');
+            return;
+        }
+        
+        // Créer les données CSV
+        let csvContent = 'Date,Ruche,Type,Produit,Dose,Efficacité,Notes\n';
+        
+        visibleRows.forEach(row => {
+            const cells = row.querySelectorAll('td');
+            const date = cells[0].textContent.trim();
+            const ruche = cells[1].textContent.trim();
+            const type = cells[2].textContent.trim();
+            const produit = cells[3].textContent.trim();
+            const dose = cells[4].textContent.trim();
+            const efficacite = cells[5].textContent.trim().split('/')[0];
+            const notes = cells[6].textContent.trim().replace(/,/g, ';'); // Remplacer les virgules par des points-virgules
+            
+            csvContent += `${date},${ruche},${type},${produit},${dose},${efficacite},${notes}\n`;
+        });
+        
+        // Créer un objet Blob et télécharger le fichier
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        
+        link.setAttribute('href', url);
+        link.setAttribute('download', 'traitements_export.csv');
+        link.style.visibility = 'hidden';
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+    
+    // Événements
+    dateFrom.addEventListener('change', applyFilters);
+    dateTo.addEventListener('change', applyFilters);
+    typeFilter.addEventListener('change', applyFilters);
+    produitFilter.addEventListener('change', applyFilters);
+    rucheFilter.addEventListener('change', applyFilters);
+    resetFiltersBtn.addEventListener('click', resetFilters);
+    resetNoResultsBtn.addEventListener('click', resetFilters);
+    exportDataBtn.addEventListener('click', exportFilteredData);
+    
+    // Initialiser les filtres
+    applyFilters();
+});
+</script>
+{% endblock %}

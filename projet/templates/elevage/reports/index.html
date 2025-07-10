@@ -1,0 +1,290 @@
+{% extends "base_elevage.html" %}
+{% load static %}
+
+{% block title %}Rapports{% endblock %}
+{% block page_title %}Rapports{% endblock %}
+
+{% block content %}
+<div class="elevage-content">
+    <h2>Rapports et exports</h2>
+    
+    <div class="info-cards">
+        <div class="info-card">
+            <div class="info-card-header">
+                <div class="info-card-icon">
+                    <i class="fas fa-file-pdf"></i>
+                </div>
+                <div class="info-card-title">Rapports PDF</div>
+            </div>
+            <div class="info-card-value">{{ pdf_reports_count }}</div>
+            <div class="info-card-subtitle">générés ce mois</div>
+        </div>
+        
+        <div class="info-card">
+            <div class="info-card-header">
+                <div class="info-card-icon">
+                    <i class="fas fa-file-excel"></i>
+                </div>
+                <div class="info-card-title">Exports Excel</div>
+            </div>
+            <div class="info-card-value">{{ excel_exports_count }}</div>
+            <div class="info-card-subtitle">générés ce mois</div>
+        </div>
+        
+        <div class="info-card">
+            <div class="info-card-header">
+                <div class="info-card-icon">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div class="info-card-title">Dernière production</div>
+            </div>
+            <div class="info-card-value">{{ last_production_kg }} kg</div>
+            <div class="info-card-subtitle">miel récolté</div>
+        </div>
+        
+        <div class="info-card">
+            <div class="info-card-header">
+                <div class="info-card-icon">
+                    <i class="fas fa-calendar-alt"></i>
+                </div>
+                <div class="info-card-title">Date</div>
+            </div>
+            <div class="info-card-value">{{ current_date|date:"d/m/Y" }}</div>
+            <div class="info-card-subtitle">rapport à jour</div>
+        </div>
+    </div>
+    
+    <div class="elevage-card">
+        <h3 style="color: var(--honey-primary); margin-bottom: 1.5rem;">
+            <i class="fas fa-file-export"></i> Générer un rapport
+        </h3>
+        
+        <form method="post" action="{% url 'generate_report' %}" class="form-container">
+            {% csrf_token %}
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" for="report_type">Type de rapport*</label>
+                    <select id="report_type" name="report_type" class="form-select" required>
+                        <option value="" disabled selected>Sélectionnez un type de rapport</option>
+                        <option value="annual">Rapport annuel</option>
+                        <option value="productivity">Rapport de productivité</option>
+                        <option value="health">Rapport sanitaire</option>
+                        <option value="queens">Rapport des reines</option>
+                        <option value="treatments">Historique des traitements</option>
+                        <option value="harvests">Historique des récoltes</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="export_format">Format*</label>
+                    <select id="export_format" name="export_format" class="form-select" required>
+                        <option value="pdf">PDF</option>
+                        <option value="excel">Excel</option>
+                        <option value="csv">CSV</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" for="date_from">Du</label>
+                    <input type="date" id="date_from" name="date_from" class="form-input" 
+                           value="{{ date_six_months_ago|date:'Y-m-d' }}">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="date_to">Au</label>
+                    <input type="date" id="date_to" name="date_to" class="form-input" 
+                           value="{{ current_date|date:'Y-m-d' }}">
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" for="rucher">Rucher (optionnel)</label>
+                    <select id="rucher" name="rucher" class="form-select">
+                        <option value="">Tous les ruchers</option>
+                        {% for rucher in ruchers %}
+                            <option value="{{ rucher.id }}">{{ rucher.nom }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="include_graphs">Inclure les graphiques</label>
+                    <select id="include_graphs" name="include_graphs" class="form-select">
+                        <option value="yes" selected>Oui</option>
+                        <option value="no">Non</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-row" style="justify-content: flex-end; margin-top: 1rem;">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-file-export"></i> Générer le rapport
+                </button>
+            </div>
+        </form>
+    </div>
+    
+    <div class="elevage-card">
+        <h3 style="color: var(--honey-primary); margin-bottom: 1.5rem;">
+            <i class="fas fa-history"></i> Rapports récents
+        </h3>
+        
+        <div class="table-container">
+            <table class="elevage-table">
+                <thead>
+                    <tr>
+                        <th width="15%">Date</th>
+                        <th width="25%">Nom</th>
+                        <th width="15%">Type</th>
+                        <th width="15%">Format</th>
+                        <th width="15%">Généré par</th>
+                        <th width="15%" class="actions-column">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for report in recent_reports %}
+                        <tr>
+                            <td>{{ report.created_at }}</td>
+                            <td>{{ report.name }}</td>
+                            <td>
+                                {% if report.report_type == 'annual' %}
+                                    <span class="tag tag-info">Annuel</span>
+                                {% elif report.report_type == 'productivity' %}
+                                    <span class="tag tag-warning">Productivité</span>
+                                {% elif report.report_type == 'health' %}
+                                    <span class="tag tag-success">Sanitaire</span>
+                                {% elif report.report_type == 'queens' %}
+                                    <span class="tag tag-info">Reines</span>
+                                {% elif report.report_type == 'treatments' %}
+                                    <span class="tag tag-warning">Traitements</span>
+                                {% elif report.report_type == 'harvests' %}
+                                    <span class="tag tag-success">Récoltes</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if report.format == 'pdf' %}
+                                    <i class="fas fa-file-pdf"></i> PDF
+                                {% elif report.format == 'excel' %}
+                                    <i class="fas fa-file-excel"></i> Excel
+                                {% elif report.format == 'csv' %}
+                                    <i class="fas fa-file-csv"></i> CSV
+                                {% endif %}
+                            </td>
+                            <td>{{ report.generated_by }}</td>
+                            <td>
+                                <a href="{{ report.file_url }}" class="btn btn-secondary" download>
+                                    <i class="fas fa-download"></i>
+                                </a>
+                                <button class="btn btn-danger delete-report" data-id="{{ report.id }}">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center">Aucun rapport récent</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <div class="elevage-card">
+        <h3 style="color: var(--honey-primary); margin-bottom: 1.5rem;">
+            <i class="fas fa-clock"></i> Rapports automatiques
+        </h3>
+        
+        <form method="post" action="{% url 'setup_automatic_reports' %}" class="form-container">
+            {% csrf_token %}
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" for="auto_report_type">Type de rapport</label>
+                    <select id="auto_report_type" name="auto_report_type" class="form-select">
+                        <option value="productivity" {% if auto_report.type == 'productivity' %}selected{% endif %}>Rapport de productivité</option>
+                        <option value="health" {% if auto_report.type == 'health' %}selected{% endif %}>Rapport sanitaire</option>
+                        <option value="combined" {% if auto_report.type == 'combined' %}selected{% endif %}>Rapport combiné</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="auto_frequency">Fréquence</label>
+                    <select id="auto_frequency" name="auto_frequency" class="form-select">
+                        <option value="weekly" {% if auto_report.frequency == 'weekly' %}selected{% endif %}>Hebdomadaire</option>
+                        <option value="monthly" {% if auto_report.frequency == 'monthly' %}selected{% endif %}>Mensuel</option>
+                        <option value="quarterly" {% if auto_report.frequency == 'quarterly' %}selected{% endif %}>Trimestriel</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" for="auto_format">Format</label>
+                    <select id="auto_format" name="auto_format" class="form-select">
+                        <option value="pdf" {% if auto_report.format == 'pdf' %}selected{% endif %}>PDF</option>
+                        <option value="excel" {% if auto_report.format == 'excel' %}selected{% endif %}>Excel</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="email_recipients">Destinataires email</label>
+                    <input type="text" id="email_recipients" name="email_recipients" class="form-input" 
+                           value="{{ auto_report.recipients }}" placeholder="email@example.com, email2@example.com">
+                </div>
+            </div>
+            
+            <div class="form-row" style="justify-content: flex-end; margin-top: 1rem;">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Enregistrer les paramètres
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Report type dependent fields
+    const reportType = document.getElementById('report_type');
+    
+    reportType.addEventListener('change', function() {
+        const dateFrom = document.getElementById('date_from');
+        const dateTo = document.getElementById('date_to');
+        
+        if (this.value === 'annual') {
+            // Set date range to current year
+            const currentYear = new Date().getFullYear();
+            dateFrom.value = `${currentYear}-01-01`;
+            dateTo.value = `${currentYear}-12-31`;
+        }
+    });
+    
+    // Delete report confirmation
+    const deleteButtons = document.querySelectorAll('.delete-report');
+    
+    deleteButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const reportId = this.getAttribute('data-id');
+            
+            if (confirm('Êtes-vous sûr de vouloir supprimer ce rapport ?')) {
+                fetch(`/api/delete-report/${reportId}/`, { method: 'DELETE' })
+                    .then(response => {
+                        if (response.ok) {
+                            // Reload the page or remove the row
+                            this.closest('tr').remove();
+                        } else {
+                            alert('Une erreur est survenue lors de la suppression du rapport.');
+                        }
+                    })
+                    .catch(error => console.error('Error:', error));
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

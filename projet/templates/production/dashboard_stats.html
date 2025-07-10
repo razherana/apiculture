@@ -1,0 +1,45 @@
+{% extends "base_commerce.html" %}
+{% load static %}
+{% block page_header %}Dashboard Production{% endblock %}
+
+{% block content %}
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
+    <div class="card">
+        <div class="card-header">Récolte Totale (kg)</div>
+        <p style="font-size: 2.5rem; font-weight: bold; color: #ffd700; margin: 0;">{{ total_recolte }}</p>
+    </div>
+    <div class="card">
+        <div class="card-header">Ruches Actives</div>
+        <p style="font-size: 2.5rem; font-weight: bold; margin: 0;">{{ nombre_ruches }}</p>
+    </div>
+    <div class="card">
+        <div class="card-header">Taux Mortalité</div>
+        <p style="font-size: 2.5rem; font-weight: bold; color: #c00; margin: 0;">{{ taux_mortalite }}%</p>
+    </div>
+</div>
+<div class="card" style="margin-top: 2rem;">
+    <div class="card-header">Production par Ruche</div>
+    <div style="height: 40vh;">
+        <canvas id="productionChart"></canvas>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    new Chart(document.getElementById('productionChart'), {
+        type: 'bar',
+        data: {
+            labels: {{ chart_labels|safe }},
+            datasets: [{
+                label: 'Production (kg)',
+                data: {{ chart_values|safe }},
+                backgroundColor: 'rgba(255, 215, 0, 0.6)',
+                borderColor: 'rgba(255, 215, 0, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+    });
+</script>
+{% endblock %}

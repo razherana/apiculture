@@ -16,8 +16,20 @@ class Client(models.Model):
     email = models.EmailField()
     note = models.TextField()
     adresse = models.CharField(max_length=255)
-    client_type_id = models.ForeignKey(
+    client_type = models.ForeignKey(
         ClientType, on_delete=models.CASCADE, related_name='clients')
+
+    @property
+    def get_last_commande(self) -> str:
+        last_commande = self.commandes.order_by('-created_at').first()
+        last_vente = self.ventes.order_by('-created_at').first()
+        if last_vente and last_commande:
+            return max(last_vente.created_at, last_commande.created_at)
+        elif last_vente:
+            return last_vente.created_at
+        elif last_commande:
+            return last_commande.created_at
+        return '-'
 
     class Meta:
         db_table = 'clients'
@@ -38,9 +50,9 @@ class ModePayement(models.Model):
 
 
 class Vente(models.Model):
-    client_id = models.ForeignKey(
+    client = models.ForeignKey(
         Client, on_delete=models.CASCADE, related_name='ventes')
-    mode_payement_id = models.ForeignKey(
+    mode_payement = models.ForeignKey(
         ModePayement, on_delete=models.CASCADE, related_name='ventes')
     note = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
@@ -50,21 +62,29 @@ class Vente(models.Model):
 
 
 class VenteDetail(models.Model):
-    miel_id = models.ForeignKey(
+    miel = models.ForeignKey(
         Miel, on_delete=models.CASCADE, related_name='vente_details')
-    vente_id = models.ForeignKey(
+    vente = models.ForeignKey(
         Vente, on_delete=models.CASCADE, related_name='vente_details')
     quantite = models.IntegerField()
+
+    @property
+    def prix_unitaire(self):
+        return self.miel.prix_unitaire
+
+    @property
+    def prix_total(self):
+        return self.quantite * self.prix_unitaire
 
     class Meta:
         db_table = 'vente_details'
 
 
 class Commande(models.Model):
-    client_id = models.ForeignKey(
+    client = models.ForeignKey(
         Client, on_delete=models.CASCADE, related_name='commandes')
-    vente_id = models.ForeignKey(
-        Vente, on_delete=models.CASCADE, related_name='commandes')
+    vente = models.ForeignKey(
+        Vente, on_delete=models.CASCADE, related_name='commande', null=True)
     note = models.TextField()
     livraison_date = models.DateField()
     created_at = models.DateTimeField(auto_now_add=True)
@@ -74,9 +94,9 @@ class Commande(models.Model):
 
 
 class CommandeDetail(models.Model):
-    miel_id = models.ForeignKey(
+    miel = models.ForeignKey(
         Miel, on_delete=models.CASCADE, related_name='commande_details')
-    commande_id = models.ForeignKey(
+    commande = models.ForeignKey(
         Commande, on_delete=models.CASCADE, related_name='commande_details')
     quantite = models.IntegerField()
 
@@ -85,9 +105,9 @@ class CommandeDetail(models.Model):
 
 
 class CommandeStatusHistory(models.Model):
-    commande_id = models.ForeignKey(
+    commande = models.ForeignKey(
         Commande, on_delete=models.CASCADE, related_name='commande_status_histories')
-    commande_status_id = models.ForeignKey(
+    commande_status = models.ForeignKey(
         CommandeStatus, on_delete=models.CASCADE, related_name='commande_status_histories')
     created_at = models.DateTimeField(auto_now_add=True)
 

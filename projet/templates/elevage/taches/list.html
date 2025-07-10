@@ -1,0 +1,237 @@
+{% extends "base_elevage.html" %}
+{% load static %}
+
+{% block title %}Liste des tâches{% endblock %}
+{% block page_title %}Gestion des tâches{% endblock %}
+
+{% block content %}
+<div class="elevage-content">
+    <h2>Liste des tâches à effectuer</h2>
+    
+    <div class="btn-group">
+        <a href="{% url 'tache_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Nouvelle tâche
+        </a>
+        <button id="filter-toggle" class="btn btn-secondary">
+            <i class="fas fa-filter"></i> Filtres
+        </button>
+    </div>
+    
+    <div id="filters-panel" class="elevage-card" style="display: none;">
+        <div class="filters-container">
+            <div class="filter-group">
+                <label class="filter-label" for="priority-filter">Priorité:</label>
+                <select class="filter-select" id="priority-filter">
+                    <option value="">Toutes les priorités</option>
+                    <option value="urgent">Urgent</option>
+                    <option value="normal">Normal</option>
+                    <option value="low">Faible</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label class="filter-label" for="status-filter">Statut:</label>
+                <select class="filter-select" id="status-filter">
+                    <option value="">Tous les statuts</option>
+                    <option value="a_faire">À faire</option>
+                    <option value="en_cours">En cours</option>
+                    <option value="termine">Terminé</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label class="filter-label" for="type-filter">Type:</label>
+                <select class="filter-select" id="type-filter">
+                    <option value="">Tous les types</option>
+                    <option value="visite">Visite</option>
+                    <option value="traitement">Traitement</option>
+                    <option value="recolte">Récolte</option>
+                    <option value="autre">Autre</option>
+                </select>
+            </div>
+        </div>
+    </div>
+    
+    <div class="elevage-card">
+        <div class="table-container">
+            <table class="elevage-table">
+                <thead>
+                    <tr>
+                        <th>Type</th>
+                        <th>Priorité</th>
+                        <th>Date prévue</th>
+                        <th>Statut</th>
+                        <th>Rucher</th>
+                        <th>Description</th>
+                        <th class="actions-column">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tache in taches %}
+                    <tr data-priority="{{ tache.priorite }}" data-status="{{ tache.statut }}" data-type="{{ tache.type }}">
+                        <td>
+                            {% if tache.type == 'visite' %}
+                                <i class="fas fa-eye"></i> Visite
+                            {% elif tache.type == 'traitement' %}
+                                <i class="fas fa-medkit"></i> Traitement
+                            {% elif tache.type == 'recolte' %}
+                                <i class="fas fa-honey-pot"></i> Récolte
+                            {% else %}
+                                <i class="fas fa-tasks"></i> {{ tache.type|title }}
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if tache.priorite == 'urgent' %}
+                                <span class="tag tag-danger">Urgent</span>
+                            {% elif tache.priorite == 'normal' %}
+                                <span class="tag tag-warning">Normal</span>
+                            {% else %}
+                                <span class="tag tag-info">Faible</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ tache.date_prevue }}</td>
+                        <td>
+                            <span class="status-clickable tag {% if tache.statut == 'termine' %}tag-success{% elif tache.statut == 'en_cours' %}tag-warning{% else %}tag-info{% endif %}" 
+                                  onclick="showTaskStatusHistory({{ tache.id }})">
+                                {% if tache.statut == 'a_faire' %}À faire{% elif tache.statut == 'en_cours' %}En cours{% else %}Terminé{% endif %}
+                                <i class="fas fa-history" style="font-size: 0.8em; margin-left: 3px;"></i>
+                            </span>
+                        </td>
+                        <td>{{ tache.rucher.nom if tache.rucher else 'Général' }}</td>
+                        <td class="cell-expand">{{ tache.description }}</td>
+                        <td>
+                            <a href="{% url 'tache_edit' id=tache.id %}" class="btn btn-secondary">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            {% if tache.statut != 'termine' %}
+                                <a href="{% url 'tache_complete' id=tache.id %}" class="btn btn-primary">
+                                    <i class="fas fa-check"></i>
+                                </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center">Aucune tâche trouvée</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Task Status History Modal -->
+<div id="taskStatusModal" class="modal" style="display: none;">
+    <div class="modal-content glass">
+        <span class="close-modal" onclick="closeTaskStatusModal()">&times;</span>
+        <h3>Historique des statuts de la tâche</h3>
+        
+        <div class="table-container">
+            <table class="elevage-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Statut</th>
+                        <th>Modifié par</th>
+                        <th>Commentaire</th>
+                    </tr>
+                </thead>
+                <tbody id="task-status-history-body">
+                    <!-- Will be populated via JavaScript -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Filter functionality
+    const filterToggle = document.getElementById('filter-toggle');
+    const filtersPanel = document.getElementById('filters-panel');
+    const priorityFilter = document.getElementById('priority-filter');
+    const statusFilter = document.getElementById('status-filter');
+    const typeFilter = document.getElementById('type-filter');
+    const tableRows = document.querySelectorAll('.elevage-table tbody tr[data-priorite]');
+    
+    filterToggle.addEventListener('click', function() {
+        filtersPanel.style.display = filtersPanel.style.display === 'none' ? 'block' : 'none';
+    });
+    
+    function applyFilters() {
+        const priority = priorityFilter.value;
+        const status = statusFilter.value;
+        const type = typeFilter.value;
+        
+        tableRows.forEach(row => {
+            const rowPriority = row.getAttribute('data-priority');
+            const rowStatus = row.getAttribute('data-status');
+            const rowType = row.getAttribute('data-type');
+            
+            const matchesPriority = !priority || rowPriority === priority;
+            const matchesStatus = !status || rowStatus === status;
+            const matchesType = !type || rowType === type;
+            
+            row.style.display = matchesPriority && matchesStatus && matchesType ? '' : 'none';
+        });
+    }
+    
+    priorityFilter.addEventListener('change', applyFilters);
+    statusFilter.addEventListener('change', applyFilters);
+    typeFilter.addEventListener('change', applyFilters);
+});
+
+function showTaskStatusHistory(tacheId) {
+    // Simulate task status history
+    const statusHistory = [
+        {
+            date: new Date().toLocaleDateString('fr-FR'),
+            status: 'À faire',
+            modifie_par: 'Système',
+            commentaire: 'Tâche créée'
+        }
+    ];
+    
+    const statusBody = document.getElementById('task-status-history-body');
+    statusBody.innerHTML = '';
+    
+    statusHistory.forEach(entry => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${entry.date}</td>
+            <td><span class="tag tag-info">${entry.status}</span></td>
+            <td>${entry.modifie_par}</td>
+            <td>${entry.commentaire}</td>
+        `;
+        statusBody.appendChild(row);
+    });
+    
+    document.getElementById('taskStatusModal').style.display = 'block';
+}
+
+function closeTaskStatusModal() {
+    document.getElementById('taskStatusModal').style.display = 'none';
+}
+
+// Close modal when clicking outside
+window.addEventListener('click', function(e) {
+    const modal = document.getElementById('taskStatusModal');
+    if (e.target === modal) {
+        closeTaskStatusModal();
+    }
+});
+</script>
+
+<style>
+.status-clickable {
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.status-clickable:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+}
+
+/* ...existing modal styles... */
+</style>
+{% endblock %}

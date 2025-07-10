@@ -1,0 +1,525 @@
+{% extends "base_elevage.html" %}
+{% load static %}
+
+{% block title %}
+    {% if intervention %}Modifier l'intervention{% else %}Nouvelle intervention{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="elevage-content">
+    <h2>
+        {% if intervention %}
+            Modifier l'intervention : {{ intervention.title }}
+        {% else %}
+            Nouvelle intervention
+        {% endif %}
+    </h2>
+    
+    {% if error %}
+    <div class="alert alert-danger">
+        <i class="fas fa-exclamation-triangle"></i>
+        {{ error }}
+    </div>
+    {% endif %}
+    
+    <div class="elevage-card">
+        <form method="post" class="form-container">
+            {% csrf_token %}
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="title" class="form-label">Titre de l'intervention *</label>
+                    <input type="text" id="title" name="title" class="form-input" 
+                          value="{{ intervention.title|default:'' }}" required
+                          placeholder="Ex: Inspection de printemps">
+                </div>
+                
+                <div class="form-group">
+                    <label for="intervention_type" class="form-label">Type d'intervention *</label>
+                    <div style="display: flex; gap: 0.5rem; align-items: end; flex-direction: column;">
+                        <select id="intervention_type" name="intervention_type" class="form-select" required style="flex: 1;">
+                            <option value="">Sélectionner un type</option>
+                            {% for type in types_intervention %}
+                                <option value="{{ type.id }}" 
+                                        {% if intervention.intervention_type.id == type.id %}selected{% endif %}>
+                                    {{ type.name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                        <button type="button" class="btn btn-secondary" onclick="openInterventionTypeModal()" title="Ajouter un nouveau type">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="date_prevue" class="form-label">Date prévue *</label>
+                    <input type="date" id="date_prevue" name="date_prevue" class="form-input" 
+                           value="{{ intervention.date_prevue|date:'Y-m-d'|default:'' }}" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="date_realisation" class="form-label">Date de réalisation</label>
+                    <input type="date" id="date_realisation" name="date_realisation" class="form-input" 
+                           value="{{ intervention.date_realisation|date:'Y-m-d'|default:'' }}">
+                    <small class="form-text">Laisser vide si l'intervention n'est pas encore réalisée</small>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="ruche" class="form-label">Ruche concernée</label>
+                    <select id="ruche" name="ruche" class="form-select">
+                        <option value="">Aucune ruche spécifique</option>
+                        {% for ruche in ruches %}
+                            <option value="{{ ruche.id }}" 
+                                    {% if intervention.ruche.id == ruche.id %}selected{% endif %}>
+                                {{ ruche.description }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                    <small class="form-text">Laisser vide pour une intervention générale sur la localisation</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="localization" class="form-label">Localisation</label>
+                    <select id="localization" name="localization" class="form-select">
+                        <option value="">Sélectionner une localisation</option>
+                        {% for localisation in localisations %}
+                            <option value="{{ localisation.id }}" 
+                                    {% if intervention.localization.id == localisation.id %}selected{% endif %}>
+                                {{ localisation.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="details" class="form-label">Détails de l'intervention *</label>
+                <textarea id="details" name="details" class="form-textarea" required
+                          placeholder="Décrivez l'intervention à effectuer...">{{ intervention.details|default:'' }}</textarea>
+            </div>
+            
+            <div class="form-group">
+                <label for="donnees" class="form-label">Données techniques</label>
+                <textarea id="donnees" name="donnees" class="form-textarea"
+                          placeholder="Informations techniques, observations, matériel nécessaire...">{{ intervention.donnees|default:'' }}</textarea>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="prix_service" class="form-label">Prix du service (Ar)</label>
+                    <input type="number" step="0.01" min="0" id="prix_service" name="prix_service" class="form-input"
+                        value="{{ intervention.prix_service|default_if_none:'' }}">
+                    <small class="form-text">Coût du service ou de l'intervention (optionnel)</small>
+                </div>
+            </div>
+            
+            <div class="btn-group">
+                {% if intervention %}
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Sauvegarder les modifications
+                    </button>
+                {% else %}
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Créer l'intervention
+                    </button>
+                {% endif %}
+                
+                <a href="{% url 'interventions_list' %}" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Annuler
+                </a>
+                
+                {% if intervention and intervention.date_realisation is None %}
+                    <button type="button" class="btn btn-success" onclick="markAsCompleted()">
+                        <i class="fas fa-check"></i> Marquer comme réalisée
+                    </button>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Intervention Type Creation Modal -->
+<div id="intervention-type-modal" class="intervention-modal" style="display: none;">
+    <div class="intervention-modal-content">
+        <span class="close-modal" onclick="closeInterventionTypeModal()">&times;</span>
+        <h4 style="margin-bottom: 1.5rem; color: var(--honey-primary);">Nouveau type d'intervention</h4>
+        
+        <form id="intervention-type-form">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="new-intervention-type-name" class="form-label">Nom du type *</label>
+                <input type="text" id="new-intervention-type-name" name="name" class="form-input" 
+                       placeholder="Ex: Inspection sanitaire, Traitement varroa..." required>
+                <small class="form-text">Le nom doit être descriptif et unique</small>
+            </div>
+            
+            <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem;">
+                <button type="button" class="btn btn-secondary" onclick="closeInterventionTypeModal()">Annuler</button>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Créer le type
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const rucheSelect = document.getElementById('ruche');
+    const localizationSelect = document.getElementById('localization');
+    
+    // When a ruche is selected, auto-select its localization
+    rucheSelect.addEventListener('change', function() {
+        if (this.value) {
+            // In a real implementation, you would fetch the ruche's localization via AJAX
+            // For now, we'll just show a helpful message
+            const ruches = {
+                {% for ruche in ruches %}
+                    {{ ruche.id }}: {{ ruche.localizations.id|default:'null' }},
+                {% endfor %}
+            };
+            
+            const rucheId = parseInt(this.value);
+            const localizationId = ruches[rucheId];
+            
+            if (localizationId) {
+                localizationSelect.value = localizationId;
+            }
+        }
+    });
+    
+    // Form validation
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(e) {
+        const rucheValue = rucheSelect.value;
+        const localizationValue = localizationSelect.value;
+        
+        // Either ruche or localization must be selected
+        if (!rucheValue && !localizationValue) {
+            e.preventDefault();
+            alert('Veuillez sélectionner soit une ruche spécifique, soit une localisation.');
+            return false;
+        }
+        
+        // Validate dates
+        const datePrevue = document.getElementById('date_prevue').value;
+        const dateRealisation = document.getElementById('date_realisation').value;
+        
+        if (dateRealisation && datePrevue && new Date(dateRealisation) < new Date(datePrevue)) {
+            e.preventDefault();
+            alert('La date de réalisation ne peut pas être antérieure à la date prévue.');
+            return false;
+        }
+    });
+});
+
+// Intervention type management
+function openInterventionTypeModal() {
+    document.getElementById('intervention-type-modal').style.display = 'block';
+    document.getElementById('new-intervention-type-name').focus();
+}
+
+function closeInterventionTypeModal() {
+    document.getElementById('intervention-type-modal').style.display = 'none';
+    document.getElementById('intervention-type-form').reset();
+}
+
+// Handle intervention type form submission
+document.getElementById('intervention-type-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const typeName = formData.get('name').trim();
+    
+    if (!typeName) {
+        alert('Veuillez saisir un nom pour le type d\'intervention.');
+        return;
+    }
+    
+    // Send AJAX request to create intervention type
+    fetch('/elevage/intervention-types/create/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': formData.get('csrfmiddlewaretoken'),
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            'name': typeName
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Add new option to the select
+            const select = document.getElementById('intervention_type');
+            const newOption = document.createElement('option');
+            newOption.value = data.intervention_type.id;
+            newOption.textContent = data.intervention_type.name;
+            newOption.selected = true;
+            
+            select.appendChild(newOption);
+            
+            // Close modal and show success message
+            closeInterventionTypeModal();
+            
+            // Show success notification
+            showNotification(`Type d'intervention "${typeName}" créé avec succès!`, 'success');
+        } else {
+            alert('Erreur lors de la création: ' + (data.error || 'Erreur inconnue'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Erreur lors de la création du type d\'intervention');
+    });
+});
+
+// Close modal when clicking outside
+window.addEventListener('click', function(e) {
+    const modal = document.getElementById('intervention-type-modal');
+    if (e.target === modal) {
+        closeInterventionTypeModal();
+    }
+});
+
+// Notification system
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.innerHTML = `
+        <i class="fas fa-${type === 'success' ? 'check-circle' : 'info-circle'}"></i>
+        <span>${message}</span>
+        <button onclick="this.parentElement.remove()" style="background: none; border: none; color: inherit; cursor: pointer; margin-left: auto;">
+            <i class="fas fa-times"></i>
+        </button>
+    `;
+    
+    // Add to page
+    const container = document.querySelector('.elevage-content');
+    container.insertBefore(notification, container.firstChild);
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        if (notification.parentElement) {
+            notification.remove();
+        }
+    }, 5000);
+}
+
+{% if intervention %}
+function markAsCompleted() {
+    if (confirm('Marquer cette intervention comme réalisée aujourd\'hui ?')) {
+        document.getElementById('date_realisation').value = new Date().toISOString().split('T')[0];
+        document.querySelector('form').submit();
+    }
+}
+{% endif %}
+</script>
+
+<style>
+.alert {
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    border-radius: var(--radius-md);
+    border: 1px solid transparent;
+}
+
+.alert-danger {
+    background-color: rgba(255, 51, 102, 0.1);
+    border-color: var(--queen-red);
+    color: var(--queen-red);
+}
+
+.alert i {
+    margin-right: 0.5rem;
+}
+
+.form-text {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-top: 0.25rem;
+}
+
+/* Enhanced form styling */
+.form-container {
+    max-width: 800px;
+}
+
+.form-row {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.form-row .form-group {
+    flex: 1;
+    margin-bottom: 0;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-label {
+    display: block;
+    font-weight: 600;
+    color: var(--honey-primary);
+    margin-bottom: 0.5rem;
+}
+
+.form-input,
+.form-select,
+.form-textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
+    background: var(--glass-bg);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    transition: all var(--transition-fast);
+}
+
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus {
+    outline: none;
+    border-color: var(--honey-primary);
+    box-shadow: 0 0 0 3px rgba(255, 209, 0, 0.2);
+}
+
+.form-textarea {
+    min-height: 120px;
+    resize: vertical;
+}
+
+.btn-group {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+    flex-wrap: wrap;
+}
+
+/* Intervention Type Modal styles */
+.intervention-modal {
+    display: none;
+    position: fixed;
+    z-index: 1001;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+
+.intervention-modal-content {
+    background: var(--glass-bg);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    margin: 10% auto;
+    padding: 2rem;
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    width: 90%;
+    max-width: 500px;
+    color: var(--text-primary);
+    animation: fadeUp 0.3s ease-out;
+}
+
+.close-modal {
+    color: var(--text-secondary);
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: color var(--transition-fast);
+}
+
+.close-modal:hover,
+.close-modal:focus {
+    color: var(--honey-primary);
+}
+
+/* Notification styles */
+.notification {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: var(--radius-md);
+    border: 1px solid transparent;
+    animation: slideDown 0.3s ease-out;
+}
+
+.notification-success {
+    background-color: rgba(0, 204, 136, 0.1);
+    border-color: var(--pollen-green);
+    color: var(--pollen-green);
+}
+
+.notification-info {
+    background-color: rgba(0, 136, 255, 0.1);
+    border-color: var(--nectar-blue);
+    color: var(--nectar-blue);
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Enhanced form styling for inline additions */
+.form-group .btn {
+    height: fit-content;
+    padding: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+    .form-row {
+        flex-direction: column;
+        gap: 0;
+    }
+    
+    .form-row .form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .btn-group {
+        flex-direction: column;
+    }
+    
+    .btn {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .intervention-modal-content {
+        margin: 5% auto;
+        width: 95%;
+        padding: 1.5rem;
+    }
+}
+</style>
+{% endblock %}

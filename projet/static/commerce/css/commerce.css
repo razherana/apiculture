@@ -1,0 +1,1189 @@
+/* BeeNova Commerce - Style Futuriste de Pointe */
+@import url('../../css/beenova.css');
+
+body {
+    font-family: 'Inter', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    margin: 0;
+    min-height: 100vh;
+    background-color: var(--bg-surface);
+    color: var(--text-primary);
+    overflow-x: hidden;
+}
+
+.layout {
+    display: flex;
+    min-height: 100vh;
+    position: relative;
+    background-color: var(--bg-surface);
+}
+
+/* ====== SIDEBAR PREMIUM - EFFET HIGH-TECH ====== */
+.sidebar {
+    width: 280px;
+    background: rgba(18, 18, 20, 0.92);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-right: 1px solid rgba(255, 209, 0, 0.15);
+    display: flex;
+    flex-direction: column;
+    padding: 28px 0;
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    overflow-y: hidden !important; /* Changé de visible à hidden pour empêcher le défilement */
+    overflow-x: hidden;
+    scrollbar-width: none; /* Désactiver la scrollbar native */
+    -ms-overflow-style: none; /* Pour IE et Edge */
+    z-index: 90;
+}
+
+/* Empêcher l'affichage de la scrollbar mais conserver la fonctionnalité */
+.sidebar::-webkit-scrollbar {
+    width: 0;
+    display: none;
+}
+
+.sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 0 15px;
+    flex: 1;
+    overflow-y: visible !important;
+    padding-bottom: 50px; /* Espace supplémentaire pour les menus déroulants */
+    position: relative; /* Nécessaire pour le positionnement des sous-menus */
+}
+
+/* Conteneur de contenu pour les sous-sections avec défilement */
+.section-content {
+    max-height: 40vh !important;
+    overflow-y: auto !important;
+    overflow-x: hidden;
+    transition: opacity 0.3s ease, max-height 0.5s cubic-bezier(0.33, 1, 0.68, 1);
+    padding-left: 15px; /* Réduction de l'indentation pour accommoder les sous-niveaux */
+    margin-top: 8px;
+    margin-bottom: 10px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 209, 0, 0.2) transparent;
+    position: relative;
+}
+
+/* Amélioration du défilement des sous-menus */
+.section-content {
+    max-height: 40vh !important; /* Hauteur maximale réduite */
+    overflow-y: auto !important; /* Défilement vertical activé */
+    overflow-x: hidden;
+    transition: opacity 0.3s ease, max-height 0.5s cubic-bezier(0.33, 1, 0.68, 1);
+    padding-left: 20px;
+    margin-top: 8px;
+    margin-bottom: 10px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 209, 0, 0.2) transparent;
+    /* Ajouter des styles pour rendre la scrollbar plus visible */
+    border-left: 1px solid rgba(255, 209, 0, 0.1);
+}
+
+/* Amélioration de la visibilité de la scrollbar des sous-menus */
+.section-content::-webkit-scrollbar {
+    width: 4px;
+}
+
+.section-content::-webkit-scrollbar-track {
+    background: rgba(255, 209, 0, 0.05);
+    border-radius: 4px;
+}
+
+.section-content::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 209, 0, 0.3);
+    border-radius: 4px;
+}
+
+.section-content::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(255, 209, 0, 0.5);
+}
+
+/* Amélioration des conteneurs de tableaux pour le défilement horizontal */
+.table-scroll-container {
+    width: 100%;
+    overflow-x: auto !important;
+    margin-bottom: 1rem;
+    border-radius: var(--radius-lg);
+    -webkit-overflow-scrolling: touch;
+    /* Amélioration du défilement */
+    scrollbar-width: thin;
+    scrollbar-color: var(--honey-primary) transparent;
+    position: relative; /* Assurez-vous que le conteneur peut créer un contexte de défilement */
+    max-width: 100%; /* Limitez la largeur au conteneur parent */
+}
+
+.table-scroll-container::-webkit-scrollbar {
+    height: 8px;
+}
+
+.table-scroll-container::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.table-scroll-container::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 209, 0, 0.4);
+    border-radius: 4px;
+}
+
+.table-scroll-container::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(255, 209, 0, 0.6);
+}
+
+/* S'assurer que les tableaux peuvent défiler horizontalement */
+.table-scroll-container table {
+    min-width: 800px; /* Forcer une largeur minimale pour activer le défilement */
+    width: auto; /* Permettre au tableau de déterminer sa propre largeur */
+    table-layout: auto; /* Laisser les colonnes déterminer leur propre largeur */
+}
+
+/* Fix for notification dropdown opacity */
+.notification-dropdown {
+    position: absolute;
+    top: 45px;
+    right: 0;
+    width: 320px;
+    background: var(--glass-bg);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    border: 1px solid var(--glass-border);
+    z-index: 1000;
+    opacity: 0; /* Initial state */
+    visibility: hidden;
+    transform: translateY(10px);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.3s ease;
+}
+
+.notification-bell:hover .notification-dropdown,
+.notification-dropdown:hover {
+    opacity: 1 !important; /* Force full opacity */
+    visibility: visible;
+    transform: translateY(0);
+    background: rgba(18, 18, 20, 0.95) !important; /* Make background nearly opaque */
+}
+
+/* Sidebar scrollbar styling */
+.sidebar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 209, 0, 0.3);
+    border-radius: 10px;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(255, 209, 0, 0.5);
+}
+
+/* Ensure sidebar nav takes full height */
+.sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 0 15px;
+    padding-bottom: 50px; /* Add padding at bottom for better scrolling experience */
+}
+
+/* Effet hexagonal de nid d'abeille sur la sidebar */
+.sidebar::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='84' viewBox='0 0 48 84'%3E%3Cpath d='M24 42L0 28V0L24 14L48 0V28L24 42Z' fill='none' stroke='rgba(255, 209, 0, 0.08)' stroke-width='1'/%3E%3Cpath d='M24 42L0 28V56L24 70L48 56V28L24 42Z' fill='none' stroke='rgba(255, 209, 0, 0.08)' stroke-width='1'/%3E%3C/svg%3E");
+    opacity: 0.8;
+    z-index: -1;
+    background-size: 60px 104px;
+    pointer-events: none;
+}
+
+/* Effet de lueur subtil */
+.sidebar::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(to bottom, 
+                rgba(255, 209, 0, 0.15) 0%, 
+                rgba(0, 0, 0, 0) 30%, 
+                rgba(0, 0, 0, 0) 70%, 
+                rgba(255, 209, 0, 0.08) 100%);
+    z-index: -1;
+    pointer-events: none;
+}
+
+/* Logo et titre */
+.sidebar-title {
+    font-size: 1.5rem;
+    font-weight: 800;
+    margin-bottom: 42px;
+    padding: 10px 30px;
+    position: relative;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.sidebar-title::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, rgba(255, 209, 0, 0.25), rgba(255, 209, 0, 0.08));
+    z-index: -1;
+    border-radius: 0 0 30px 0;
+    opacity: 0.7;
+}
+
+.sidebar-title-text {
+    font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+    font-size: 1.6rem;
+    background: linear-gradient(135deg, #FFD100 0%, #FFDE4C 50%, #FFD100 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    letter-spacing: 1px;
+    text-shadow: 0 0 15px rgba(255, 209, 0, 0.5);
+    position: relative;
+}
+
+.sidebar-title-text::before {
+    content: attr(data-text);
+    position: absolute;
+    left: 0;
+    top: 0;
+    z-index: -1;
+    background: linear-gradient(135deg, #FFD100 0%, #FFDE4C 50%, #FFD100 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    filter: blur(6px);
+    opacity: 0.9;
+}
+
+.sidebar-title i {
+    font-size: 2rem;
+    color: #FFD100;
+    text-shadow: 0 0 15px rgba(255, 209, 0, 0.7);
+    animation: pulsateIcon 3s infinite alternate;
+}
+
+@keyframes pulsateIcon {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.1); opacity: 0.8; }
+}
+
+.sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 0 15px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 209, 0, 0.4) transparent;
+}
+
+/* Sections de navigation */
+.nav-section {
+    width: 100%;
+    margin-bottom: 18px;
+    position: relative;
+    overflow: hidden;
+}
+
+.section-title {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    padding: 14px 20px;
+    background: rgba(255, 209, 0, 0.1);
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+}
+
+.section-title::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, 
+                rgba(255, 209, 0, 0.15) 0%, 
+                rgba(255, 209, 0, 0) 100%);
+    z-index: 0;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.section-title:hover {
+    transform: translateX(5px);
+    background: rgba(255, 209, 0, 0.15);
+}
+
+.section-title:hover::before {
+    opacity: 1;
+}
+
+/* Effet de brillance au survol */
+.section-title::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(90deg, 
+                transparent, 
+                rgba(255, 255, 255, 0.2), 
+                transparent);
+    transform: skewX(-25deg);
+    transition: left 0.8s ease;
+    z-index: 1;
+}
+
+.section-title:hover::after {
+    left: 200%;
+}
+
+.section-title .icon {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 14px;
+    z-index: 2;
+    position: relative;
+}
+
+.section-title .title {
+    flex: 1;
+    color: #FFD100;
+    font-weight: 600;
+    font-size: 0.92rem;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    text-align: left;
+    z-index: 2;
+    position: relative;
+    text-shadow: 0 0 8px rgba(255, 209, 0, 0.4);
+}
+
+.section-title .arrow {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #FFD100;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    z-index: 2;
+    position: relative;
+}
+
+.section-title i {
+    font-size: 1.2rem;
+    color: #FFD100;
+    text-shadow: 0 0 8px rgba(255, 209, 0, 0.4);
+}
+
+.section-content {
+    overflow: hidden;
+    transition: max-height 0.5s cubic-bezier(0.33, 1, 0.68, 1), 
+                opacity 0.3s ease;
+    padding-left: 20px;
+    margin-top: 8px;
+    opacity: 0;
+    max-height: 0;
+}
+
+/* Items du sous-menu - TAILLE AJUSTÉE */
+.sidebar-btn.sub-item {
+    display: flex;
+    align-items: center;
+    padding: 11px 18px;
+    width: 100%;
+    color: rgba(255, 255, 255, 0.85);
+    text-decoration: none;
+    border-radius: 8px;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    margin-bottom: 6px;
+    position: relative;
+    overflow: hidden;
+    font-size: 0.9rem;
+    padding: 0.5rem 1rem; /* Réduction de l'espacement vertical */
+    margin-bottom: 0.15rem; /* Espacement réduit entre les éléments */
+}
+
+/* Enhanced hover effect with animated gradient */
+.sidebar-btn.sub-item::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: 3px;
+    background: linear-gradient(to bottom, #FFD100, #FFDE4C);
+    transform: scaleY(0);
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transform-origin: bottom;
+    border-radius: 0 2px 2px 0;
+    box-shadow: 0 0 10px rgba(255, 209, 0, 0.5);
+}
+
+/* New glow effect on hover */
+.sidebar-btn.sub-item::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, 
+                rgba(255, 209, 0, 0.08) 0%, 
+                rgba(255, 209, 0, 0) 100%);
+    opacity: 0;
+    z-index: -1;
+    transition: opacity 0.3s ease;
+}
+
+/* Enhanced hover state with subtle animation */
+.sidebar-btn.sub-item:hover {
+    background: rgba(255, 209, 0, 0.1);
+    color: #FFE066;
+    transform: translateX(5px);
+    box-shadow: 0 0 20px rgba(255, 209, 0, 0.03);
+}
+
+.sidebar-btn.sub-item:hover::after {
+    opacity: 1;
+    animation: pulseGlow 2s infinite;
+}
+
+@keyframes pulseGlow {
+    0% { opacity: 0.5; }
+    50% { opacity: 0.8; }
+    100% { opacity: 0.5; }
+}
+
+/* Enhanced active state */
+.sidebar-btn.sub-item.active {
+    background: rgba(255, 209, 0, 0.18);
+    color: #FFD100;
+    font-weight: 500;
+    text-shadow: 0 0 5px rgba(255, 209, 0, 0.3);
+    box-shadow: inset 0 0 8px rgba(255, 209, 0, 0.05);
+}
+
+.sidebar-btn.sub-item.active::before {
+    transform: scaleY(1);
+    animation: glowPulse 2s infinite;
+}
+
+@keyframes glowPulse {
+    0%, 100% { box-shadow: 0 0 5px rgba(255, 209, 0, 0.5); }
+    50% { box-shadow: 0 0 15px rgba(255, 209, 0, 0.8); }
+}
+
+/* Enhanced icon animation */
+.sidebar-btn.sub-item .icon {
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 12px;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    color: rgba(255, 209, 0, 0.85);
+    position: relative;
+}
+
+/* Icon hover effect */
+.sidebar-btn.sub-item:hover .icon {
+    transform: translateY(-2px) scale(1.1);
+    color: #FFD100;
+    text-shadow: 0 0 8px rgba(255, 209, 0, 0.6);
+}
+
+/* Active icon glow */
+.sidebar-btn.sub-item.active .icon {
+    color: #FFD100;
+    text-shadow: 0 0 10px rgba(255, 209, 0, 0.7);
+    animation: iconFloat 3s infinite ease-in-out;
+}
+
+@keyframes iconFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-3px); }
+}
+
+/* Enhanced text styling */
+.sidebar-btn.sub-item .title {
+    flex: 1;
+    font-size: 0.87rem;
+    transition: all 0.3s ease;
+    letter-spacing: 0.3px;
+    position: relative;
+    display: inline-block;
+}
+
+/* Text hover effect with subtle shifting gradient */
+.sidebar-btn.sub-item:hover .title {
+    background: linear-gradient(90deg, #FFD100, #FFDE4C, #FFD100);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: gradientShift 3s linear infinite;
+}
+
+@keyframes gradientShift {
+    0% { background-position: 0% center; }
+    100% { background-position: 200% center; }
+}
+
+/* Enhance active title */
+.sidebar-btn.sub-item.active .title {
+    background: linear-gradient(90deg, #FFD100, #FFDE4C, #FFD100);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+}
+
+/* Adding new hexagon indicator for active item */
+.sidebar-btn.sub-item.active::after {
+    content: '';
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 8px;
+    height: 9.24px; /* Height for hexagon proportions */
+    background: #FFD100;
+    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+    opacity: 0.8;
+    box-shadow: 0 0 5px rgba(255, 209, 0, 0.4);
+}
+
+/* Light mode adjustments for these new effects */
+:root.light-mode .sidebar-btn.sub-item::before {
+    background: linear-gradient(to bottom, #D97706, #F59E0B);
+    box-shadow: 0 0 10px rgba(217, 119, 6, 0.3);
+}
+
+:root.light-mode .sidebar-btn.sub-item::after {
+    background: linear-gradient(90deg, 
+                rgba(217, 119, 6, 0.05) 0%, 
+                rgba(217, 119, 6, 0) 100%);
+}
+
+:root.light-mode .sidebar-btn.sub-item:hover {
+    background: rgba(217, 119, 6, 0.08);
+    color: #D97706;
+    box-shadow: 0 0 20px rgba(217, 119, 6, 0.02);
+}
+
+:root.light-mode .sidebar-btn.sub-item.active {
+    background: rgba(217, 119, 6, 0.12);
+    color: #D97706;
+    text-shadow: 0 0 3px rgba(217, 119, 6, 0.2);
+    box-shadow: inset 0 0 8px rgba(217, 119, 6, 0.03);
+}
+
+:root.light-mode .sidebar-btn.sub-item:hover .icon {
+    color: #D97706;
+    text-shadow: 0 0 8px rgba(217, 119, 6, 0.4);
+}
+
+:root.light-mode .sidebar-btn.sub-item.active .icon {
+    color: #D97706;
+    text-shadow: 0 0 8px rgba(217, 119, 6, 0.5);
+}
+
+:root.light-mode .sidebar-btn.sub-item:hover .title,
+:root.light-mode .sidebar-btn.sub-item.active .title {
+    background: linear-gradient(90deg, #D97706, #F59E0B, #D97706);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+:root.light-mode .sidebar-btn.sub-item.active::after {
+    background: #D97706;
+    box-shadow: 0 0 5px rgba(217, 119, 6, 0.3);
+}
+
+/* MAIN CONTENT */
+.main-content {
+    flex: 1;
+    background-color: var(--bg-surface);
+    display: flex;
+    flex-direction: column;
+    margin-left: 280px;
+    width: calc(100% - 280px);
+    transition: margin-left 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.page-header {
+    background: rgba(18, 18, 20, 0.9);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    padding: 1.5rem 2.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between; /* Pour positionner le toggle à droite */
+    border-bottom: 1px solid rgba(255, 209, 0, 0.15);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    position: sticky;
+    top: 0;
+    z-index: 80;
+}
+
+.page-header h1 {
+    margin: 0;
+    font-size: 2rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #FFD100 0%, #FFDE4C 50%, #FFD100 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-shadow: 0 0 20px rgba(255, 209, 0, 0.3);
+}
+
+.main-section {
+    flex: 1;
+    padding: 2.5rem;
+    position: relative;
+    animation: fadeUp 0.5s ease-out forwards;
+}
+
+/* TOGGLE DE THEME AMÉLIORÉ */
+.theme-toggle {
+    position: relative;
+    width: 50px;
+    height: 24px;
+    background: rgba(255, 209, 0, 0.15);
+    border-radius: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    transition: all 0.4s ease;
+    border: 1px solid rgba(255, 209, 0, 0.2);
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2), inset 0 0 5px rgba(0, 0, 0, 0.1);
+}
+
+.theme-toggle::before {
+    content: '';
+    position: absolute;
+    left: 2px;
+    top: 2px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #FFD100;
+    box-shadow: 0 0 8px rgba(255, 209, 0, 0.5);
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+}
+
+.theme-toggle .theme-icons {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 5px;
+    box-sizing: border-box;
+    z-index: 1;
+}
+
+.theme-toggle .moon-icon,
+.theme-toggle .sun-icon {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.8);
+    transition: all 0.3s ease;
+}
+
+.theme-toggle .moon-icon {
+    margin-left: auto;
+    margin-right: 2px;
+}
+
+.theme-toggle .sun-icon {
+    margin-right: auto;
+    margin-left: 2px;
+}
+
+/* État activé (mode clair) */
+:root.light-mode .theme-toggle {
+    background: rgba(217, 119, 6, 0.2);
+}
+
+:root.light-mode .theme-toggle::before {
+    left: calc(100% - 22px);
+    background: #D97706;
+    box-shadow: 0 0 8px rgba(217, 119, 6, 0.5);
+}
+
+/* Animation d'entrée améliorée pour les sous-menus */
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.nav-section:not(.collapsed) .section-content {
+    animation: slideDown 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* Table container for horizontal scrolling across the entire application */
+.table-scroll-container {
+    width: 100%;
+    overflow-x: auto !important;
+    margin-bottom: 1rem;
+    border-radius: var(--radius-lg);
+    -webkit-overflow-scrolling: touch;
+    /* Amélioration du défilement */
+    scrollbar-width: thin;
+    scrollbar-color: var(--honey-primary) transparent;
+    position: relative; /* Assurez-vous que le conteneur peut créer un contexte de défilement */
+    max-width: 100%; /* Limitez la largeur au conteneur parent */
+}
+
+.table-scroll-container::-webkit-scrollbar {
+    height: 8px;
+}
+
+.table-scroll-container::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.table-scroll-container::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 209, 0, 0.4);
+    border-radius: 4px;
+}
+
+.table-scroll-container::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(255, 209, 0, 0.6);
+}
+
+/* S'assurer que les tableaux peuvent défiler horizontalement */
+.table-scroll-container table {
+    min-width: 800px; /* Forcer une largeur minimale pour activer le défilement */
+    width: auto; /* Permettre au tableau de déterminer sa propre largeur */
+    table-layout: auto; /* Laisser les colonnes déterminer leur propre largeur */
+}
+
+/* Styles spécifiques pour le mode clair - SOPHISTICATION AMÉLIORÉE */
+:root.light-mode .sidebar {
+    background: rgba(255, 250, 240, 0.95); /* Teinte légèrement crémeuse pour rappeler le miel */
+    box-shadow: 0 0 30px rgba(217, 119, 6, 0.08);
+    border-right: 1px solid rgba(217, 119, 6, 0.1);
+}
+
+:root.light-mode .sidebar::before {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='84' viewBox='0 0 48 84'%3E%3Cpath d='M24 42L0 28V0L24 14L48 0V28L24 42Z' fill='none' stroke='rgba(217, 119, 6, 0.08)' stroke-width='1'/%3E%3Cpath d='M24 42L0 28V56L24 70L48 56V28L24 42Z' fill='none' stroke='rgba(217, 119, 6, 0.08)' stroke-width='1'/%3E%3C/svg%3E");
+    opacity: 0.7;
+}
+
+:root.light-mode .sidebar::after {
+    background: linear-gradient(to bottom, 
+                rgba(217, 119, 6, 0.08) 0%, 
+                rgba(255, 255, 255, 0) 30%, 
+                rgba(255, 255, 255, 0) 70%, 
+                rgba(217, 119, 6, 0.05) 100%);
+}
+
+:root.light-mode .sidebar-title::before {
+    background: linear-gradient(135deg, rgba(217, 119, 6, 0.1), rgba(217, 119, 6, 0.03));
+}
+
+:root.light-mode .sidebar-title-text {
+    background: linear-gradient(135deg, #D97706 0%, #F59E0B 50%, #D97706 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    text-shadow: 0 0 15px rgba(217, 119, 6, 0.3);
+}
+
+:root.light-mode .sidebar-title-text::before {
+    background: linear-gradient(135deg, #D97706 0%, #F59E0B 50%, #D97706 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+}
+
+:root.light-mode .sidebar-title i {
+    color: #D97706;
+    text-shadow: 0 0 10px rgba(217, 119, 6, 0.4);
+}
+
+:root.light-mode .page-header {
+    background: rgba(255, 250, 240, 0.95);
+    border-bottom: 1px solid rgba(217, 119, 6, 0.1);
+    box-shadow: 0 4px 15px rgba(217, 119, 6, 0.07);
+}
+
+:root.light-mode .page-header h1 {
+    background: linear-gradient(135deg, #D97706 0%, #F59E0B 50%, #D97706 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    text-shadow: 0 0 20px rgba(217, 119, 6, 0.2);
+}
+
+:root.light-mode .section-title {
+    background: rgba(217, 119, 6, 0.08);
+    box-shadow: 0 2px 5px rgba(217, 119, 6, 0.05);
+}
+
+:root.light-mode .section-title:hover {
+    background: rgba(217, 119, 6, 0.12);
+}
+
+:root.light-mode .section-title::before {
+    background: linear-gradient(90deg, 
+                rgba(217, 119, 6, 0.1) 0%, 
+                rgba(217, 119, 6, 0) 100%);
+}
+
+:root.light-mode .section-title .title {
+    color: #D97706;
+    text-shadow: 0 0 5px rgba(217, 119, 6, 0.2);
+}
+
+:root.light-mode .section-title .arrow,
+:root.light-mode .section-title i {
+    color: #D97706;
+    text-shadow: 0 0 5px rgba(217, 119, 6, 0.2);
+}
+
+:root.light-mode .sidebar-btn.sub-item {
+    color: rgba(66, 32, 6, 0.85); /* Brun foncé pour meilleure lisibilité */
+}
+
+:root.light-mode .sidebar-btn.sub-item::before {
+    background: linear-gradient(to bottom, #D97706, #F59E0B);
+    box-shadow: 0 0 10px rgba(217, 119, 6, 0.3);
+}
+
+:root.light-mode .sidebar-btn.sub-item::after {
+    background: linear-gradient(90deg, 
+                rgba(217, 119, 6, 0.05) 0%, 
+                rgba(217, 119, 6, 0) 100%);
+}
+
+:root.light-mode .sidebar-btn.sub-item:hover {
+    background: rgba(217, 119, 6, 0.08);
+    color: #D97706;
+}
+
+:root.light-mode .sidebar-btn.sub-item:hover .icon {
+    color: #D97706;
+}
+
+:root.light-mode .sidebar-btn.sub-item.active {
+    background: rgba(217, 119, 6, 0.12);
+    color: #D97706;
+    text-shadow: 0 0 3px rgba(217, 119, 6, 0.2);
+}
+
+:root.light-mode .sidebar-btn.sub-item.active::before {
+    background: #D97706;
+    box-shadow: 0 0 5px rgba(217, 119, 6, 0.3);
+}
+
+/* Ajout d'un effet de neumorphisme subtil pour le mode clair */
+:root.light-mode .section-title {
+    box-shadow: 3px 3px 6px rgba(217, 119, 6, 0.05), 
+                -3px -3px 6px rgba(255, 255, 255, 0.8);
+}
+
+:root.light-mode .section-title:hover {
+    box-shadow: 2px 2px 4px rgba(217, 119, 6, 0.05), 
+                -2px -2px 4px rgba(255, 255, 255, 0.8);
+}
+
+:root.light-mode .sidebar-btn.sub-item.active {
+    box-shadow: inset 2px 2px 5px rgba(217, 119, 6, 0.1), 
+                inset -2px -2px 5px rgba(255, 255, 255, 0.5);
+}
+
+/* Styles pour les notifications */
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.notification-bell {
+    position: relative;
+    cursor: pointer;
+    font-size: 1.3rem;
+    color: var(--honey-primary);
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--glass-bg);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+}
+
+.notification-bell:hover {
+    transform: scale(1.1);
+    background: rgba(255, 209, 0, 0.1);
+}
+
+.notification-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: var(--queen-red);
+    color: white;
+    font-size: 0.7rem;
+    font-weight: bold;
+    height: 18px;
+    width: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    border: 2px solid var(--bg-surface);
+}
+
+.notification-dropdown {
+    position: absolute;
+    top: 45px;
+    right: 0;
+    width: 320px;
+    background: var(--glass-bg);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    border: 1px solid var(--glass-border);
+    z-index: 1000;
+    opacity: 0; /* Initial state */
+    visibility: hidden;
+    transform: translateY(10px);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.3s ease;
+}
+
+.notification-bell:hover .notification-dropdown,
+.notification-dropdown:hover {
+    opacity: 1 !important; /* Force full opacity */
+    visibility: visible;
+    transform: translateY(0);
+    background: rgba(18, 18, 20, 0.95) !important; /* Make background nearly opaque */
+}
+
+.notification-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.2rem;
+    border-bottom: 1px solid var(--border-subtle);
+    font-weight: 600;
+}
+
+.view-all {
+    font-size: 0.8rem;
+    color: var(--honey-primary);
+    text-decoration: none;
+}
+
+.notification-body {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.notification-item {
+    padding: 0.8rem 1.2rem;
+    border-bottom: 1px solid var(--border-subtle);
+    display: flex;
+    gap: 0.8rem;
+    transition: background-color 0.2s ease;
+}
+
+.notification-item:hover {
+    background-color: rgba(255, 209, 0, 0.05);
+}
+
+.notification-item:last-child {
+    border-bottom: none;
+}
+
+.notification-item.high .notification-icon {
+    color: var(--queen-red);
+}
+
+.notification-item.medium .notification-icon {
+    color: var(--honey-primary);
+}
+
+.notification-item.low .notification-icon {
+    color: var(--pollen-green);
+}
+
+.notification-icon {
+    font-size: 1.2rem;
+}
+
+.notification-content {
+    flex: 1;
+}
+
+.notification-title {
+    font-weight: 600;
+    margin-bottom: 0.2rem;
+}
+
+.notification-text {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.4rem;
+}
+
+.notification-time {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.notification-empty {
+    padding: 2rem 1rem;
+    text-align: center;
+    color: var(--text-secondary);
+}
+
+.notification-empty i {
+    font-size: 2rem;
+    color: var(--pollen-green);
+    margin-bottom: 0.5rem;
+}
+
+/* Améliorations pour les sous-menus imbriqués */
+.sidebar-nav {
+    /* ...existing code... */
+    padding-bottom: 50px; /* Espace supplémentaire pour les menus déroulants */
+}
+
+/* Conteneur de contenu pour les sous-sections avec défilement */
+.section-content {
+    max-height: 40vh !important;
+    overflow-y: auto !important;
+    overflow-x: hidden;
+    transition: opacity 0.3s ease, max-height 0.5s cubic-bezier(0.33, 1, 0.68, 1);
+    padding-left: 15px; /* Réduction de l'indentation pour accommoder les sous-niveaux */
+    margin-top: 8px;
+    margin-bottom: 10px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 209, 0, 0.2) transparent;
+    position: relative;
+}
+
+/* Sous-sections imbriquées */
+.sub-section {
+    position: relative;
+    margin: 0.4rem 0;
+}
+
+/* Titre des sous-sections avec style distinctif */
+.sub-section-title {
+    font-weight: 500;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+/* Contenu des sous-sections avec indication visuelle */
+.sub-section-content {
+    position: relative;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Items de sous-menu avec indication visuelle de niveau */
+.sidebar-btn.sub-sub-item {
+    font-size: 0.82rem;
+    padding: 0.35rem 0.75rem 0.35rem 1.2rem;
+    margin-bottom: 0.15rem;
+    opacity: 0.85;
+    transition: all 0.25s ease;
+}
+
+.sidebar-btn.sub-sub-item:hover {
+    opacity: 1;
+    padding-left: 1.4rem;
+    background: rgba(255, 209, 0, 0.08);
+}
+
+.sidebar-btn.sub-sub-item.active {
+    opacity: 1;
+    background: rgba(255, 209, 0, 0.15);
+    font-weight: 600;
+}
+
+/* Hiérarchie visuelle avec icônes plus petites pour les sous-menus */
+.sidebar-btn.sub-sub-item .icon i {
+    font-size: 0.9em;
+}
+
+/* Transition lisse pour l'ouverture/fermeture des sous-menus */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.sub-section.open .sub-section-content {
+    animation: fadeIn 0.3s forwards;
+}
+
+/* Amélioration de l'interface pour le mode clair */
+:root.light-mode .sub-section-content {
+    border-left-color: rgba(217, 119, 6, 0.15);
+}
+
+:root.light-mode .sidebar-btn.sub-sub-item:hover {
+    background: rgba(217, 119, 6, 0.05);
+}
+
+:root.light-mode .sidebar-btn.sub-sub-item.active {
+    background: rgba(217, 119, 6, 0.1);
+}

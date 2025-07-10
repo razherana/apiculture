@@ -63,6 +63,8 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                # Ajout du context processor pour les alertes
+                'projet.context_processors.alertes_processor',
             ],
         },
     },

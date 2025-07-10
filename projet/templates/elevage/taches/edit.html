@@ -1,0 +1,240 @@
+{% extends "base_elevage.html" %}
+{% load static %}
+
+{% block title %}
+    {% if tache.id %}Modifier une tâche{% else %}Nouvelle tâche{% endif %}
+{% endblock %}
+
+{% block page_title %}
+    {% if tache.id %}Modifier une tâche{% else %}Nouvelle tâche{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="elevage-content">
+    <h2>{% if tache.id %}Modifier la tâche{% else %}Créer une nouvelle tâche{% endif %}</h2>
+    
+    <div class="elevage-card">
+        <form method="post" class="form-container">
+            {% csrf_token %}
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" for="type">Type de tâche*</label>
+                    <select id="type" name="type" class="form-select" required>
+                        <option value="" disabled {% if not tache.type %}selected{% endif %}>Sélectionnez un type</option>
+                        <option value="visite" {% if tache.type == 'visite' %}selected{% endif %}>Visite</option>
+                        <option value="traitement" {% if tache.type == 'traitement' %}selected{% endif %}>Traitement</option>
+                        <option value="recolte" {% if tache.type == 'recolte' %}selected{% endif %}>Récolte</option>
+                        <option value="autre" {% if tache.type == 'autre' %}selected{% endif %}>Autre</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="priorite">Priorité*</label>
+                    <select id="priorite" name="priorite" class="form-select" required>
+                        <option value="" disabled {% if not tache.priorite %}selected{% endif %}>Sélectionnez une priorité</option>
+                        <option value="urgent" {% if tache.priorite == 'urgent' %}selected{% endif %}>Urgent</option>
+                        <option value="normal" {% if tache.priorite == 'normal' %}selected{% endif %}>Normal</option>
+                        <option value="low" {% if tache.priorite == 'low' %}selected{% endif %}>Faible</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" for="date_prevue">Date prévue*</label>
+                    <input type="date" id="date_prevue" name="date_prevue" class="form-input" 
+                           value="{{ tache.date_prevue|date:'Y-m-d' }}" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="statut">Statut*</label>
+                    <select id="statut" name="statut" class="form-select" required>
+                        <option value="a_faire" {% if tache.statut == 'a_faire' or not tache.statut %}selected{% endif %}>À faire</option>
+                        <option value="en_cours" {% if tache.statut == 'en_cours' %}selected{% endif %}>En cours</option>
+                        <option value="termine" {% if tache.statut == 'termine' %}selected{% endif %}>Terminé</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" for="rucher">Rucher*</label>
+                    <select id="rucher" name="rucher" class="form-select" required>
+                        <option value="" disabled {% if not tache.rucher %}selected{% endif %}>Sélectionnez un rucher</option>
+                        {% for rucher in ruchers %}
+                            <option value="{{ rucher.id }}" {% if tache.rucher.id == rucher.id %}selected{% endif %}>
+                                {{ rucher.nom }} ({{ rucher.emplacement }})
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-group" id="ruche-container" style="{% if tache.type != 'visite' and tache.type != 'traitement' %}display: none;{% endif %}">
+                    <label class="form-label" for="ruche">Ruche (optionnel)</label>
+                    <select id="ruche" name="ruche" class="form-select">
+                        <option value="">Toutes les ruches du rucher</option>
+                        <!-- Populated dynamically based on rucher selection -->
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Conditional fields based on task type -->
+            <div id="traitement-fields" class="form-row" style="{% if tache.type != 'traitement' %}display: none;{% endif %}">
+                <div class="form-group">
+                    <label class="form-label" for="produit">Produit de traitement</label>
+                    <select id="produit" name="produit" class="form-select">
+                        <option value="" disabled {% if not tache.produit %}selected{% endif %}>Sélectionnez un produit</option>
+                        {% for produit in produits %}
+                            <option value="{{ produit.id }}" {% if tache.produit.id == produit.id %}selected{% endif %}>
+                                {{ produit.nom }} ({{ produit.type }})
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="dosage">Dosage</label>
+                    <input type="text" id="dosage" name="dosage" class="form-input" value="{{ tache.dosage }}">
+                </div>
+            </div>
+            
+            <div id="recolte-fields" class="form-row" style="{% if tache.type != 'recolte' %}display: none;{% endif %}">
+                <div class="form-group">
+                    <label class="form-label" for="quantite_estimee">Quantité estimée (kg)</label>
+                    <input type="number" id="quantite_estimee" name="quantite_estimee" class="form-input" 
+                           step="0.1" min="0" value="{{ tache.quantite_estimee }}">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="type_miel">Type de miel</label>
+                    <select id="type_miel" name="type_miel" class="form-select">
+                        <option value="" disabled {% if not tache.type_miel %}selected{% endif %}>Sélectionnez un type</option>
+                        {% for type_miel in types_miel %}
+                            <option value="{{ type_miel.id }}" {% if tache.type_miel.id == type_miel.id %}selected{% endif %}>
+                                {{ type_miel.nom }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group" style="flex: 1 0 100%;">
+                    <label class="form-label" for="description">Description*</label>
+                    <textarea id="description" name="description" class="form-textarea" rows="4" required>{{ tache.description }}</textarea>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group" style="flex: 1 0 100%;">
+                    <label class="form-label" for="notes">Notes supplémentaires</label>
+                    <textarea id="notes" name="notes" class="form-textarea" rows="3">{{ tache.notes }}</textarea>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" for="assignee">Assigné à</label>
+                    <select id="assignee" name="assignee" class="form-select">
+                        <option value="">Non assigné</option>
+                        {% for user in users %}
+                            <option value="{{ user.id }}" {% if tache.assignee.id == user.id %}selected{% endif %}>
+                                {{ user.first_name }} {{ user.last_name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="rappel">Envoyer un rappel</label>
+                    <select id="rappel" name="rappel" class="form-select">
+                        <option value="0" {% if tache.rappel == 0 %}selected{% endif %}>Pas de rappel</option>
+                        <option value="1" {% if tache.rappel == 1 %}selected{% endif %}>1 jour avant</option>
+                        <option value="2" {% if tache.rappel == 2 %}selected{% endif %}>2 jours avant</option>
+                        <option value="7" {% if tache.rappel == 7 %}selected{% endif %}>1 semaine avant</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-row" style="justify-content: flex-end; margin-top: 1rem;">
+                <a href="{% url 'taches_list' %}" class="btn btn-secondary" style="margin-right: 1rem;">
+                    Annuler
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    {% if tache.id %}Mettre à jour{% else %}Créer la tâche{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const typeSelect = document.getElementById('type');
+    const rucherSelect = document.getElementById('rucher');
+    const rucheSelect = document.getElementById('ruche');
+    const rucheContainer = document.getElementById('ruche-container');
+    const traitementFields = document.getElementById('traitement-fields');
+    const recolteFields = document.getElementById('recolte-fields');
+    
+    // Toggle conditional fields based on task type
+    typeSelect.addEventListener('change', function() {
+        const type = this.value;
+        
+        if (type === 'visite' || type === 'traitement') {
+            rucheContainer.style.display = '';
+        } else {
+            rucheContainer.style.display = 'none';
+        }
+        
+        if (type === 'traitement') {
+            traitementFields.style.display = '';
+        } else {
+            traitementFields.style.display = 'none';
+        }
+        
+        if (type === 'recolte') {
+            recolteFields.style.display = '';
+        } else {
+            recolteFields.style.display = 'none';
+        }
+    });
+    
+    // Populate ruches based on rucher selection
+    rucherSelect.addEventListener('change', function() {
+        const rucherId = this.value;
+        if (!rucherId) return;
+        
+        // Clear current options
+        rucheSelect.innerHTML = '<option value="">Toutes les ruches du rucher</option>';
+        
+        // Fetch ruches for selected rucher
+        fetch(`/api/ruches-by-rucher/${rucherId}/`)
+            .then(response => response.json())
+            .then(data => {
+                data.forEach(ruche => {
+                    const option = document.createElement('option');
+                    option.value = ruche.id;
+                    option.textContent = `${ruche.nom} (${ruche.numero})`;
+                    rucheSelect.appendChild(option);
+                });
+                
+                // If editing, restore selected ruche
+                {% if tache.ruche %}
+                rucheSelect.value = "{{ tache.ruche.id }}";
+                {% endif %}
+            })
+            .catch(error => console.error('Error fetching ruches:', error));
+    });
+    
+    // Trigger change event on page load to set initial state
+    typeSelect.dispatchEvent(new Event('change'));
+    
+    // If a rucher is selected, load its ruches
+    if (rucherSelect.value) {
+        rucherSelect.dispatchEvent(new Event('change'));
+    }
+});
+</script>
+{% endblock %}

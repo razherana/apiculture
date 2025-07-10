@@ -1,0 +1,502 @@
+/* BeeNova Statistics Styles - Modern & Adaptive */
+@import url('../../css/beenova.css');
+
+#main-flex-container {
+    display: flex; 
+    align-items: flex-start;
+    gap: 1.8rem;
+    padding: 0.5rem;
+    animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Sidebar de navigation statistiques */
+#sidecard-list {
+    min-width: 220px;
+    background: var(--glass-bg);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem 0.5rem;
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--glass-border);
+    position: sticky;
+    top: 2rem;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    overflow: hidden;
+}
+
+#sidecard-list::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='84' viewBox='0 0 48 84'%3E%3Cpath d='M24 42L0 28V0L24 14L48 0V28L24 42Z' fill='none' stroke='rgba(255, 209, 0, 0.03)' stroke-width='1'/%3E%3Cpath d='M24 42L0 28V56L24 70L48 56V28L24 42Z' fill='none' stroke='rgba(255, 209, 0, 0.03)' stroke-width='1'/%3E%3C/svg%3E");
+    opacity: 0.7;
+    z-index: -1;
+    background-size: 48px 84px;
+    pointer-events: none;
+}
+
+#sidecard-list:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-lg), 0 0 15px rgba(255, 209, 0, 0.1);
+}
+
+#sidecard-list h4 {
+    text-align: center;
+    font-size: 1.1rem;
+    margin: 0 0 1.2rem 0;
+    padding-bottom: 0.8rem;
+    border-bottom: 1px solid var(--border-subtle);
+    color: var(--honey-primary);
+    font-weight: 600;
+    position: relative;
+}
+
+#sidecard-list h4::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 50px;
+    height: 2px;
+    background: var(--gradient-honey);
+    border-radius: 2px;
+}
+
+#sidecard-list ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+#sidecard-list li {
+    cursor: pointer;
+    font-size: 0.95rem;
+    padding: 0.9rem 1.25rem;
+    margin: 0.3rem 0.5rem;
+    border-radius: var(--radius-md);
+    color: var(--text-secondary);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    position: relative;
+    overflow: hidden;
+}
+
+#sidecard-list li::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, 
+                rgba(255, 209, 0, 0.1) 0%, 
+                rgba(255, 209, 0, 0) 100%);
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+#sidecard-list li:hover {
+    color: var(--honey-primary);
+    transform: translateX(5px);
+}
+
+#sidecard-list li:hover::before {
+    opacity: 1;
+}
+
+#sidecard-list li.selected {
+    background: rgba(255, 209, 0, 0.15);
+    color: var(--honey-primary);
+    font-weight: 600;
+    position: relative;
+}
+
+#sidecard-list li.selected::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: 3px;
+    background: var(--gradient-honey);
+    border-radius: 0 2px 2px 0;
+}
+
+/* Zone principale des statistiques */
+#stats-panel {
+    flex: 1;
+    min-width: 0; /* Évite les débordements */
+}
+
+.stat-cards-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.8rem;
+}
+
+/* Cartes mini-stats */
+.stat-cards-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.2rem;
+}
+
+.mini-card {
+    flex: 1;
+    min-width: 160px;
+    background: var(--glass-bg);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-radius: var(--radius-lg);
+    padding: 1.3rem;
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--glass-border);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.mini-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--glass-overlay);
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.mini-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-lg);
+}
+
+.mini-card:hover::before {
+    opacity: 1;
+}
+
+.mini-card-title {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    text-shadow: 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+.mini-card-value {
+    font-size: 2.2rem;
+    font-weight: 700;
+    font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+    background: var(--gradient-honey);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    display: inline-block;
+}
+
+/* Carte principale des stats */
+.small-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--glass-border);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+    overflow: hidden;
+    color: var(--text-primary); /* Garantit la visibilité du texte */
+}
+
+.small-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-lg);
+}
+
+/* Effet hexagonal de nid d'abeille sur les cartes */
+.small-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='84' viewBox='0 0 48 84'%3E%3Cpath d='M24 42L0 28V0L24 14L48 0V28L24 42Z' fill='none' stroke='rgba(255, 209, 0, 0.03)' stroke-width='1'/%3E%3Cpath d='M24 42L0 28V56L24 70L48 56V28L24 42Z' fill='none' stroke='rgba(255, 209, 0, 0.03)' stroke-width='1'/%3E%3C/svg%3E");
+    opacity: 0.5;
+    z-index: -1;
+    background-size: 48px 84px;
+    pointer-events: none;
+}
+
+/* Cartes de graphiques */
+.stat-graphs-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+}
+
+.stat-graph-card {
+    flex: 1;
+    min-width: 300px;
+    min-height: 280px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    color: var(--text-primary); /* Garantir la visibilité du texte */
+}
+
+.stat-graph-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: var(--gradient-honey);
+    border-radius: 0 2px 2px 0;
+    opacity: 0.7;
+}
+
+/* Tableaux de statistiques */
+.stat-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+    color: var(--text-primary); /* Garantir la visibilité du texte */
+}
+
+.stat-table, 
+.stat-table td, 
+.stat-table th {
+    color: var(--text-primary);
+}
+
+.stat-table th {
+    padding: 0.8rem 1.2rem;
+    text-align: left;
+    color: var(--honey-primary);
+    font-weight: 600;
+    background-color: rgba(255, 209, 0, 0.05);
+    border-bottom: 2px solid var(--honey-primary);
+}
+
+.stat-table td {
+    padding: 0.8rem 1.2rem;
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.stat-table tr:last-child td {
+    border-bottom: none;
+}
+
+.stat-table tr:hover td {
+    background-color: rgba(255, 209, 0, 0.03);
+}
+
+/* Badges/Indicators */
+.stat-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.35rem 0.7rem;
+    background: var(--gradient-honey);
+    color: var(--hive-black);
+    border-radius: var(--radius-pill);
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-left: 0.5rem;
+}
+
+/* Mode clair */
+:root.light-mode .mini-card,
+:root.light-mode .small-card,
+:root.light-mode #sidecard-list {
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(255, 209, 0, 0.1);
+}
+
+:root.light-mode .mini-card-title {
+    color: rgba(66, 32, 6, 0.7);
+}
+
+:root.light-mode .mini-card-value {
+    background: linear-gradient(135deg, #D97706 0%, #F59E0B 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+}
+
+:root.light-mode #sidecard-list h4 {
+    color: #D97706;
+}
+
+:root.light-mode #sidecard-list li {
+    color: rgba(66, 32, 6, 0.7);
+}
+
+:root.light-mode #sidecard-list li:hover,
+:root.light-mode #sidecard-list li.selected {
+    color: #D97706;
+}
+
+:root.light-mode #sidecard-list li.selected {
+    background: rgba(245, 158, 11, 0.1);
+}
+
+:root.light-mode #sidecard-list li.selected::after {
+    background: linear-gradient(to bottom, #D97706, #F59E0B);
+}
+
+:root.light-mode .stat-table th {
+    color: #D97706;
+    background-color: rgba(245, 158, 11, 0.05);
+    border-bottom: 2px solid #D97706;
+}
+
+:root.light-mode .stat-table td {
+    color: var(--text-primary);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+:root.light-mode .stat-badge {
+    background: linear-gradient(135deg, #D97706 0%, #F59E0B 100%);
+    color: white;
+}
+
+/* Mode sombre - ajustements spécifiques */
+:root:not(.light-mode) .stat-table th {
+    background-color: rgba(255, 209, 0, 0.1);
+}
+
+:root:not(.light-mode) .stat-table tr:hover td {
+    background-color: rgba(255, 209, 0, 0.05);
+}
+
+:root:not(.light-mode) .mini-card,
+:root:not(.light-mode) .small-card {
+    background: rgba(34, 34, 34, 0.7);
+    border: 1px solid rgba(255, 209, 0, 0.1);
+}
+
+/* Forcer les couleurs de texte dans les éléments du tableau de statistiques */
+.stat-table, 
+.stat-table td, 
+.stat-table th {
+    color: var(--text-primary);
+}
+
+.stat-table th {
+    color: var(--honey-primary);
+}
+
+/* Assurer la visibilité du texte dans les éléments de carte */
+.mini-card-title {
+    color: var(--text-secondary);
+    text-shadow: 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+#commandes-stats {
+    color: var(--text-primary);
+}
+
+/* Correction pour les éléments de la liste latérale */
+#sidecard-list li {
+    color: var(--text-secondary);
+}
+
+/* Assurer des contrastes suffisants pour les éléments décoratifs */
+:root:not(.light-mode) .mini-card,
+:root:not(.light-mode) .small-card,
+:root:not(.light-mode) #sidecard-list,
+:root:not(.light-mode) #commandes-stats {
+    background: rgba(34, 34, 34, 0.8); /* Plus opaque pour meilleur contraste */
+    border: 1px solid rgba(255, 209, 0, 0.15);
+}
+
+/* Ajustements de visibilité pour le mode sombre */
+:root:not(.light-mode) canvas {
+    filter: brightness(1.1); /* Rendre les graphiques légèrement plus lumineux */
+}
+
+/* Responsive adaptations */
+@media (max-width: 992px) {
+    #main-flex-container {
+        flex-direction: column;
+    }
+    
+    #sidecard-list {
+        position: relative;
+        top: 0;
+        width: 100%;
+        max-width: none;
+        margin-bottom: 1.5rem;
+    }
+    
+    .stat-graphs-row {
+        flex-direction: column;
+    }
+    
+    .stat-graph-card {
+        min-width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .stat-table th, 
+    .stat-table td {
+        padding: 0.6rem 0.8rem;
+        font-size: 0.9rem;
+    }
+    
+    .mini-card {
+        min-width: 140px;
+    }
+    
+    .mini-card-value {
+        font-size: 1.8rem;
+    }
+}
+
+@media (max-width: 576px) {
+    #main-flex-container {
+        padding: 0.5rem;
+    }
+    
+    .stat-table {
+        font-size: 0.85rem;
+    }
+    
+    .stat-badge {
+        font-size: 0.7rem;
+        padding: 0.25rem 0.5rem;
+    }
+}
+
+/* Animations */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

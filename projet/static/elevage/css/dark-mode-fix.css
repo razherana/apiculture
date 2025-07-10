@@ -1,0 +1,100 @@
+/**
+ * Correctifs pour le mode sombre - Section Élevage
+ * Ce fichier force la visibilité des textes en mode sombre
+ */
+
+/* Forcer les couleurs de texte pour tous les éléments importants */
+:root:not(.light-mode) .elevage-content,
+:root:not(.light-mode) .elevage-card,
+:root:not(.light-mode) .info-card,
+:root:not(.light-mode) .detail-info {
+    color: rgba(255, 255, 255, 0.95) !important;
+}
+
+:root:not(.light-mode) .elevage-table, 
+:root:not(.light-mode) .elevage-table th, 
+:root:not(.light-mode) .elevage-table td {
+    color: var(--text-primary);
+}
+
+:root:not(.light-mode) .elevage-table th {
+    color: var(--honey-primary);
+}
+
+:root:not(.light-mode) .form-label,
+:root:not(.light-mode) .detail-stat-label,
+:root:not(.light-mode) .info-card-subtitle,
+:root:not(.light-mode) .filter-label {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+:root:not(.light-mode) .elevage-content h2,
+:root:not(.light-mode) .info-card-title,
+:root:not(.light-mode) .detail-title,
+:root:not(.light-mode) .calendar-title {
+    color: var(--honey-primary) !important;
+}
+
+:root:not(.light-mode) .info-card-value,
+:root:not(.light-mode) .detail-stat-value {
+    background: var(--gradient-honey);
+    -webkit-background-clip: text;
+    background-clip: text;
+}
+
+/* Styles pour les cartes spécifiques */
+:root:not(.light-mode) .calendar-day,
+:root:not(.light-mode) .detail-stat,
+:root:not(.light-mode) .alert-card {
+    background: rgba(34, 34, 34, 0.8) !important;
+}
+
+:root:not(.light-mode) .calendar-event-treatment {
+    color: var(--nectar-blue) !important;
+}
+
+:root:not(.light-mode) .calendar-event-inspection {
+    color: var(--honey-primary) !important;
+}
+
+:root:not(.light-mode) .calendar-event-urgent {
+    color: var(--queen-red) !important;
+}
+
+/* Améliorer les contrastes pour les graphiques */
+:root:not(.light-mode) canvas {
+    filter: brightness(1.2) !important;
+}
+
+/* Garantir la visibilité dans les formulaires */
+:root:not(.light-mode) .form-input,
+:root:not(.light-mode) .form-select,
+:root:not(.light-mode) .form-textarea {
+    color: rgba(255, 255, 255, 0.95) !important;
+}
+
+/* Amélioration du contraste des boutons jaunes en mode sombre */
+:root:not(.light-mode) .btn-primary {
+    background: var(--honey-primary);
+    color: var(--hive-black) !important; /* Force la couleur du texte en noir */
+    font-weight: 700; /* Rend le texte plus gras pour une meilleure visibilité */
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5); /* Ajoute une ombre au texte */
+}
+
+:root:not(.light-mode) .btn-primary:hover {
+    background: var(--honey-dark);
+    color: var(--hive-black) !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+}
+
+:root:not(.light-mode) .action-btn.add {
+    background: var(--honey-primary);
+    color: var(--hive-black) !important;
+    font-weight: 700;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
+}
+
+/* Assurer la visibilité des contenus dans les tables */
+:root:not(.light-mode) .elevage-table tbody td {
+    color: rgba(255, 255, 255, 0.95) !important;
+}

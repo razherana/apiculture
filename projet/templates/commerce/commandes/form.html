@@ -1,0 +1,236 @@
+{% extends "base_commerce.html" %}
+{% load static %}
+{% block title %}Nouvelle commande{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'commerce/css/form.css' %}">
+<link rel="stylesheet" href="{% static 'commerce/css/dark-mode-fix.css' %}">
+<style>
+    .cart-section {
+        margin-top: 2em;
+        padding: 1em;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        background-color: #f9f9f9;
+    }
+    
+    :root:not(.light-mode) .cart-section {
+        background-color: rgba(41, 41, 41, 0.95) !important;
+        border-color: rgba(255, 209, 0, 0.2) !important;
+    }
+    
+    .miel-selector {
+        display: flex;
+        gap: 1em;
+        align-items: center;
+        margin-bottom: 1em;
+    }
+    
+    .cart-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5em;
+        border: 1px solid #ccc;
+        border-radius: 3px;
+        margin-bottom: 0.5em;
+        background-color: white;
+    }
+    
+    :root:not(.light-mode) .cart-item {
+        background-color: rgba(34, 34, 34, 0.95) !important;
+        border-color: rgba(255, 209, 0, 0.3) !important;
+    }
+    
+    .cart-total {
+        font-weight: bold;
+        margin-top: 1em;
+        padding-top: 1em;
+        border-top: 1px solid #ddd;
+    }
+    
+    :root:not(.light-mode) .cart-total {
+        border-top-color: rgba(255, 209, 0, 0.2) !important;
+    }
+    
+    .remove-btn {
+        background: #ff4444;
+        color: white;
+        border: none;
+        padding: 0.25em 0.5em;
+        border-radius: 3px;
+        cursor: pointer;
+    }
+    
+    .add-to-cart-btn {
+        background: #4CAF50;
+        color: white;
+        border: none;
+        padding: 0.5em 1em;
+        border-radius: 3px;
+        cursor: pointer;
+    }
+</style>
+
+<div class="form-card" id="commande-insert-card">
+    <h2>Nouvelle commande</h2>
+    <form method="post" id="commande-insert-form" autocomplete="off">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="livraison_date">Date de livraison prévue</label>
+            <input type="date" id="livraison_date" name="livraison_date" required>
+        </div>
+        <div class="form-group">
+            <label for="client">Client</label>
+            <select id="client" name="client" required>
+                <option value="" disabled selected>-- Sélectionner un client --</option>
+                {% for cl in clients %}
+                    <option value="{{ cl.id }}">{{ cl.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <!-- Shopping Cart Section -->
+        <div class="cart-section">
+            <h3>Ajouter des miels</h3>
+            <div class="miel-selector">
+                <select id="miel-select" style="flex: 2;">
+                    <option value="" disabled selected>-- Sélectionner un Miel --</option>
+                    {% for miel in miels %}
+                        <option value="{{ miel.id }}" 
+                                data-prix="{{ miel.prix }}" 
+                                data-nom="{{ miel.nom }}"
+                                data-unite="{{ miel.unite }}"
+                                data-quantite-unite="{{ miel.quantite_unite }}">
+                            {{ miel.nom }} - {{ miel.prix }}Ar ({{ miel.quantite_unite }}{{ miel.unite }})
+                        </option>
+                    {% endfor %}
+                </select>
+                <input type="number" id="quantite-input" placeholder="Quantité" min="1" value="1" style="flex: 1;">
+                <button type="button" class="add-to-cart-btn" onclick="addToCart()">Ajouter</button>
+            </div>
+            
+            <div id="cart-items">
+                <h4>Panier</h4>
+                <div id="cart-list">
+                    <!-- Cart items will be added here dynamically -->
+                </div>
+                <div class="cart-total">
+                    Total estimé: <span id="total-price">0.00</span>Ar
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label for="note">Note</label>
+            <textarea id="note" name="note" rows="3"></textarea>
+        </div>
+        
+        <div style="display: flex; gap: 0.5em; justify-content: flex-end;">
+            <button type="submit" class="action-btn add">Enregistrer la commande</button>
+        </div>
+    </form>
+</div>
+
+<script>
+let cart = [];
+let cartTotal = 0;
+
+function addToCart() {
+    const mielSelect = document.getElementById('miel-select');
+    const quantiteInput = document.getElementById('quantite-input');
+    
+    if (!mielSelect.value || !quantiteInput.value || quantiteInput.value <= 0) {
+        alert('Veuillez sélectionner un miel et une quantité valide');
+        return;
+    }
+    
+    const selectedOption = mielSelect.options[mielSelect.selectedIndex];
+    const mielId = selectedOption.value;
+    const mielNom = selectedOption.dataset.nom;
+    const prix = parseFloat(selectedOption.dataset.prix);
+    const quantite = parseInt(quantiteInput.value);
+    const unite = selectedOption.dataset.unite;
+    const quantiteUnite = selectedOption.dataset.quantiteUnite;
+    
+    // Check if item already exists in cart
+    const existingItemIndex = cart.findIndex(item => item.id === mielId);
+    if (existingItemIndex !== -1) {
+        cart[existingItemIndex].quantite += quantite;
+    } else {
+        cart.push({
+            id: mielId,
+            nom: mielNom,
+            prix: prix,
+            quantite: quantite,
+            unite: unite,
+            quantiteUnite: quantiteUnite
+        });
+    }
+    
+    updateCartDisplay();
+    
+    // Reset form
+    mielSelect.selectedIndex = 0;
+    quantiteInput.value = 1;
+}
+
+function removeFromCart(index) {
+    cart.splice(index, 1);
+    updateCartDisplay();
+}
+
+function updateCartDisplay() {
+    const cartList = document.getElementById('cart-list');
+    const totalPrice = document.getElementById('total-price');
+    
+    cartList.innerHTML = '';
+    cartTotal = 0;
+    
+    cart.forEach((item, index) => {
+        const itemTotal = item.prix * item.quantite;
+        cartTotal += itemTotal;
+        
+        const cartItem = document.createElement('div');
+        cartItem.className = 'cart-item';
+        cartItem.innerHTML = `
+            <div>
+                <strong>${item.nom}</strong><br>
+                ${item.quantite} × ${item.prix}Ar = ${itemTotal.toFixed(2)}Ar
+            </div>
+            <button type="button" class="remove-btn" onclick="removeFromCart(${index})">Supprimer</button>
+        `;
+        cartList.appendChild(cartItem);
+    });
+    
+    totalPrice.textContent = cartTotal.toFixed(2);
+    
+    // Update hidden form fields
+    updateHiddenFields();
+}
+
+function updateHiddenFields() {
+    // Remove existing hidden fields
+    const existingFields = document.querySelectorAll('input[name="cart_items"]');
+    existingFields.forEach(field => field.remove());
+    
+    // Add new hidden fields
+    const form = document.getElementById('commande-insert-form');
+    cart.forEach(item => {
+        const hiddenField = document.createElement('input');
+        hiddenField.type = 'hidden';
+        hiddenField.name = 'cart_items';
+        hiddenField.value = `${item.id}|${item.quantite}`;
+        form.appendChild(hiddenField);
+    });
+}
+
+// Validate form before submission
+document.getElementById('commande-insert-form').addEventListener('submit', function(e) {
+    if (cart.length === 0) {
+        e.preventDefault();
+        alert('Veuillez ajouter au moins un miel à la commande');
+    }
+});
+</script>
+{% endblock %}

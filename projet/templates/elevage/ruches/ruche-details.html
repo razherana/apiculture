@@ -1,0 +1,286 @@
+{% extends "base_elevage.html" %}
+{% load static %}
+
+{% block title %}Détails ruche {{ ruche.nom }}{% endblock %}
+{% block page_title %}Ruche: {{ ruche.nom }}{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="elevage-content">
+    <div class="detail-header">
+        <div class="detail-info">
+            <h2 class="detail-title">{{ ruche.nom }}</h2>
+            <p class="detail-subtitle">{{ ruche.type }} - Installée le {{ ruche.date_installation }}</p>
+            
+            <div class="detail-stats">
+                <div class="detail-stat">
+                    <div class="detail-stat-value status-clickable" onclick="showStatusHistory({{ ruche.id }})">
+                        {{ ruche.statut }}
+                        <i class="fas fa-history" style="font-size: 0.8em; margin-left: 5px;"></i>
+                    </div>
+                    <div class="detail-stat-label">Statut</div>
+                </div>
+                <div class="detail-stat">
+                    <div class="detail-stat-value">{{ ruche.nb_hausses }}</div>
+                    <div class="detail-stat-label">Hausses</div>
+                </div>
+                <div class="detail-stat">
+                    <div class="detail-stat-value">{{ ruche.production }} kg</div>
+                    <div class="detail-stat-label">Production tenue de la recolte </div>
+                </div>
+            </div>
+            
+            <div class="btn-group">
+                <a href="{% url 'ruche_edit' id=ruche.id %}" class="btn btn-primary">
+                    <i class="fas fa-edit"></i> Modifier
+                </a>
+                <a href="{% url 'soin_add' %}" class="btn btn-secondary">
+                    <i class="fas fa-medkit"></i> Soin
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="detail-tabs">
+        <div class="detail-tab active" data-tab="overview">Vue d'ensemble</div>
+        <div class="detail-tab" data-tab="health">Santé & Soins</div>
+        <div class="detail-tab" data-tab="production">Recoltes</div>
+    </div>
+    
+    <!-- Onglet Vue d'ensemble -->
+    <div class="detail-tab-content active" id="tab-overview">
+        <div class="elevage-card">
+            <h3>Informations générales</h3>
+            <table class="elevage-table">
+                <tr>
+                    <th>Localisation</th>
+                    <td>{{ ruche.localisation }}</td>
+                </tr>
+                <tr>
+                    <th>Type</th>
+                    <td>{{ ruche.type }}</td>
+                </tr>
+                <tr>
+                    <th>Date d'installation</th>
+                    <td>{{ ruche.date_installation }}</td>
+                </tr>
+                <tr>
+                    <th>Hausses</th>
+                    <td>{{ ruche.nb_hausses }}</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Onglet Santé & Soins -->
+    <div class="detail-tab-content" id="tab-health">
+        <div class="elevage-card">
+            <h3>Historique des soins</h3>
+            <div class="table-container">
+                <table class="elevage-table">
+                    <thead>
+                        <tr>
+                            <th>Date prévue</th>
+                            <th>Date réalisée</th>
+                            <th>Type</th>
+                            <th>Dose</th>
+                            <th>Note</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for soin in soins %}
+                        <tr>
+                            <td>{{ soin.date_prevue }}</td>
+                            <td>{{ soin.date_realisation }}</td>
+                            <td>{{ soin.intervention_type.name }}</td>
+                            <td>{{ soin.donnees }}</td>
+                            <td>{{ soin.details }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center">Aucun soin enregistré</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Onglet Production -->
+    <div class="detail-tab-content" id="tab-production">
+        <div class="elevage-card">
+            <h3>Production de miel</h3>
+            <div class="table-container">
+                <table class="elevage-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Poids (kg)</th>
+                            <th>Taux humidité (%)</th>
+                            <th>Qualité</th>
+                            <th>Note</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for rec in recolte %}
+                        <tr>
+                            <td>{{ rec.created_at|date:"d/m/Y" }}</td>
+                            <td>{{ rec.poids_miel }}</td>
+                            <td>{{ rec.taux_humidite }}</td>
+                            <td>{{ rec.qualite }}/10</td>
+                            <td>{{ rec.note }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center">Aucune récolte enregistrée</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Status History Modal -->
+<div id="statusModal" class="modal" style="display: none;">
+    <div class="modal-content glass">
+        <span class="close-modal" onclick="closeStatusModal()">&times;</span>
+        <h3>Historique des statuts - <span id="modal-ruche-name">{{ ruche.nom }}</span></h3>
+        
+        <div class="table-container">
+            <table class="elevage-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Statut</th>
+                        <th>Modifié par</th>
+                        <th>Notes</th>
+                    </tr>
+                </thead>
+                <tbody id="status-history-body">
+                    <!-- Will be populated via JavaScript -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Gestion des onglets
+        const tabs = document.querySelectorAll('.detail-tab');
+        const contents = document.querySelectorAll('.detail-tab-content');
+        
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const target = tab.getAttribute('data-tab');
+                tabs.forEach(t => t.classList.toggle('active', t === tab));
+                contents.forEach(c => {
+                    if (c.id === `tab-${target}`) {
+                        c.classList.add('active');
+                    } else {
+                        c.classList.remove('active');
+                    }
+                });
+            });
+        });
+    });
+    
+    function showStatusHistory(rucheId) {
+        // In a real implementation, this would fetch data via AJAX
+        // For now, we'll simulate the data
+        const statusHistory = [
+            {
+                date: '{{ ruche.date_installation|date:"Y-m-d" }}',
+                status: '{{ ruche.statut }}',
+                modifie_par: 'Système',
+                notes: 'Statut initial'
+            }
+        ];
+        
+        const statusBody = document.getElementById('status-history-body');
+        statusBody.innerHTML = '';
+        
+        statusHistory.forEach(entry => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${entry.date}</td>
+                <td><span class="tag tag-info">${entry.status}</span></td>
+                <td>${entry.modifie_par}</td>
+                <td>${entry.notes}</td>
+            `;
+            statusBody.appendChild(row);
+        });
+        
+        document.getElementById('statusModal').style.display = 'block';
+    }
+
+    function closeStatusModal() {
+        document.getElementById('statusModal').style.display = 'none';
+    }
+
+    window.addEventListener('click', function(e) {
+        const modal = document.getElementById('statusModal');
+        if (e.target === modal) {
+            closeStatusModal();
+        }
+    });
+</script>
+
+<style>
+.status-clickable {
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    padding: 0.25rem;
+    border-radius: var(--radius-sm);
+}
+
+.status-clickable:hover {
+    background-color: var(--honey-primary);
+    color: var(--hive-black);
+    transform: translateY(-1px);
+}
+
+/* Modal styles */
+.modal {
+    position: fixed;
+    z-index: var(--z-modal);
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+}
+
+.modal-content {
+    margin: 5% auto;
+    padding: var(--space-xl);
+    width: 90%;
+    max-width: 800px;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    animation: fadeUp 0.3s ease-out;
+}
+
+.close-modal {
+    color: var(--text-secondary);
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: color var(--transition-fast);
+}
+
+.close-modal:hover {
+    color: var(--honey-primary);
+}
+</style>
+{% endblock %}

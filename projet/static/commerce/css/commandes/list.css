@@ -1,0 +1,136 @@
+.expandable-row {
+    cursor: pointer;
+  }
+  
+  /* Modal styles */
+  .modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    align-items: start;
+    background-color: #0003;
+    backdrop-filter: blur(3px);
+  }
+  
+  .modal-content {
+    background-color: #fefefe;
+    margin: 10% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 800px;
+    border-radius: 5px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Dark mode support for modal */
+  :root:not(.light-mode) .modal-content {
+    background-color: rgba(34, 34, 34, 0.95) !important;
+    border-color: rgba(255, 209, 0, 0.2) !important;
+  }
+  
+  .close-modal {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  
+  .close-modal:hover,
+  .close-modal:focus {
+    color: black;
+  }
+  
+  :root:not(.light-mode) .close-modal {
+    color: #ddd;
+  }
+  
+  :root:not(.light-mode) .close-modal:hover,
+  :root:not(.light-mode) .close-modal:focus {
+    color: white;
+  }
+  
+  .details-table {
+    width: 100%;
+    margin-bottom: 1em;
+    border-collapse: collapse;
+  }
+  
+  .details-table th,
+  .details-table td {
+    padding: 0.5em;
+    border: 1px solid #dee2e6;
+    text-align: left;
+  }
+  
+  :root:not(.light-mode) .details-table th,
+  :root:not(.light-mode) .details-table td {
+    border-color: rgba(255, 209, 0, 0.2) !important;
+  }
+  
+  .details-table th {
+    background-color: #e9ecef;
+  }
+  
+  :root:not(.light-mode) .details-table th {
+    background-color: rgba(41, 41, 41, 0.95) !important;
+  }
+  
+  .status-history {
+    margin-top: 1em;
+  }
+  
+  .modal-tabs {
+    display: flex;
+    border-bottom: 1px solid #dee2e6;
+    margin-bottom: 15px;
+  }
+  
+  :root:not(.light-mode) .modal-tabs {
+    border-bottom-color: rgba(255, 209, 0, 0.2) !important;
+  }
+  
+  .modal-tab {
+    padding: 10px 15px;
+    cursor: pointer;
+    margin-right: 5px;
+    border: 1px solid transparent;
+    border-radius: 5px 5px 0 0;
+  }
+  
+  .modal-tab.active {
+    border: 1px solid #dee2e6;
+    border-bottom-color: white;
+    margin-bottom: -1px;
+    background-color: white;
+  }
+  
+  :root:not(.light-mode) .modal-tab.active {
+    border-color: rgba(255, 209, 0, 0.2) !important;
+    border-bottom-color: rgba(34, 34, 34, 0.95) !important;
+    background-color: rgba(34, 34, 34, 0.95) !important;
+    color: rgba(255, 255, 255, 0.95) !important;
+  }
+  
+  :root:not(.light-mode) .modal-tab {
+    color: rgba(255, 255, 255, 0.7) !important;
+  }
+  
+  :root:not(.light-mode) .modal-tab:hover {
+    color: rgba(255, 255, 255, 0.95) !important;
+  }
+  
+  .modal-tab-content {
+    display: none;
+  }
+  
+  .modal-tab-content.active {
+    display: flex;
+    overflow-x: auto;
+  }

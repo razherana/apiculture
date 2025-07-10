@@ -1,0 +1,313 @@
+{% extends "base_commerce.html" %} {% load static %} 
+{% block title %}
+  Liste des commandes
+{% endblock %} 
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'commerce/css/list.css' %}" />
+<link rel="stylesheet" href="{% static 'commerce/css/commandes/list.css' %}" />
+<link rel="stylesheet" href="{% static 'commerce/css/dark-mode-fix.css' %}" />
+
+<div class="liste-content">
+  <h2>Liste des commandes</h2>
+  <form
+    action="{% url 'commande_form' %}"
+    method="post"
+    style="display: inline"
+  >
+    {% csrf_token %}
+    <button class="action-btn add" type="submit">Nouvelle Commande</button>
+  </form>
+  <form
+    action="{% url 'commandes_stats' %}"
+    method="post"
+    style="display: inline"
+  >
+    {% csrf_token %}
+    <button class="action-btn add" type="submit">
+      Statistiques des commandes cette Saison
+    </button>
+  </form>
+
+  <!-- Section commandes EN ATTENTE -->
+  <div class="table-card">
+    <h3>Commandes en attente</h3>
+    <div class="table-scroll-container">
+      <table class="commerce-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Date</th>
+            <th>Créée le</th>
+            <th>Livraison prévue</th>
+            <th>Client</th>
+            <th>Miel</th>
+            <th>Quantité</th>
+            <th>Statut</th>
+            <th>Vente liée</th>
+            <th>Note</th>
+            <th class="actions-column">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for commande in commandes_en_attente %}
+          <tr class="expandable-row" data-commande-id="{{ commande.id }}">
+            <td>{{ commande.id }}</td>
+            <td>{{ commande.date }}</td>
+            <td>{{ commande.created_at }}</td>
+            <td>{{ commande.livraison_date }}</td>
+            <td>{{ commande.client }}</td>
+            <td>{{ commande.produit }}</td>
+            <td>{{ commande.quantite }}</td>
+            <td>{{ commande.statut }}</td>
+            <td>
+              {% if commande.vente_id %}
+                {{ commande.vente_id }}
+              {% else %}
+                -
+              {% endif %}
+            </td>
+            <td>{{ commande.note }}</td>
+            <td style="display: flex; gap: 0.25em">
+              <form action="#" method="post" style="display: inline">
+                {% csrf_token %}
+                <input
+                  type="hidden"
+                  name="commande_id"
+                  value="{{ commande.id }}"
+                />
+                <button class="action-btn delete" type="submit">Annuler</button>
+              </form>
+              <form action="#" method="post" style="display: inline">
+                {% csrf_token %}
+                <input
+                  type="hidden"
+                  name="commande_id"
+                  value="{{ commande.id }}"
+                />
+                <button class="action-btn add" type="submit">Livrer</button>
+              </form>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="11">Aucune commande en attente.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Section commandes LIVRÉES -->
+  <div class="table-card" style="margin-top: 2em">
+    <h3>Commandes livrées</h3>
+    <div class="table-scroll-container">
+      <table class="commerce-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Date</th>
+            <th>Créée le</th>
+            <th>Livraison prévue</th>
+            <th>Client</th>
+            <th>Produit</th>
+            <th>Quantité</th>
+            <th>Statut</th>
+            <th>Vente liée</th>
+            <th>Note</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for commande in commandes_livrees %}
+            <tr class="expandable-row" data-commande-id="{{ commande.id }}">
+              <td>{{ commande.id }}</td>
+              <td>{{ commande.date }}</td>
+              <td>{{ commande.created_at }}</td>
+              <td>{{ commande.livraison_date }}</td>
+              <td>{{ commande.client }}</td>
+              <td>{{ commande.produit }}</td>
+              <td>{{ commande.quantite }}</td>
+              <td>{{ commande.statut }}</td>
+              <td>
+                {% if commande.vente_id %}
+                  {{ commande.vente_id }}
+                {% else %}
+                  -
+                {% endif %}
+              </td>
+              <td>{{ commande.note }}</td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="10">Aucune commande livrée.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Modal for commande details -->
+<div id="commandeModal" class="modal">
+  <div class="modal-content">
+    <span class="close-modal">&times;</span>
+    <h3>Détails de la commande <span id="modal-commande-id"></span></h3>
+    
+    <div class="modal-tabs">
+      <div class="modal-tab active" data-tab="details">Détails</div>
+      <div class="modal-tab" data-tab="history">Historique des statuts</div>
+    </div>
+    
+    <div id="details-tab" class="modal-tab-content active">
+      <table class="details-table">
+        <thead>
+          <tr>
+            <th>Miel</th>
+            <th>Quantité</th>
+          </tr>
+        </thead>
+        <tbody id="modal-details-body">
+          <!-- Details will be populated via JavaScript -->
+        </tbody>
+      </table>
+    </div>
+    
+    <div id="history-tab" class="modal-tab-content">
+      <table class="details-table">
+        <thead>
+          <tr>
+            <th>Statut</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody id="modal-history-body">
+          <!-- History will be populated via JavaScript -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const expandableRows = document.querySelectorAll(".expandable-row");
+    const modal = document.getElementById("commandeModal");
+    const closeBtn = document.querySelector(".close-modal");
+    const modalCommandeId = document.getElementById("modal-commande-id");
+    const modalDetailsBody = document.getElementById("modal-details-body");
+    const modalHistoryBody = document.getElementById("modal-history-body");
+    const modalTabs = document.querySelectorAll(".modal-tab");
+    
+    // Store commande data for modal access
+    const commandeData = {};
+    
+    {% for commande in commandes_en_attente %}
+      commandeData[{{ commande.id }}] = {
+        details: [
+          {% for detail in commande.commande_details.all %}
+            { miel: "{{ detail.miel.name }}", quantite: {{ detail.quantite }} },
+          {% endfor %}
+        ],
+        history: [
+          {% for history in commande.commande_status_histories.all %}
+            { status: "{{ history.commande_status.name }}", date: "{{ history.created_at }}" },
+          {% endfor %}
+        ]
+      };
+    {% endfor %}
+    
+    {% for commande in commandes_livrees %}
+      commandeData[{{ commande.id }}] = {
+        details: [
+          {% for detail in commande.commande_details.all %}
+            { miel: "{{ detail.miel.name }}", quantite: {{ detail.quantite }} },
+          {% endfor %}
+        ],
+        history: [
+          {% for history in commande.commande_status_histories.all %}
+            { status: "{{ history.commande_status.name }}", date: "{{ history.created_at }}" },
+          {% endfor %}
+        ]
+      };
+    {% endfor %}
+    
+    // Tab switching functionality
+    modalTabs.forEach(tab => {
+      tab.addEventListener('click', function() {
+        // Remove active class from all tabs and contents
+        modalTabs.forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.modal-tab-content').forEach(c => c.classList.remove('active'));
+        
+        // Add active class to clicked tab and corresponding content
+        this.classList.add('active');
+        const tabName = this.getAttribute('data-tab');
+        document.getElementById(`${tabName}-tab`).classList.add('active');
+      });
+    });
+    
+    // Open modal when clicking on a row
+    expandableRows.forEach(row => {
+      row.addEventListener("click", function(e) {
+        // Prevent click on buttons from opening modal
+        if (e.target.tagName === "BUTTON" || e.target.closest("button")) {
+          return;
+        }
+        
+        const commandeId = this.getAttribute("data-commande-id");
+        modalCommandeId.textContent = commandeId;
+        
+        // Populate details tab
+        modalDetailsBody.innerHTML = '';
+        if (commandeData[commandeId] && commandeData[commandeId].details.length > 0) {
+          commandeData[commandeId].details.forEach(detail => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+              <td>${detail.miel}</td>
+              <td>${detail.quantite}</td>
+            `;
+            modalDetailsBody.appendChild(row);
+          });
+        } else {
+          const row = document.createElement('tr');
+          row.innerHTML = '<td colspan="2">Aucun détail disponible</td>';
+          modalDetailsBody.appendChild(row);
+        }
+        
+        // Populate history tab
+        modalHistoryBody.innerHTML = '';
+        if (commandeData[commandeId] && commandeData[commandeId].history.length > 0) {
+          commandeData[commandeId].history.forEach(history => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+              <td>${history.status}</td>
+              <td>${history.date}</td>
+            `;
+            modalHistoryBody.appendChild(row);
+          });
+        } else {
+          const row = document.createElement('tr');
+          row.innerHTML = '<td colspan="2">Aucun historique de statut disponible</td>';
+          modalHistoryBody.appendChild(row);
+        }
+        
+        // Show the modal
+        modal.style.display = "block";
+      });
+    });
+    
+    // Close modal when clicking on X
+    closeBtn.addEventListener("click", function() {
+      modal.style.display = "none";
+    });
+    
+    // Close modal when clicking outside of it
+    window.addEventListener("click", function(e) {
+      if (e.target === modal) {
+        modal.style.display = "none";
+      }
+    });
+  });
+</script>
+{% endblock %}

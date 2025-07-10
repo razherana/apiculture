@@ -1,0 +1,62 @@
+{% extends "base_commerce.html" %}
+{% load static %}
+{% block page_header %}Inventaire du Matériel{% endblock %}
+
+{% block content %}
+<!-- Header avec titre et bouton -->
+<div class="content-header">
+    <h2>Inventaire du Matériel</h2>
+    <a href="{% url 'materiel_form' %}" class="btn">Ajouter</a>
+</div>
+
+<div class="card">
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Type</th>
+                    <th>Date d'ajout</th>
+                    <th>Statut</th>
+                    <th>Durée de vie (mois)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in materiels %}
+                <tr>
+                    <td>{{ item.type }}</td>
+                    <td>{{ item.date_ajout }}</td>
+                    <td>{{ item.statut }}</td>
+                    <td>{{ item.durre_de_vie_estimee }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<style>
+.content-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.content-header h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--honey-primary);
+    margin: 0;
+}
+
+@media (max-width: 768px) {
+    .content-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+}
+</style>
+{% endblock %}

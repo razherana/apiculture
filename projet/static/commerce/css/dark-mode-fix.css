@@ -1,0 +1,121 @@
+/**
+ * Correctifs pour le mode sombre
+ * Ce fichier force la visibilité des textes en mode sombre
+ */
+
+/* Forcer les couleurs de texte pour tous les éléments importants */
+:root:not(.light-mode) body {
+    color: rgba(255, 255, 255, 0.95) !important;
+}
+
+:root:not(.light-mode) p,
+:root:not(.light-mode) span:not(.mini-card-value):not(.stat-value),
+:root:not(.light-mode) td,
+:root:not(.light-mode) th,
+:root:not(.light-mode) li,
+:root:not(.light-mode) label,
+:root:not(.light-mode) input,
+:root:not(.light-mode) select,
+:root:not(.light-mode) textarea {
+    color: rgba(255, 255, 255, 0.95) !important;
+}
+
+/* Exceptions pour les éléments qui doivent conserver d'autres couleurs */
+:root:not(.light-mode) a:not(.sidebar-btn):not(.action-btn),
+:root:not(.light-mode) th {
+    color: #FFD100 !important;
+}
+
+:root:not(.light-mode) .status-completed {
+    color: #00CC88 !important;
+}
+
+:root:not(.light-mode) .status-pending {
+    color: #FFD100 !important;
+}
+
+:root:not(.light-mode) .status-cancelled {
+    color: #FF3366 !important;
+}
+
+/* Augmenter le contraste de fond pour les éléments en mode sombre */
+:root:not(.light-mode) .table-card,
+:root:not(.light-mode) .form-card,
+:root:not(.light-mode) .mini-card,
+:root:not(.light-mode) .small-card,
+:root:not(.light-mode) .stat-card,
+:root:not(.light-mode) .activity-timeline,
+:root:not(.light-mode) .recent-data {
+    background: rgba(34, 34, 34, 0.9) !important;
+    border-color: rgba(255, 209, 0, 0.2) !important;
+}
+
+:root:not(.light-mode) tbody tr {
+    background: rgba(41, 41, 41, 0.95) !important;
+}
+
+/* Améliorer les contrastes pour les graphiques */
+:root:not(.light-mode) canvas {
+    filter: brightness(1.2) !important;
+}
+
+/* Styles pour les notifications en mode clair */
+:root.light-mode .notification-dropdown {
+    background: rgba(255, 255, 255, 0.95) !important;
+    border: 1px solid rgba(217, 119, 6, 0.1);
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+}
+
+:root.light-mode .notification-header {
+    border-bottom: 1px solid rgba(217, 119, 6, 0.1);
+    color: #333;
+}
+
+:root.light-mode .notification-bell:hover .notification-dropdown,
+:root.light-mode .notification-dropdown:hover {
+    background: rgba(255, 255, 255, 0.98) !important;
+}
+
+:root.light-mode .view-all {
+    color: #D97706;
+}
+
+:root.light-mode .notification-item {
+    border-bottom: 1px solid rgba(217, 119, 6, 0.1);
+}
+
+:root.light-mode .notification-item:hover {
+    background-color: rgba(217, 119, 6, 0.05);
+}
+
+:root.light-mode .notification-item.high .notification-icon {
+    color: #FF3366;
+}
+
+:root.light-mode .notification-item.medium .notification-icon {
+    color: #D97706;
+}
+
+:root.light-mode .notification-item.low .notification-icon {
+    color: #00CC88;
+}
+
+:root.light-mode .notification-title {
+    color: #333;
+}
+
+:root.light-mode .notification-text {
+    color: #555;
+}
+
+:root.light-mode .notification-time {
+    color: #777;
+}
+
+:root.light-mode .notification-empty {
+    color: #777;
+}
+
+:root.light-mode .notification-empty i {
+    color: #00CC88;
+}

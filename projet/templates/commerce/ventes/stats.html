@@ -1,0 +1,153 @@
+{% extends "base_commerce.html" %}
+{% load static %}
+{% block title %}Statistiques des ventes{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="{% static 'commerce/css/list.css' %}">
+<link rel="stylesheet" href="{% static 'commerce/css/stat.css' %}">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<div class="liste-content">
+    <h2 style="font-size:1.3em;margin-bottom:0.5em;">Statistiques des ventes</h2>
+    <div id="main-flex-container">
+        <div id="sidecard-list" class="small-card">
+            <h4 style="text-align:center;font-size:1em;margin:0 0 0.6em 0;">Types de miel</h4>
+            <ul>
+                {% for miel in stats %}
+                <li data-miel-idx="{{ forloop.counter0 }}"{% if forloop.first %} class="selected"{% endif %}>
+                    {{ miel.type }}
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        <div id="stats-panel">
+            <div class="stat-cards-container">
+                <div class="stat-cards-row" style="display:flex; gap:1em;">
+                    <div class="mini-card small-card">
+                        <div class="mini-card-title">Quantité totale vendue</div>
+                        <div class="mini-card-value" id="val-quantite">0</div>
+                    </div> 
+                    <div class="mini-card small-card">
+                        <div class="mini-card-title">Montant total (Ar)</div>
+                        <div class="mini-card-value" id="val-montant">0</div>
+                    </div>
+                    <div class="mini-card small-card">
+                        <div class="mini-card-title">Nombre de ventes</div>
+                        <div class="mini-card-value" id="val-nb-ventes">0</div>
+                    </div>
+                </div>
+                <div id="vente-stats" class="small-card"></div>
+                <div class="stat-graphs-row">
+                    <div class="small-card stat-graph-card">
+                        <canvas id="venteCurveChart" width="430" height="230"></canvas>
+                    </div>
+                    <div class="small-card stat-graph-card">
+                        <canvas id="ventePieChart" width="260" height="230"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+const ventesStats = [
+    {% for miel in stats %}
+    {
+        type: "{{ miel.type }}",
+        total_quantite: {{ miel.total_quantite }},
+        total_montant: {{ miel.total_montant }},
+        nb_ventes: {{ miel.nb_ventes }},
+        ventes_evolution_dates: {{ miel.ventes_evolution_dates|safe }},
+        ventes_evolution_qte: {{ miel.ventes_evolution_qte|safe }},
+        ventes_par_mode: {{ miel.ventes_par_mode|safe }}
+    }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+];
+
+function renderMiniCards(idx) {
+    const v = ventesStats[idx];
+    document.getElementById("val-quantite").innerText = v.total_quantite;
+    document.getElementById("val-montant").innerText = v.total_montant;
+    document.getElementById("val-nb-ventes").innerText = v.nb_ventes;
+}
+
+function renderVenteStats(idx){
+    const v = ventesStats[idx];
+    document.getElementById("vente-stats").innerHTML = `
+        <table class="stat-table">
+            <tr><th>Type</th><td>${v.type}</td></tr>
+            <tr><th>Quantité totale vendue</th><td>${v.total_quantite}</td></tr>
+            <tr><th>Montant total (Ar)</th><td>${v.total_montant}</td></tr>
+            <tr><th>Nombre de ventes</th><td>${v.nb_ventes}</td></tr>
+        </table>
+    `;
+}
+
+let venteCurveChart, ventePieChart;
+function renderVenteCharts(idx){
+    const v = ventesStats[idx];
+    // Courbe évolution des quantités vendues
+    const cc = document.getElementById('venteCurveChart').getContext('2d');
+    if(venteCurveChart) venteCurveChart.destroy();
+    venteCurveChart = new Chart(cc, {
+        type: 'line',
+        data: {
+            labels: v.ventes_evolution_dates,
+            datasets: [{
+                label: 'Quantité vendue',
+                data: v.ventes_evolution_qte,
+                fill: true,
+                borderColor: '#5f8f3e',
+                backgroundColor: 'rgba(95,143,62,0.09)',
+                tension: 0.22,
+                pointBackgroundColor: '#b0da99',
+                pointRadius: 3
+            }]
+        },
+        options: {
+            plugins: {legend: {display: false}},
+            scales: {
+                x: {
+                    ticks: {font: {size: 12}, color: "#694b18"}
+                },
+                y: {
+                    beginAtZero: true,
+                    ticks: {font: {size: 12}, color: "#694b18"}
+                }
+            }
+        }
+    });
+    // Camembert répartition modes de paiement
+    const pc = document.getElementById('ventePieChart').getContext('2d');
+    if(ventePieChart) ventePieChart.destroy();
+    const modes = Object.keys(v.ventes_par_mode);
+    const values = Object.values(v.ventes_par_mode);
+    const colors = ['#f6ca7a', '#d46a6a', '#62a469', '#a4bdfc', '#ffd700'];
+    ventePieChart = new Chart(pc, {
+        type: 'pie',
+        data: {
+            labels: modes,
+            datasets: [{
+                data: values,
+                backgroundColor: colors.slice(0, modes.length)
+            }]
+        },
+        options: {plugins:{legend:{position:'bottom', labels: {font: {size:14}}}}}
+    });
+}
+
+window.addEventListener("DOMContentLoaded", function(){
+    const mielList = document.querySelectorAll('#sidecard-list li');
+    let selected = 0;
+    function selectMiel(idx){
+        mielList.forEach((li,i) => li.classList.toggle('selected', i === idx));
+        renderMiniCards(idx);
+        renderVenteStats(idx);
+        renderVenteCharts(idx);
+        selected = idx;
+    }
+    mielList.forEach((li,i)=>{
+        li.addEventListener('click', ()=>selectMiel(i));
+    });
+    selectMiel(0);
+});
+</script>
+{% endblock %}

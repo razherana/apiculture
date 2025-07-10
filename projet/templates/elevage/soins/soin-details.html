@@ -1,0 +1,234 @@
+{% extends "base_elevage.html" %}
+{% load static %}
+
+{% block title %}Détails soin - {{ soin.intervention_type.name }}{% endblock %}
+
+{% block content %}
+<div class="elevage-content">
+    <div class="detail-header">
+        <div class="detail-info">
+            <h2 class="detail-title">Soin du {{ soin.date_prevue|date:"d/m/Y" }}</h2>
+            <p class="detail-subtitle">{{ soin.intervention_type.name }}</p>
+            <!-- Correction: on ne met plus |date:"H:i" sur une date -->
+            
+            <div class="detail-stats">
+                <div class="detail-stat">
+                    <div class="detail-stat-value">
+                        {% if soin.ruche %}
+                            {{ soin.ruche.description }}
+                        {% else %}
+                            Soin général
+                        {% endif %}
+                    </div>
+                    <div class="detail-stat-label">Ruche</div>
+                </div>
+                
+                <div class="detail-stat">
+                    <div class="detail-stat-value">{{ soin.intervention_type.name }}</div>
+                    <div class="detail-stat-label">Type de soin</div>
+                </div>
+                
+                <div class="detail-stat">
+                    <div class="detail-stat-value">
+                        {{ soin.donnees|default:"Non spécifiée" }}
+                    </div>
+                    <div class="detail-stat-label">Dose/Quantité</div>
+                </div>
+                
+                <div class="detail-stat">
+                    <div class="detail-stat-value">
+                        {% if soin.date_realisation %}
+                            <span class="tag tag-success">Réalisé</span>
+                        {% else %}
+                            <span class="tag tag-warning">Prévu</span>
+                        {% endif %}
+                    </div>
+                    <div class="detail-stat-label">Statut</div>
+                </div>
+                <div class="detail-stat">
+                    <div class="detail-stat-value">
+                        {% if soin.prix_service >= 0 %}
+                            {{ soin.prix_service|floatformat:2 }} Ar
+                        {% else %}
+                            -
+                        {% endif %}
+                    </div>
+                    <div class="detail-stat-label">Prix du service</div>
+                </div>
+            </div>
+            
+            <div class="btn-group">
+                <a href="{% url 'soin_edit' soin.id %}" class="btn btn-primary">
+                    <i class="fas fa-edit"></i> Modifier
+                </a>
+                
+                {% if not soin.date_realisation %}
+                    <button class="btn btn-success" onclick="markAsCompleted({{ soin.id }})">
+                        <i class="fas fa-check"></i> Marquer comme réalisé
+                    </button>
+                {% endif %}
+                
+                <a href="{% url 'soins_list' %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Retour à la liste
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="elevage-card">
+        <h3>Détails du soin</h3>
+        <div class="soin-details">
+            {% if soin.details %}
+            <div class="detail-section">
+                <h4>Notes et observations</h4>
+                <p>{{ soin.details|linebreaks }}</p>
+            </div>
+            {% endif %}
+            
+            <div class="detail-section">
+                <h4>Informations détaillées</h4>
+                <table class="elevage-table">
+                    <tr>
+                        <th>Date prévue</th>
+                        <td>{{ soin.date_prevue|date:"l d F Y" }}</td>
+                    </tr>
+                    {% if soin.date_realisation %}
+                    <tr>
+                        <th>Date de réalisation</th>
+                        <td>{{ soin.date_realisation|date:"l d F Y" }}</td>
+                    </tr>
+                    {% endif %}
+                    <tr>
+                        <th>Type de soin</th>
+                        <td>
+                            {% if "Varroa" in soin.intervention_type.name or "varroa" in soin.intervention_type.name %}
+                                <span class="tag tag-danger">{{ soin.intervention_type.name }}</span>
+                            {% elif "Sirop" in soin.intervention_type.name or "Candy" in soin.intervention_type.name or "Nourrissement" in soin.intervention_type.name %}
+                                <span class="tag tag-warning">{{ soin.intervention_type.name }}</span>
+                            {% elif "Médicament" in soin.intervention_type.name %}
+                                <span class="tag tag-info">{{ soin.intervention_type.name }}</span>
+                            {% else %}
+                                <span class="tag tag-secondary">{{ soin.intervention_type.name }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Dose/Quantité administrée</th>
+                        <td>{{ soin.donnees|default:"Non spécifiée" }}</td>
+                    </tr>
+                    <tr>
+                        <th>Ruche concernée</th>
+                        <td>
+                            {% if soin.ruche %}
+                                <a href="{% url 'ruche_details' soin.ruche.id %}" class="link-hover">
+                                    {{ soin.ruche.description }}
+                                </a>
+                            {% else %}
+                                Soin général (non spécifique à une ruche)
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Statut</th>
+                        <td>
+                            {% if soin.date_realisation %}
+                                <span class="tag tag-success">Réalisé le {{ soin.date_realisation|date:"d/m/Y" }}</span>
+                            {% else %}
+                                <span class="tag tag-warning">En attente de réalisation</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Prix du service</th>
+                        <td>
+                            {% if soin.prix_service %}
+                                {{ soin.prix_service|floatformat:2 }} Ar
+                            {% else %}
+                                Non renseigné
+                            {% endif %}
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function markAsCompleted(soinId) {
+    if (confirm('Marquer ce soin comme réalisé aujourd\'hui ?')) {
+        fetch(`/elevage/interventions/${soinId}/complete/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                'date_realisation': new Date().toISOString().split('T')[0]
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Erreur lors de la mise à jour: ' + (data.error || 'Erreur inconnue'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Erreur lors de la mise à jour');
+        });
+    }
+}
+</script>
+
+<style>
+.soin-details {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.detail-section h4 {
+    color: var(--honey-primary);
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--glass-border);
+}
+
+.detail-section p {
+    line-height: 1.6;
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+}
+
+.link-hover {
+    color: var(--honey-primary);
+    text-decoration: none;
+    transition: all var(--transition-fast);
+}
+
+.link-hover:hover {
+    color: var(--honey-dark);
+    text-decoration: underline;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+    .detail-stats {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+    }
+    
+    .btn-group {
+        flex-direction: column;
+    }
+    
+    .btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+</style>
+{% endblock %}

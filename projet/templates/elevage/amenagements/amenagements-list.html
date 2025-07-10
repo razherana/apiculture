@@ -1,0 +1,296 @@
+{% extends "base_elevage.html" %}
+{% load static %}
+
+{% block title %}Aménagements{% endblock %}
+{% block page_title %}Aménagements{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'elevage/css/elevage.css' %}">
+<link rel="stylesheet" href="{% static 'elevage/css/dark-mode-fix.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="elevage-content">
+    <h2>Gestion des aménagements</h2>
+    
+    <div class="btn-group">
+        <a href="{% url 'amenagement_add' %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Nouvel aménagement
+        </a>
+    </div>
+    
+    <!-- Filtres -->
+    <div class="filters-container">
+        <div class="filter-group">
+            <label class="filter-label" for="type-filter">Type:</label>
+            <select class="filter-select" id="type-filter">
+                <option value="">Tous les types</option>
+                {% for type in types %}
+                    <option value="{{ type }}">{{ type }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="filter-group">
+            <label class="filter-label" for="race-filter">Race:</label>
+            <select class="filter-select" id="race-filter">
+                <option value="">Toutes les races</option>
+                {% for race in races %}
+                    <option value="{{ race }}">{{ race }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="filter-group">
+            <label class="filter-label" for="origine-filter">Origine:</label>
+            <select class="filter-select" id="origine-filter">
+                <option value="">Toutes les origines</option>
+                {% for origine in origines %}
+                    <option value="{{ origine }}">{{ origine }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="filter-group">
+            <div class="search-container" style="position: relative;">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" class="search-input" id="amenagement-search" placeholder="Rechercher...">
+            </div>
+        </div>
+    </div>
+    
+    <!-- Statistiques rapides -->
+    <div class="info-cards">
+        <div class="info-card">
+            <div class="info-card-header">
+                <div class="info-card-icon">
+                    <i class="fas fa-layer-group"></i>
+                </div>
+                <div class="info-card-title">Total aménagements</div>
+            </div>
+            <div class="info-card-value">{{ amenagements|length }}</div>
+            <div class="info-card-subtitle">Enregistrés dans le système</div>
+        </div>
+        
+        <div class="info-card">
+            <div class="info-card-header">
+                <div class="info-card-icon">
+                    <i class="fas fa-home"></i>
+                </div>
+                <div class="info-card-title">Ruches assignées</div>
+            </div>
+            <div class="info-card-value">{{ ruches|length }}</div>
+            <div class="info-card-subtitle">Ruches avec essaims</div>
+        </div>
+        
+        <div class="info-card">
+            <div class="info-card-header">
+                <div class="info-card-icon">
+                    <i class="fas fa-dna"></i>
+                </div>
+                <div class="info-card-title">Races </div>
+            </div>
+            <div class="info-card-value">{{ races|length }}</div>
+            <div class="info-card-subtitle">Races différentes</div>
+        </div>
+    </div>
+    
+    <!-- Tableau des aménagements -->
+    <div class="elevage-card">
+        <div class="table-container">
+            <table class="elevage-table">
+                <thead>
+                    <tr>
+                        <th>Type</th>
+                        <th>Date</th>
+                        <th>Origine</th>
+                        <th>Race</th>
+                        <th>Ruche destination</th>
+                        <th>Notes</th>
+                        <th class="actions-column">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for amenagement in amenagements %}
+                    <tr data-type="{{ amenagement.type }}" 
+                        data-race="{{ amenagement.race }}" 
+                        data-origine="{{ amenagement.origine }}"
+                        data-search="{{ amenagement.type }} {{ amenagement.race }} {{ amenagement.origine }} {{ amenagement.ruche_destination }}">
+                        <td>
+                            <span class="tag tag-info">{{ amenagement.type }}</span>
+                        </td>
+                        <td>{{ amenagement.date|date:"d/m/Y" }}</td>
+                        <td>{{ amenagement.origine }}</td>
+                        <td>
+                            <span class="tag tag-success">{{ amenagement.race }}</span>
+                        </td>
+                        <td>
+                            {% if amenagement.ruche_destination %}
+                                <span class="tag tag-success">{{ amenagement.ruche_destination }}</span>
+                            {% else %}
+                                <span class="tag tag-warning">Non assigné</span>
+                            {% endif %}
+                        </td>
+                        <td class="cell-expand">{{ amenagement.notes|truncatechars:50 }}</td>
+                        <td class="actions-column">
+                            <div style="display: flex; gap: 0.5rem; justify-content: center;">
+                                <a href="{% url 'amenagement_edit' id=amenagement.id %}" 
+                                   class="btn btn-secondary" 
+                                   title="Modifier">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                {% if amenagement.ruche_id %}
+                                <a href="{% url 'ruche_details' id=amenagement.ruche_id %}" 
+                                   class="btn btn-info" 
+                                   title="Voir la ruche">
+                                    <i class="fas fa-home"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+                            <i class="fas fa-layer-group" style="font-size: 2rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                            <br>
+                            Aucun aménagement trouvé
+                            <br>
+                            <a href="{% url 'amenagement_add' %}" class="btn btn-primary" style="margin-top: 1rem;">
+                                <i class="fas fa-plus"></i> Créer le premier aménagement
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Système de filtrage amélioré
+        const typeFilter = document.getElementById('type-filter');
+        const raceFilter = document.getElementById('race-filter');
+        const origineFilter = document.getElementById('origine-filter');
+        const searchInput = document.getElementById('amenagement-search');
+        const amenagementRows = document.querySelectorAll('.elevage-table tbody tr[data-type]');
+        
+        function filterAmenagements() {
+            const typeValue = typeFilter.value.toLowerCase();
+            const raceValue = raceFilter.value.toLowerCase();
+            const origineValue = origineFilter.value.toLowerCase();
+            const searchValue = searchInput.value.toLowerCase();
+            
+            let visibleCount = 0;
+            
+            amenagementRows.forEach(row => {
+                const type = row.getAttribute('data-type').toLowerCase();
+                const race = row.getAttribute('data-race').toLowerCase();
+                const origine = row.getAttribute('data-origine').toLowerCase();
+                const searchText = row.getAttribute('data-search').toLowerCase();
+                
+                const matchesType = !typeValue || type === typeValue;
+                const matchesRace = !raceValue || race === raceValue;
+                const matchesOrigine = !origineValue || origine === origineValue;
+                const matchesSearch = !searchValue || searchText.includes(searchValue);
+                
+                if (matchesType && matchesRace && matchesOrigine && matchesSearch) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+            
+            // Update counter if needed
+            console.log(`${visibleCount} aménagement(s) affiché(s)`);
+        }
+        
+        // Event listeners for filters
+        typeFilter.addEventListener('change', filterAmenagements);
+        raceFilter.addEventListener('change', filterAmenagements);
+        origineFilter.addEventListener('change', filterAmenagements);
+        searchInput.addEventListener('input', filterAmenagements);
+        
+        // Enhanced table interactions
+        amenagementRows.forEach(row => {
+            row.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateX(5px)';
+                this.style.boxShadow = 'var(--shadow-md)';
+            });
+            
+            row.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateX(0)';
+                this.style.boxShadow = 'none';
+            });
+        });
+        
+        // Progress bar animations
+        const progressBars = document.querySelectorAll('.progress-bar');
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.animationDelay = Math.random() * 0.5 + 's';
+                    entry.target.classList.add('animate-progress');
+                }
+            });
+        });
+        
+        progressBars.forEach(bar => observer.observe(bar));
+    });
+</script>
+
+<style>
+.search-container {
+    position: relative;
+    display: inline-block;
+}
+
+.search-icon {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-secondary);
+    z-index: 2;
+}
+
+.search-input {
+    padding-left: 2.5rem !important;
+}
+
+.progress-container {
+    display: inline-block;
+    vertical-align: middle;
+}
+
+@keyframes progressAnimation {
+    from { width: 0%; }
+    to { width: var(--final-width); }
+}
+
+.animate-progress {
+    animation: progressAnimation 1s ease-out forwards;
+}
+
+/* Amélioration des interactions */
+.elevage-table tbody tr[data-type] {
+    transition: all var(--transition-medium);
+    cursor: pointer;
+}
+
+.elevage-table tbody tr[data-type]:hover {
+    background: var(--glass-bg) !important;
+    backdrop-filter: blur(16px);
+}
+
+/* Tags améliorés */
+.tag {
+    transition: all var(--transition-fast);
+}
+
+.tag:hover {
+    transform: scale(1.05);
+    box-shadow: var(--shadow-sm);
+}
+</style>
+{% endblock %}

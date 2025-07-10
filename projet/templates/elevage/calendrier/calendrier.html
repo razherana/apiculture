@@ -1,0 +1,330 @@
+{% extends "base_elevage.html" %}
+{% load static %}
+
+{% block title %}Calendrier des interventions{% endblock %}
+{% block page_title %}Calendrier{% endblock %}
+
+{% block content %}
+<div class="elevage-content">
+    <div class="btn-group">
+        <button class="btn btn-primary" id="add-event">
+            <i class="fas fa-plus"></i> Nouvel événement
+        </button>
+        <div class="filter-group" style="margin-left: auto;">
+            <label class="filter-label" for="type-filter">Filtrer par type:</label>
+            <select class="filter-select" id="type-filter">
+                <option value="">Tous les types</option>
+                <option value="inspection">Inspection</option>
+                <option value="treatment">Traitement</option>
+                <option value="task">Tâche</option>
+                <option value="urgent">Urgent</option>
+                <option value="harvest">Récolte</option>
+            </select>
+        </div>
+    </div>
+    
+    <div class="elevage-card">
+        <div class="calendar-container">
+            <div class="calendar-header">
+                <div class="calendar-title">{{ mois }}</div>
+                <div class="calendar-nav">
+                    <button class="btn btn-secondary" id="prev-month">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <button class="btn btn-secondary" id="today">Aujourd'hui</button>
+                    <button class="btn btn-secondary" id="next-month">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="calendar-grid">
+                {% for jour in jours_semaine %}
+                    <div class="calendar-day-header">{{ jour }}</div>
+                {% endfor %}
+                
+                {% for jour in jours %}
+                    <div class="calendar-day{% if jour.jour == None %} empty{% endif %}" {% if jour.date %}data-date="{{ jour.date }}"{% endif %}>
+                        {% if jour.jour %}
+                            <div class="calendar-day-number">{{ jour.jour }}</div>
+                            {% for evenement in jour.evenements %}
+                                <div class="calendar-event calendar-event-{{ evenement.type }}" data-id="{{ evenement.id }}" data-type="{{ evenement.type }}">
+                                    {{ evenement.titre }}
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal pour ajouter/modifier un événement -->
+<div class="modal" id="event-modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="modal-title">Nouvel événement</h3>
+            <span class="close-modal">&times;</span>
+        </div>
+        <div class="modal-body">
+            <form id="event-form">
+                <div class="form-group">
+                    <label class="form-label" for="event-title">Titre *</label>
+                    <input type="text" class="form-input" id="event-title" required>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="event-date">Date *</label>
+                        <input type="date" class="form-input" id="event-date" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="event-type">Type *</label>
+                        <select class="form-select" id="event-type" required>
+                            <option value="" disabled selected>Sélectionnez un type</option>
+                            <option value="inspection">Inspection</option>
+                            <option value="treatment">Traitement</option>
+                            <option value="task">Tâche</option>
+                            <option value="urgent">Urgent</option>
+                            <option value="harvest">Récolte</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="event-ruche">Ruche</label>
+                    <select class="form-select" id="event-ruche">
+                        <option value="">Toutes les ruches</option>
+                        {% for ruche in ruches %}
+                            <option value="{{ ruche.id }}">{{ ruche.nom }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="event-description">Description</label>
+                    <textarea class="form-textarea" id="event-description" rows="3"></textarea>
+                </div>
+                
+                <div class="btn-group" style="justify-content: flex-end; margin-top: 1rem;">
+                    <button type="button" class="btn btn-secondary" id="cancel-event">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Styles pour le modal */
+    .modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+    }
+    
+    .modal-content {
+        background: var(--glass-bg);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-lg);
+        border: 1px solid var(--glass-border);
+        width: 100%;
+        max-width: 600px;
+        animation: fadeInUp 0.3s ease-out;
+    }
+    
+    .modal-header {
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid var(--border-subtle);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    
+    .modal-header h3 {
+        margin: 0;
+        color: var(--honey-primary);
+    }
+    
+    .close-modal {
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: var(--text-secondary);
+    }
+    
+    .close-modal:hover {
+        color: var(--text-primary);
+    }
+    
+    .modal-body {
+        padding: 1.5rem;
+    }
+    
+    /* Styles spécifiques pour les événements */
+    .calendar-event {
+        cursor: pointer;
+        transition: transform 0.2s ease;
+    }
+    
+    .calendar-event:hover {
+        transform: translateX(3px);
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Variables pour le modal
+        const modal = document.getElementById('event-modal');
+        const closeModal = document.querySelector('.close-modal');
+        const cancelEvent = document.getElementById('cancel-event');
+        const addEventBtn = document.getElementById('add-event');
+        const eventForm = document.getElementById('event-form');
+        const modalTitle = document.getElementById('modal-title');
+        
+        // Boutons de navigation du calendrier
+        const prevMonthBtn = document.getElementById('prev-month');
+        const nextMonthBtn = document.getElementById('next-month');
+        const todayBtn = document.getElementById('today');
+        
+        // Filtre de type d'événement
+        const typeFilter = document.getElementById('type-filter');
+        const calendarEvents = document.querySelectorAll('.calendar-event');
+        
+        // Fonctions pour ouvrir/fermer le modal
+        function openModal() {
+            modal.style.display = 'flex';
+            document.getElementById('event-title').focus();
+        }
+        
+        function closeModalFunc() {
+            modal.style.display = 'none';
+            eventForm.reset();
+        }
+        
+        // Gérer l'ouverture du modal pour ajouter un événement
+        addEventBtn.addEventListener('click', function() {
+            modalTitle.textContent = 'Nouvel événement';
+            
+            // Remplir la date avec aujourd'hui
+            const today = new Date();
+            const formattedDate = today.toISOString().split('T')[0];
+            document.getElementById('event-date').value = formattedDate;
+            
+            openModal();
+        });
+        
+        // Fermer le modal
+        closeModal.addEventListener('click', closeModalFunc);
+        cancelEvent.addEventListener('click', closeModalFunc);
+        
+        // Fermer le modal si on clique en dehors
+        window.addEventListener('click', function(event) {
+            if (event.target == modal) {
+                closeModalFunc();
+            }
+        });
+        
+        // Soumettre le formulaire d'événement
+        eventForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Dans un cas réel, on enverrait ces données à un serveur
+            const eventData = {
+                title: document.getElementById('event-title').value,
+                date: document.getElementById('event-date').value,
+                type: document.getElementById('event-type').value,
+                ruche: document.getElementById('event-ruche').value,
+                description: document.getElementById('event-description').value
+            };
+            
+            console.log('Événement à enregistrer:', eventData);
+            
+            // Fermer le modal et afficher un message de confirmation
+            closeModalFunc();
+            alert('Événement enregistré avec succès! (Simulation)');
+            
+            // Dans un cas réel, on rechargerait la page ou on mettrait à jour le calendrier
+        });
+        
+        // Cliquer sur un jour pour ajouter un événement
+        document.querySelectorAll('.calendar-day').forEach(day => {
+            if (!day.classList.contains('empty')) {
+                day.addEventListener('click', function(e) {
+                    // Ne pas déclencher si on a cliqué sur un événement existant
+                    if (!e.target.classList.contains('calendar-event')) {
+                        modalTitle.textContent = 'Nouvel événement';
+                        
+                        // Remplir la date avec le jour cliqué
+                        const date = this.getAttribute('data-date');
+                        document.getElementById('event-date').value = date;
+                        
+                        openModal();
+                    }
+                });
+            }
+        });
+        
+        // Cliquer sur un événement pour le modifier
+        document.querySelectorAll('.calendar-event').forEach(event => {
+            event.addEventListener('click', function(e) {
+                e.stopPropagation(); // Empêcher la propagation au jour parent
+                
+                modalTitle.textContent = 'Modifier l\'événement';
+                
+                // Remplir le formulaire avec les données de l'événement
+                const eventId = this.getAttribute('data-id');
+                const eventType = this.getAttribute('data-type');
+                const eventTitle = this.textContent.trim();
+                const eventDate = this.closest('.calendar-day').getAttribute('data-date');
+                
+                document.getElementById('event-title').value = eventTitle;
+                document.getElementById('event-date').value = eventDate;
+                document.getElementById('event-type').value = eventType;
+                
+                // Dans un cas réel, on récupérerait plus de détails via une requête AJAX
+                
+                openModal();
+            });
+        });
+        
+        // Filtrer les événements par type
+        typeFilter.addEventListener('change', function() {
+            const filterValue = this.value;
+            
+            calendarEvents.forEach(event => {
+                const eventType = event.getAttribute('data-type');
+                
+                if (!filterValue || eventType === filterValue) {
+                    event.style.display = '';
+                } else {
+                    event.style.display = 'none';
+                }
+            });
+        });
+        
+        // Navigation du calendrier (simulée)
+        prevMonthBtn.addEventListener('click', function() {
+            alert('Navigation vers le mois précédent (fonctionnalité à implémenter)');
+        });
+        
+        nextMonthBtn.addEventListener('click', function() {
+            alert('Navigation vers le mois suivant (fonctionnalité à implémenter)');
+        });
+        
+        todayBtn.addEventListener('click', function() {
+            alert('Navigation vers le mois actuel (fonctionnalité à implémenter)');
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,260 @@
+{% extends "base_commerce.html" %}
+{% load static %}
+{% block title %}Fiche vente{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'commerce/css/form.css' %}">
+<link rel="stylesheet" href="{% static 'commerce/css/dark-mode-fix.css' %}">
+
+<div class="form-card" id="vente-card">
+    <h2><i class="fas fa-receipt"></i> Fiche vente #{{ vente.id }}</h2>
+    
+    <div style="display: flex; gap: 1rem; margin-bottom: 2rem;">
+        <button type="button" class="action-btn edit" id="edit-btn">
+            <i class="fas fa-edit"></i> Modifier
+        </button>
+        <button type="button" class="action-btn view" id="cancel-btn" style="display:none;">
+            <i class="fas fa-times"></i> Annuler
+        </button>
+        <a href="{% url 'ventes_list' %}" class="action-btn view">
+            <i class="fas fa-arrow-left"></i> Retour à la liste
+        </a>
+    </div>
+    
+    <form method="post" id="vente-form">
+        {% csrf_token %}
+        <input type="hidden" name="id" value="{{ vente.id }}">
+        
+        <div class="form-row">
+            <div class="form-group">
+                <label for="client">Client</label>
+                <input type="text" id="client_input" name="client_display" value="{{ vente.client }}" readonly>
+                <select id="client_select" name="client" style="display:none;">
+                    {% for cl in clients %}
+                        <option value="{{ cl.id }}" {% if cl.name == vente.client %}selected{% endif %}>{{ cl.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="mode_payement">Mode de paiement</label>
+                <input type="text" id="mode_payement_input" name="mode_payement_display" value="{{ vente.mode_payement.name }}" readonly>
+                <select id="mode_payement_select" name="mode_payement" style="display:none;">
+                    {% for mp in modes_payement %}
+                        <option value="{{ mp.mode }}" {% if mp.mode == vente.mode_payement.name %}selected{% endif %}>{{ mp.mode }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group">
+                <label for="date">Date de vente</label>
+                <input type="text" id="date" name="date" value="{{ vente.date }}" readonly>
+            </div>
+            
+            <div class="form-group">
+                <label for="montant">Montant total</label>
+                <input type="text" id="montant" name="montant" value="{{ vente.montant|floatformat:2 }}Ar" readonly>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label for="note">Note</label>
+            <textarea id="note" name="note" readonly>{{ vente.note }}</textarea>
+        </div>
+        
+        <!-- Détails de la vente -->
+        <div class="form-group">
+            <label>Détails de la vente</label>
+            <div class="vente-details-container">
+                <table class="details-table">
+                    <thead>
+                        <tr>
+                            <th>Miel</th>
+                            <th>Quantité</th>
+                            <th>Prix unitaire</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for detail in vente_model.vente_details.all %}
+                          <tr>
+                              <td>{{ detail.miel.miel_type.name }} - {{ detail.miel.consommable_type.name }}</td>
+                              <td>{{ detail.quantite }}</td>
+                              <td>{{ detail.prix_unitaire|floatformat:2 }}Ar</td>
+                              <td>{{ detail.prix_total|floatformat:2 }}Ar</td>
+                          </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" style="text-align: center; color: var(--text-secondary);">Aucun détail disponible</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div style="display: flex; gap: 0.5em; justify-content: flex-end;">
+            <button type="button" class="action-btn delete" id="delete-btn">
+                <i class="fas fa-trash"></i> Supprimer
+            </button>
+            <button type="submit" class="action-btn add" id="save-btn" style="display:none;">
+                <i class="fas fa-save"></i> Enregistrer
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+    // Mode switching logic
+    const form = document.getElementById('vente-form');
+    const editBtn = document.getElementById('edit-btn');
+    const saveBtn = document.getElementById('save-btn');
+    const cancelBtn = document.getElementById('cancel-btn');
+
+    // Input fields
+    const noteTextarea = document.getElementById('note');
+    
+    // Select & Input pairs
+    const clientInput = document.getElementById('client_input');
+    const clientSelect = document.getElementById('client_select');
+    const modePayementInput = document.getElementById('mode_payement_input');
+    const modePayementSelect = document.getElementById('mode_payement_select');
+
+    let originalValues = {};
+
+    function setReadOnly(isReadOnly) {
+        noteTextarea.readOnly = isReadOnly;
+        
+        // Client
+        clientInput.style.display = isReadOnly ? '' : 'none';
+        clientSelect.style.display = isReadOnly ? 'none' : '';
+        
+        // Mode paiement
+        modePayementInput.style.display = isReadOnly ? '' : 'none';
+        modePayementSelect.style.display = isReadOnly ? 'none' : '';
+    }
+
+    editBtn.addEventListener('click', function() {
+        // Store original values for cancel
+        originalValues['note'] = noteTextarea.value;
+        originalValues['client'] = clientSelect.value;
+        originalValues['mode_payement'] = modePayementSelect.value;
+        
+        setReadOnly(false);
+        editBtn.style.display = 'none';
+        saveBtn.style.display = '';
+        cancelBtn.style.display = '';
+    });
+
+    cancelBtn.addEventListener('click', function() {
+        // Restore original values
+        noteTextarea.value = originalValues['note'];
+        clientSelect.value = originalValues['client'];
+        modePayementSelect.value = originalValues['mode_payement'];
+        
+        // Update display inputs
+        clientInput.value = clientSelect.options[clientSelect.selectedIndex].text;
+        modePayementInput.value = modePayementSelect.options[modePayementSelect.selectedIndex].text;
+        
+        setReadOnly(true);
+        editBtn.style.display = '';
+        saveBtn.style.display = 'none';
+        cancelBtn.style.display = 'none';
+    });
+
+    // On select change, update input value
+    clientSelect.addEventListener('change', function() {
+        clientInput.value = clientSelect.options[clientSelect.selectedIndex].text;
+    });
+    
+    modePayementSelect.addEventListener('change', function() {
+        modePayementInput.value = modePayementSelect.options[modePayementSelect.selectedIndex].text;
+    });
+
+    // By default: view mode
+    setReadOnly(true);
+
+    form.addEventListener('submit', function(e) {
+        // On save, update input fields with selected values
+        clientInput.value = clientSelect.options[clientSelect.selectedIndex].text;
+        modePayementInput.value = modePayementSelect.options[modePayementSelect.selectedIndex].text;
+        
+        setReadOnly(true);
+        editBtn.style.display = '';
+        saveBtn.style.display = 'none';
+        cancelBtn.style.display = 'none';
+        
+        // Form will be submitted normally
+    });
+
+    document.getElementById('delete-btn').addEventListener('click', function() {
+        if(confirm("Voulez-vous vraiment supprimer cette vente ? Cette action est irréversible.")) {
+            // Implement delete functionality
+            alert("Fonctionnalité de suppression à implémenter");
+        }
+    });
+</script>
+
+<style>
+.form-row {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.form-row .form-group {
+    flex: 1;
+}
+
+.vente-details-container {
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    background: var(--bg-elevated);
+}
+
+.details-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.details-table th,
+.details-table td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.details-table th {
+    background: var(--bg-elevated-hover);
+    font-weight: 600;
+    color: var(--honey-primary);
+}
+
+.details-table tr:hover {
+    background: var(--bg-elevated-hover);
+}
+
+@media (max-width: 768px) {
+    .form-row {
+        flex-direction: column;
+        gap: 0;
+    }
+    
+    .form-row .form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .details-table {
+        font-size: 0.875rem;
+    }
+    
+    .details-table th,
+    .details-table td {
+        padding: 0.5rem;
+    }
+}
+</style>
+{% endblock %}
