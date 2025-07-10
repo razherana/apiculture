@@ -103,12 +103,12 @@ def commandes_list(request):
     # Separate commandes by status
     commandes_en_attente = [
         cmd for cmd in commandes_data 
-        if cmd['statut'] in ['En attente', 'Créée', 'En préparation']
+        if cmd['statut'] in ['En attente', 'Créée', 'En préparation'] or cmd['vente_id'] is None
     ]
 
     commandes_livrees = [
         cmd for cmd in commandes_data 
-        if cmd['statut'] in ['Livrée', 'Terminée']
+        if cmd['statut'] in ['Livrée', 'Terminée'] or cmd['vente_id'] is not None
     ]
 
     return render(request, "commerce/commandes/list.html", {
@@ -573,69 +573,104 @@ def vente_form(request):
     })
 
 def commandes_stats(request):
-    stats_par_type = {
-        "Fleurs": {
-            "total_commandes": 57,
-            "commandes_livrees": 50,
-            "commandes_annulees": 4,
-            "taux_livraison": 50 / 57,
-            "ca_estime": 1250.0,
-            "repartition_par_jour": {
-                "2025-06-01": 5,
-                "2025-06-02": 7,
-                "2025-06-03": 6,
-                "2025-06-04": 4,
-                "2025-06-05": 8,
-                "2025-06-06": 10,
-                "2025-06-07": 17
-            },
-            "top_clients": ["Durand", "Petit", "Lemoine"]
-        },
-        "Acacia": {
-            "total_commandes": 34,
-            "commandes_livrees": 29,
-            "commandes_annulees": 2,
-            "taux_livraison": 29 / 34,
-            "ca_estime": 1020.0,
-            "repartition_par_jour": {
-                "2025-06-01": 4,
-                "2025-06-02": 3,
-                "2025-06-03": 5,
-                "2025-06-04": 6,
-                "2025-06-06": 8,
-                "2025-06-07": 8
-            },
-            "top_clients": ["Bernard", "Martin", "Durand"]
-        },
-        "Châtaignier": {
-            "total_commandes": 20,
-            "commandes_livrees": 15,
-            "commandes_annulees": 3,
-            "taux_livraison": 15 / 20,
-            "ca_estime": 700.0,
-            "repartition_par_jour": {
-                "2025-06-01": 2,
-                "2025-06-03": 4,
-                "2025-06-05": 5,
-                "2025-06-06": 5,
-                "2025-06-07": 4
-            },
-            "top_clients": ["Petit", "Thomas", "Bernard"]
-        }
-    }
-
+    from projet.models.ventes import Commande, CommandeDetail, CommandeStatusHistory
+    from projet.models.productions import Miel, MielType
+    from django.db.models import Sum, Count, F, Q, Case, When, Value, IntegerField
+    from django.db.models.functions import TruncDate
+    from collections import defaultdict
+    import json
+    
+    # Get all commandes with their latest status
+    commandes = Commande.objects.prefetch_related(
+        'commande_details__miel__miel_type',
+        'commande_status_histories__commande_status',
+        'client'
+    ).all()
+    
+    # Group statistics by miel type
+    stats_par_type = defaultdict(lambda: {
+        'total_commandes': 0,
+        'commandes_livrees': 0,
+        'commandes_annulees': 0,
+        'taux_livraison': 0.0,
+        'ca_estime': 0.0,
+        'repartition_par_jour': defaultdict(int),
+        'top_clients': defaultdict(int)
+    })
+    
+    # Calculate statistics for each commande
+    for commande in commandes:
+        # Get latest status
+        latest_status = commande.commande_status_histories.order_by('-created_at').first()
+        current_status = latest_status.commande_status.name if latest_status else 'Non défini'
+        
+        # Get all miel types in this commande
+        for detail in commande.commande_details.all():
+            miel_type = detail.miel.miel_type.name
+            
+            stats_par_type[miel_type]['total_commandes'] += 1
+            
+            # Count by status
+            if current_status in ['Livrée', 'Terminée']:
+                stats_par_type[miel_type]['commandes_livrees'] += 1
+                # Calculate estimated revenue
+                prix_unitaire = detail.miel.prix_unitaire
+                stats_par_type[miel_type]['ca_estime'] += detail.quantite * prix_unitaire
+            elif current_status == 'Annulée':
+                stats_par_type[miel_type]['commandes_annulees'] += 1
+            
+            # Count by day
+            date_str = commande.created_at.strftime('%Y-%m-%d')
+            stats_par_type[miel_type]['repartition_par_jour'][date_str] += 1
+            
+            # Count by client
+            stats_par_type[miel_type]['top_clients'][commande.client.name] += 1
+    
+    # Calculate delivery rates and format top clients
+    for miel_type in stats_par_type:
+        data = stats_par_type[miel_type]
+        if data['total_commandes'] > 0:
+            data['taux_livraison'] = data['commandes_livrees'] / data['total_commandes']
+        
+        # Get top 3 clients
+        top_clients = sorted(data['top_clients'].items(), key=lambda x: x[1], reverse=True)[:3]
+        data['top_clients'] = [client[0] for client in top_clients]
+        
+        # Convert defaultdict to regular dict
+        data['repartition_par_jour'] = dict(data['repartition_par_jour'])
+    
+    # Convert to regular dict for template
+    stats_par_type = dict(stats_par_type)
+    
+    # Calculate global statistics
+    total_commandes = sum(data['total_commandes'] for data in stats_par_type.values())
+    total_livrees = sum(data['commandes_livrees'] for data in stats_par_type.values())
+    total_annulees = sum(data['commandes_annulees'] for data in stats_par_type.values())
+    total_ca = sum(data['ca_estime'] for data in stats_par_type.values())
+    
     stats_globales = {
-        "total_commandes": 111,
-        "commandes_livrees": 94,
-        "commandes_annulees": 9,
-        "taux_livraison": 94 / 111,
-        "ca_estime": 1250.0 + 1020.0 + 700.0,
-        "produit_plus_vendu": "Fleurs",
-        "client_fidele": "Durand",
-        "courbe_jour_labels": ["2025-06-01", "2025-06-02", "2025-06-03", "2025-06-04", "2025-06-05", "2025-06-06", "2025-06-07"],
-        "courbe_jour_valeurs": [11, 10, 15, 10, 13, 23, 29]
+        'total_commandes': total_commandes,
+        'commandes_livrees': total_livrees,
+        'commandes_annulees': total_annulees,
+        'taux_livraison': total_livrees / total_commandes if total_commandes > 0 else 0,
+        'ca_estime': total_ca,
+        'produit_plus_vendu': max(stats_par_type.keys(), key=lambda x: stats_par_type[x]['total_commandes']) if stats_par_type else '',
+        'client_fidele': '',  # Would need more complex calculation
+        'courbe_jour_labels': [],
+        'courbe_jour_valeurs': []
     }
-
+    
+    # Calculate global daily distribution
+    all_dates = defaultdict(int)
+    for data in stats_par_type.values():
+        for date, count in data['repartition_par_jour'].items():
+            all_dates[date] += count
+    
+    if all_dates:
+        sorted_dates = sorted(all_dates.items())
+        stats_globales['courbe_jour_labels'] = [date for date, _ in sorted_dates]
+        stats_globales['courbe_jour_valeurs'] = [count for _, count in sorted_dates]
+    
     return render(request, "commerce/commandes/stats.html", {
         "stats_par_type": stats_par_type,
         "stats_globales": stats_globales
@@ -856,7 +891,168 @@ def commande_form(request):
     })
 
 def miel_stats(request):
-    return
+    from projet.models.productions import Miel, MielStock, MielPriceHistory
+    from django.db.models import Sum, Count, F, Q
+    from django.db.models.functions import TruncDate
+    from datetime import datetime, timedelta
+    from collections import defaultdict
+    import json
+    
+    # Get selected date or use today
+    selected_date = request.GET.get('date', datetime.now().strftime('%Y-%m-%d'))
+    filter_date = datetime.strptime(selected_date, '%Y-%m-%d').date()
+    
+    # Get all miels with related data
+    miels = Miel.objects.select_related(
+        'miel_type', 'consommable_type', 'unite_mesure'
+    ).prefetch_related(
+        'miel_stock', 'miel_price_histories'
+    ).all()
+    
+    stats = []
+    
+    for miel in miels:
+        # Calculate stock at selected date
+        stock_entries = miel.miel_stock.filter(created_at__date__lte=filter_date)
+        stock_actuel = stock_entries.aggregate(total=Sum('added_quantity'))['total'] or 0
+        
+        # Calculate initial stock (first entry)
+        first_entry = miel.miel_stock.order_by('created_at').first()
+        stock_initial = first_entry.added_quantity if first_entry else 0
+        
+        # Calculate total entries and exits
+        total_entrees = stock_entries.filter(added_quantity__gt=0).aggregate(
+            total=Sum('added_quantity'))['total'] or 0
+        nb_entrees = stock_entries.filter(added_quantity__gt=0).count()
+        
+        total_sorties = abs(stock_entries.filter(added_quantity__lt=0).aggregate(
+            total=Sum('added_quantity'))['total'] or 0)
+        nb_sorties = stock_entries.filter(added_quantity__lt=0).count()
+        
+        # Get latest price up to selected date
+        latest_price_entry = miel.miel_price_histories.filter(
+            created_at__date__lte=filter_date
+        ).order_by('-created_at').first()
+        prix_unitaire = latest_price_entry.price if latest_price_entry else 0.0
+        
+        # Calculate stock value
+        valeur_stock = stock_actuel * prix_unitaire
+        
+        # Calculate stock evolution over time (last 30 days)
+        start_date = filter_date - timedelta(days=30)
+        daily_stock = defaultdict(int)
+        
+        # Get cumulative stock for each day
+        for entry in miel.miel_stock.filter(
+            created_at__date__gte=start_date,
+            created_at__date__lte=filter_date
+        ).order_by('created_at'):
+            date_str = entry.created_at.strftime('%Y-%m-%d')
+            daily_stock[date_str] += entry.added_quantity
+        
+        # Convert to cumulative values
+        evolution_stock = []
+        evolution_dates = []
+        running_total = stock_initial
+        
+        current_date = start_date
+        while current_date <= filter_date:
+            date_str = current_date.strftime('%Y-%m-%d')
+            if date_str in daily_stock:
+                running_total += daily_stock[date_str]
+            evolution_dates.append(date_str)
+            evolution_stock.append(running_total)
+            current_date += timedelta(days=1)
+        
+        stats.append({
+            'type': miel.miel_type.name,
+            'stock_actuel': stock_actuel,
+            'stock_initial': stock_initial,
+            'total_entrees': total_entrees,
+            'nb_entrees': nb_entrees,
+            'total_sorties': total_sorties,
+            'nb_sorties': nb_sorties,
+            'valeur_stock': valeur_stock,
+            'prix_unitaire': prix_unitaire,
+            'evolution_stock': json.dumps(evolution_stock),
+            'evolution_dates': json.dumps(evolution_dates)
+        })
+    
+    return render(request, 'commerce/miels/stats.html', {
+        'stats': stats,
+        'selected_date': selected_date
+    })
 
 def ventes_stats(request):
-    return  
+    from projet.models.ventes import Vente, VenteDetail
+    from projet.models.productions import Miel, MielType
+    from django.db.models import Sum, Count, F, Q
+    from django.db.models.functions import TruncDate
+    from collections import defaultdict
+    import json
+    
+    # Get all vente details with related data
+    vente_details = VenteDetail.objects.select_related(
+        'miel__miel_type', 'miel__consommable_type', 'vente__mode_payement'
+    ).all()
+    
+    # Group by miel type
+    stats_by_type = defaultdict(lambda: {
+        'total_quantite': 0,
+        'total_montant': 0.0,
+        'nb_ventes': 0,
+        'ventes_evolution_dates': [],
+        'ventes_evolution_qte': [],
+        'ventes_par_mode': defaultdict(int)
+    })
+    
+    # Calculate statistics for each miel type
+    for detail in vente_details:
+        miel_type = detail.miel.miel_type.name
+        prix_unitaire = detail.miel.prix_unitaire
+        montant = detail.quantite * prix_unitaire
+        
+        stats_by_type[miel_type]['total_quantite'] += detail.quantite
+        stats_by_type[miel_type]['total_montant'] += montant
+        stats_by_type[miel_type]['nb_ventes'] += 1
+        
+        # Count by payment mode
+        mode_payement = detail.vente.mode_payement.name
+        stats_by_type[miel_type]['ventes_par_mode'][mode_payement] += 1
+    
+    # Calculate evolution data for each type
+    for miel_type in stats_by_type.keys():
+        # Get daily sales evolution for this miel type
+        daily_sales = VenteDetail.objects.filter(
+            miel__miel_type__name=miel_type
+        ).annotate(
+            date=TruncDate('vente__created_at')
+        ).values('date').annotate(
+            total_quantite=Sum('quantite')
+        ).order_by('date')
+        
+        dates = []
+        quantities = []
+        for sale in daily_sales:
+            dates.append(sale['date'].strftime('%Y-%m-%d'))
+            quantities.append(sale['total_quantite'])
+        
+        stats_by_type[miel_type]['ventes_evolution_dates'] = dates
+        stats_by_type[miel_type]['ventes_evolution_qte'] = quantities
+    
+    # Format data for template
+    stats = []
+    for miel_type, data in stats_by_type.items():
+        stats.append({
+            'type': miel_type,
+            'total_quantite': data['total_quantite'],
+            'total_montant': data['total_montant'],
+            'nb_ventes': data['nb_ventes'],
+            'ventes_evolution_dates': json.dumps(data['ventes_evolution_dates']),
+            'ventes_evolution_qte': json.dumps(data['ventes_evolution_qte']),
+            'ventes_par_mode': json.dumps(dict(data['ventes_par_mode']))
+        })
+    
+    return render(request, 'commerce/ventes/stats.html', {
+        'stats': stats
+    })

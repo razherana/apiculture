@@ -72,6 +72,10 @@ class VenteDetail(models.Model):
     def prix_unitaire(self):
         return self.miel.prix_unitaire
 
+    @property
+    def prix_total(self):
+        return self.quantite * self.prix_unitaire
+
     class Meta:
         db_table = 'vente_details'
 
