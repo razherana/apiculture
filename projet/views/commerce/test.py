@@ -495,8 +495,9 @@ def vente_vue(request):
         return redirect('ventes_list')
 
 def vente_form(request):
-    from projet.models.productions import Miel
+    from projet.models.productions import Miel, MielStock
     from projet.models.ventes import Vente, VenteDetail
+    from django.db.models import Sum
     
     if request.method == "POST":
         # Handle form submission
@@ -508,6 +509,7 @@ def vente_form(request):
         try:
             client = Client.objects.get(id=client_id)
         except Client.DoesNotExist:
+            messages.error(request, 'Client non trouvé.')
             return redirect('vente_form')
         
         mode_payement_model = ModePayement.objects.filter(name=mode_payement).first()
@@ -515,31 +517,60 @@ def vente_form(request):
         if not mode_payement_model:
             messages.error(request, 'Mode de paiement invalide.')
             return redirect('vente_form')    
-    
-        # Create vente
+        
+        # Process cart items and check stock before creating the sale
+        cart_items = request.POST.getlist('cart_items')
+        stock_errors = []
+        items_to_process = []
+        
+        for item in cart_items:
+            if item:  # Skip empty items
+                divided = item.split('|')
+                miel_id, quantite = divided[0], divided[1]
+                try:
+                    miel = Miel.objects.get(id=miel_id)
+                    quantite_int = int(quantite)
+                    
+                    # Check current stock
+                    current_stock = miel.miel_stock.aggregate(total=Sum('added_quantity'))['total'] or 0
+                    
+                    if current_stock < quantite_int:
+                        stock_errors.append(f"Stock insuffisant pour {miel.miel_type.name} - {miel.consommable_type.name}. Stock disponible: {current_stock}, quantité demandée: {quantite_int}")
+                    else:
+                        items_to_process.append((miel, quantite_int))
+                        
+                except (Miel.DoesNotExist, ValueError):
+                    continue
+        
+        # If there are stock errors, show them and return to form
+        if stock_errors:
+            for error in stock_errors:
+                messages.error(request, error)
+            return redirect('vente_form')
+        
+        # Create vente only if all stock checks passed
         vente = Vente.objects.create(
             client=client,
             mode_payement=mode_payement_model,
             note=note
         )
         
-        # Process cart items
-        cart_items = request.POST.getlist('cart_items')
-        for item in cart_items:
-            if item:  # Skip empty items
-                print(item)
-                divided = item.split('|')
-                miel_id, quantite = divided[0], divided[1]
-                try:
-                    miel = Miel.objects.get(id=miel_id)
-                    VenteDetail.objects.create(
-                        vente=vente,
-                        miel=miel,
-                        quantite=int(quantite),
-                    )
-                except (Miel.DoesNotExist, ValueError):
-                    continue
+        # Process cart items and reduce stock
+        for miel, quantite in items_to_process:
+            # Create vente detail
+            VenteDetail.objects.create(
+                vente=vente,
+                miel=miel,
+                quantite=quantite,
+            )
+            
+            # Reduce stock by adding negative quantity
+            MielStock.objects.create(
+                miel=miel,
+                added_quantity=-quantite
+            )
         
+        messages.success(request, f'Vente créée avec succès pour {client.name}.')
         return redirect('ventes_list')
     
     # GET request - show form
@@ -552,12 +583,16 @@ def vente_form(request):
         latest_price = miel.miel_price_histories.order_by('-created_at').first()
         price = latest_price.price if latest_price else 0.0
         
+        # Get current stock for display
+        current_stock = miel.miel_stock.aggregate(total=Sum('added_quantity'))['total'] or 0
+        
         miels_data.append({
             'id': miel.id,
             'nom': f"{miel.miel_type.name} - {miel.consommable_type.name}",
             'prix': price,
             'unite': miel.unite_mesure.name,
-            'quantite_unite': miel.quantite_unite
+            'quantite_unite': miel.quantite_unite,
+            'stock_actuel': current_stock
         })
         
     modes_payements = ModePayement.objects.all()

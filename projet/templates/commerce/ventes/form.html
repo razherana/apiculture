@@ -121,8 +121,9 @@
                                 data-prix="{{ miel.prix }}" 
                                 data-nom="{{ miel.nom }}"
                                 data-unite="{{ miel.unite }}"
-                                data-quantite-unite="{{ miel.quantite_unite }}">
-                            {{ miel.nom }} - {{ miel.prix }} Ar ({{ miel.quantite_unite }}{{ miel.unite }})
+                                data-quantite-unite="{{ miel.quantite_unite }}"
+                                data-stock="{{ miel.stock_actuel }}">
+                            {{ miel.nom }} - {{ miel.prix }} Ar ({{ miel.quantite_unite }}{{ miel.unite }}) - Stock: {{ miel.stock_actuel }}
                         </option>
                     {% endfor %}
                 </select>
@@ -179,6 +180,17 @@ function addToCart() {
     const quantite = parseInt(quantiteInput.value);
     const unite = selectedOption.dataset.unite;
     const quantiteUnite = selectedOption.dataset.quantiteUnite;
+    const stockActuel = parseInt(selectedOption.dataset.stock || 0);
+    
+    // Check stock availability
+    const existingItem = cart.find(item => item.id === mielId);
+    const quantiteDejaEnPanier = existingItem ? existingItem.quantite : 0;
+    const quantiteTotale = quantiteDejaEnPanier + quantite;
+    
+    if (quantiteTotale > stockActuel) {
+        alert(`Stock insuffisant! Stock disponible: ${stockActuel}, quantité déjà en panier: ${quantiteDejaEnPanier}, quantité demandée: ${quantite}`);
+        return;
+    }
     
     // Use custom price if provided, otherwise use suggested price
     const prix = prixInput.value ? parseFloat(prixInput.value) : prixSuggere;
